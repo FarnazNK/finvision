@@ -1,0 +1,25 @@
+# FinVision — full stack: React frontend + FastAPI AI service.
+#
+#   docker compose up --build
+#   frontend: http://localhost:8080
+#   ai-service docs: http://localhost:8000/docs
+#
+# ANTHROPIC_API_KEY is optional; without it the AI service runs in a
+# deterministic offline mode so the demo still works end-to-end.
+services:
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-4-6}
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8080:80"
+    depends_on:
+      - ai-service
