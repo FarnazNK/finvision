@@ -6,11 +6,12 @@ export function LandingPage() {
   return (
     <Page>
       <Hero>
-        <Eyebrow>AI portfolio analytics platform</Eyebrow>
+        <Eyebrow>Public product demo</Eyebrow>
         <Title>Understand your portfolio with clarity.</Title>
         <Subtitle>
-          FinVision combines market monitoring, authenticated portfolios, deterministic
-          financial analytics, and citation-based research in one focused workspace.
+          FinVision is a production-minded portfolio analytics platform. This public
+          demo shows the product experience while authenticated data and AI services
+          remain behind a protected API.
         </Subtitle>
         <Actions>
           <Link to="/auth?mode=register">
@@ -26,6 +27,20 @@ export function LandingPage() {
         </Disclaimer>
       </Hero>
 
+      <AccessPanel>
+        <div>
+          <Eyebrow>Protected workspace</Eyebrow>
+          <AccessTitle>Ready to work with your own portfolio?</AccessTitle>
+          <AccessText>
+            Sign in to use the authenticated portfolio workflow. The public demo never
+            presents seeded data as a personal account.
+          </AccessText>
+        </div>
+        <Link to="/auth">
+          <Button>Sign in</Button>
+        </Link>
+      </AccessPanel>
+
       <FeatureGrid>
         <Card title="Portfolio intelligence" description="Track holdings, allocation, cost basis, gains, and activity with auditable calculations." />
         <Card title="Market monitoring" description="Use provider-backed quotes, history, and symbol search through a server-side API boundary." />
@@ -33,16 +48,15 @@ export function LandingPage() {
       </FeatureGrid>
 
       <Story>
-        <Eyebrow>Built as an engineering portfolio</Eyebrow>
-        <StoryTitle>Production-minded frontend, Python backend, and AI foundations.</StoryTitle>
+        <Eyebrow>Engineering showcase</Eyebrow>
+        <StoryTitle>Staff-level engineering practices in a focused full-stack system.</StoryTitle>
         <StoryText>
-          FinVision demonstrates React and Redux state management, FastAPI APIs,
-          PostgreSQL-compatible persistence, JWT authentication, Docker, CI/CD,
-          tool-calling analytics, and retrieval-augmented generation.
+          The architecture demonstrates React and Redux state management, typed FastAPI
+          APIs, PostgreSQL-compatible persistence, JWT authentication, Docker, CI/CD,
+          deterministic analytics, and retrieval-augmented generation. Use the demo,
+          then sign in to exercise the protected workflow when an API is configured.
         </StoryText>
-        <StoryLink href="https://github.com/FarnazNK/finvision" target="_blank" rel="noreferrer">
-          View the source on GitHub
-        </StoryLink>
+        <StoryLink>Engineering documentation is available with the project.</StoryLink>
       </Story>
     </Page>
   );
@@ -102,6 +116,34 @@ const FeatureGrid = styled.div`
   gap: ${({ theme }) => theme.space[4]};
 `;
 
+const AccessPanel = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space[5]};
+  padding: ${({ theme }) => theme.space[5]};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+
+  @media (max-width: 620px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+`;
+
+const AccessTitle = styled.h2`
+  margin: ${({ theme }) => `${theme.space[2]} 0`};
+  font-size: ${({ theme }) => theme.fontSize.xl};
+`;
+
+const AccessText = styled.p`
+  max-width: 650px;
+  margin: 0;
+  color: ${({ theme }) => theme.color.textMuted};
+  line-height: 1.6;
+`;
+
 const Story = styled.section`
   padding: ${({ theme }) => `${theme.space[8]} ${theme.space[4]}`};
   border-top: 1px solid ${({ theme }) => theme.color.border};
@@ -119,7 +161,7 @@ const StoryText = styled.p`
   line-height: 1.7;
 `;
 
-const StoryLink = styled.a`
+const StoryLink = styled.p`
   display: inline-block;
   margin-top: ${({ theme }) => theme.space[3]};
   color: ${({ theme }) => theme.color.primary};

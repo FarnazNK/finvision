@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
@@ -84,6 +85,7 @@ export function Topbar() {
           {themeMode === 'light' ? '☀' : themeMode === 'dark' ? '☾' : '⌒'}
           <ThemeLabel>{themeMode}</ThemeLabel>
         </ThemeToggle>
+        <SignInLink to="/auth">Sign in</SignInLink>
       </Right>
     </Bar>
   );
@@ -180,6 +182,20 @@ const ThemeToggle = styled.button`
 const ThemeLabel = styled.span`
   display: none;
   ${media.sm`display: inline;`}
+`;
+
+const SignInLink = styled(Link)`
+  padding: 6px ${({ theme }) => theme.space[3]};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.primary};
+  color: ${({ theme }) => theme.color.primaryText};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  text-decoration: none;
+
+  &:hover {
+    opacity: 0.9;
+  }
 `;
 
 const CurrencySelect = styled.select`

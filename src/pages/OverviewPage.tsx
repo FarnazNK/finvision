@@ -58,8 +58,8 @@ export function OverviewPage() {
       <PageHeader>
         <div>
           <Eyebrow>Overview</Eyebrow>
-          <Title>Good {greetingForHour()}, Farnaz</Title>
-          <Subtitle>Here's where your portfolio stands today.</Subtitle>
+          <Title>Your portfolio at a glance</Title>
+          <Subtitle>Review holdings, market movement, and grounded insights in one workspace.</Subtitle>
         </div>
       </PageHeader>
 
@@ -155,13 +155,6 @@ export function OverviewPage() {
       </Grid>
     </Page>
   );
-}
-
-function greetingForHour(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 18) return 'afternoon';
-  return 'evening';
 }
 
 function rangeLabel(r: Range): string {
