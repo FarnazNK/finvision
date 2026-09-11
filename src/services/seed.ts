@@ -97,7 +97,9 @@ export function seedPortfolioCurve(days = 365, start = 78000): PortfolioPoint[] 
     value = value * (1 + drift + noise);
     points.push({ t: now - i * 86_400_000, value: Math.round(value * 100) / 100 });
   }
-  return points;
+  const target = seedHoldings.reduce((sum, h) => sum + h.quantity * h.price, 0);
+  const scale = target / (points[points.length - 1]?.value ?? target);
+  return points.map((point) => ({ ...point, value: Math.round(point.value * scale * 100) / 100 }));
 }
 
 export const seedTransactions: Transaction[] = [

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
+import { selectCurrency } from '@/features/ui/uiSlice';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { makeSelectSparkline } from '@/features/markets/marketsSlice';
 import { Badge, Card } from '@/components/primitives';
@@ -21,6 +22,7 @@ type SortDir = 'asc' | 'desc';
 
 export function HoldingsPage() {
   const holdings = useAppSelector(selectHoldings);
+  const currency = useAppSelector(selectCurrency);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: 'value',
     dir: 'desc',
@@ -54,7 +56,7 @@ export function HoldingsPage() {
         <div>
           <Eyebrow>Holdings</Eyebrow>
           <Title>{holdings.length} positions</Title>
-          <Subtitle>{formatMoney(totalValue)} total market value</Subtitle>
+          <Subtitle>{formatMoney(totalValue, { currency })} total market value</Subtitle>
         </div>
       </PageHeader>
 
@@ -91,7 +93,7 @@ export function HoldingsPage() {
             </thead>
             <tbody>
               {sorted.map((h) => (
-                <HoldingRow key={h.id} holding={h} />
+                <HoldingRow key={h.id} holding={h} currency={currency} />
               ))}
             </tbody>
           </Table>
@@ -120,7 +122,7 @@ function readSortValue(h: Holding, k: SortKey): number | string {
   }
 }
 
-function HoldingRow({ holding }: { holding: Holding }) {
+function HoldingRow({ holding, currency }: { holding: Holding; currency: string }) {
   // Per-row memoised selector — Recommended RTK pattern for parameterised selectors.
   const sparkSelector = useMemo(() => makeSelectSparkline(holding.symbol), [holding.symbol]);
   const ticks = useSelector((s: RootState) => sparkSelector(s));
@@ -146,18 +148,18 @@ function HoldingRow({ holding }: { holding: Holding }) {
         </Badge>
       </Td>
       <Td $align="right">{formatNumber(holding.quantity, holding.assetClass === 'cash' ? 0 : 2)}</Td>
-      <Td $align="right">{formatMoney(holding.price)}</Td>
+      <Td $align="right">{formatMoney(holding.price, { currency })}</Td>
       <Td $align="right">
         <Pct $positive={holding.dayChangePct >= 0}>
           {formatPercent(holding.dayChangePct)}
         </Pct>
       </Td>
       <Td $align="right">
-        <strong>{formatMoney(value)}</strong>
+        <strong>{formatMoney(value, { currency })}</strong>
       </Td>
       <Td $align="right">
         <ReturnStack>
-          <span>{formatMoney(gain, { signed: true })}</span>
+          <span>{formatMoney(gain, { currency, signed: true })}</span>
           <Pct $positive={gain >= 0}>{formatPercent(gainPct)}</Pct>
         </ReturnStack>
       </Td>

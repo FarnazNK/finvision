@@ -56,6 +56,52 @@ docker compose up --build
 # AI service: http://localhost:8000/docs
 ```
 
+## Configuration and deployment checks
+
+The frontend is built with Vite, so `VITE_AI_SERVICE_URL` must be supplied at
+image build time. For local Docker Compose, the default is
+`http://localhost:8000`; for production, set it to the public URL of the AI
+service before building the web image.
+
+```bash
+# Optional Anthropic access; omit for deterministic offline mode
+$env:ANTHROPIC_API_KEY = 'sk-...'
+$env:VITE_AI_SERVICE_URL = 'https://ai.example.com'
+$env:FINVISION_API_KEY = 'use-a-user-facing-authenticated-proxy-in-production'
+docker compose up --build
+```
+
+The web image includes an nginx SPA fallback, so direct navigation and refreshes
+on routes such as `/holdings` and `/transactions` work correctly. The AI service
+supports configurable CORS origins, API-key authorization, request timeouts,
+and per-client rate limiting through `FINVISION_ALLOWED_ORIGINS`,
+`FINVISION_API_KEY`, `FINVISION_REQUEST_TIMEOUT`, and `FINVISION_RATE_LIMIT`.
+Do not put a shared production secret in a `VITE_*` variable: Vite embeds those
+values in the browser bundle. Use a server-side proxy or user-scoped tokens for
+production authentication.
+
+## Verification
+
+Run the existing checks before publishing changes:
+
+```bash
+npm run typecheck
+npm run lint
+npm test -- --runInBand
+npm run build
+Set-Location ai-service
+python -m pytest
+Set-Location ..
+docker compose config
+docker compose build
+```
+
+For a runtime smoke test, open `http://localhost:8080/holdings` and refresh the
+page, open `http://localhost:8000/health`, and submit an Insights question from
+the Overview page. The expected health response is `{"status":"ok"}` and the
+Insights request should return either the configured model response or the
+`offline-fallback` response when no Anthropic key is configured.
+
 ## Scripts
 
 ```

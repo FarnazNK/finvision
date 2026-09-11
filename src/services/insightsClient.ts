@@ -9,7 +9,8 @@ import type { Holding, Transaction } from '@/types/domain';
 
 const BASE_URL =
   (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ??
-  'http://localhost:8000';
+  '/ai-service';
+const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
 export interface Citation {
   kind: 'holding' | 'transaction' | 'metric';
@@ -31,7 +32,10 @@ export async function askInsight(
 ): Promise<InsightsResponse> {
   const res = await fetch(`${BASE_URL}/api/insights`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
+    },
     body: JSON.stringify({
       question,
       portfolio: { holdings, transactions, baseCurrency },

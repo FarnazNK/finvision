@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
+  currencyChanged,
   liveFeedToggled,
+  selectCurrency,
   selectLiveFeed,
   selectThemeMode,
   themeModeChanged,
 } from '@/features/ui/uiSlice';
+import { searchChanged } from '@/features/transactions/transactionsSlice';
 import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { Input } from '@/components/primitives/Input';
@@ -16,6 +19,7 @@ export function Topbar() {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(selectThemeMode);
   const liveFeed = useAppSelector(selectLiveFeed);
+  const currency = useAppSelector(selectCurrency);
   const lastUpdated = useAppSelector(selectLastUpdated);
 
   // Re-render every 15s so the relative-time label stays fresh.
@@ -32,6 +36,7 @@ export function Topbar() {
           label="Search"
           hideLabel
           placeholder="Search holdings, transactions, symbols…"
+          onChange={(e) => dispatch(searchChanged(e.target.value))}
           iconStart={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="7" />
@@ -42,6 +47,15 @@ export function Topbar() {
       </SearchWrap>
 
       <Right>
+        <CurrencySelect
+          aria-label="Display currency"
+          value={currency}
+          onChange={(e) => dispatch(currencyChanged(e.target.value))}
+        >
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="EUR">EUR</option>
+        </CurrencySelect>
         <LiveStatus
           type="button"
           onClick={() => dispatch(liveFeedToggled())}
@@ -166,4 +180,12 @@ const ThemeToggle = styled.button`
 const ThemeLabel = styled.span`
   display: none;
   ${media.sm`display: inline;`}
+`;
+
+const CurrencySelect = styled.select`
+  padding: 6px 8px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.text};
 `;

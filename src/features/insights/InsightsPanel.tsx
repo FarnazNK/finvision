@@ -10,6 +10,7 @@ import { useRef, useState } from 'react';
 import styled from 'styled-components';
 
 import { useAppSelector } from '@/app/hooks';
+import { selectCurrency } from '@/features/ui/uiSlice';
 import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
@@ -25,6 +26,7 @@ const SUGGESTIONS = [
 export function InsightsPanel() {
   const holdings = useAppSelector(selectHoldings);
   const transactions = useAppSelector(selectTransactions);
+  const currency = useAppSelector(selectCurrency);
 
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState<InsightsResponse | null>(null);
@@ -46,7 +48,7 @@ export function InsightsPanel() {
         trimmed,
         holdings,
         transactions,
-        'USD',
+        currency,
         controller.signal,
       );
       setResult(res);

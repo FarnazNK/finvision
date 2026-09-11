@@ -8,6 +8,9 @@ import path from 'path';
 // names and component display names automatically.
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __FINVISION_DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
