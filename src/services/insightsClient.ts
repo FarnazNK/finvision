@@ -1,16 +1,14 @@
 /**
- * Client for the FinVision AI service (`ai-service/`).
+ * Client for the FinVision AI service.
  *
- * The whole portfolio snapshot is sent with each question so answers are
- * grounded in the user's real holdings. Base URL is configurable via
- * `VITE_AI_SERVICE_URL` and defaults to the local uvicorn dev server.
+ * Authenticated requests send only the question. The API loads the user's
+ * portfolio from its database; demo requests may send the offline snapshot.
  */
 import type { Holding, Transaction } from '@/types/domain';
+import { getAccessToken } from '@/services/authClient';
 
 const BASE_URL =
-  (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ??
-  '/ai-service';
-const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
+  (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ?? '/ai-service';
 
 export interface Citation {
   kind: 'holding' | 'transaction' | 'metric';
@@ -30,21 +28,27 @@ export async function askInsight(
   baseCurrency = 'USD',
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
-  const res = await fetch(`${BASE_URL}/api/insights`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
+  const token = getAccessToken();
+  const authenticated = Boolean(token);
+  const response = await fetch(
+    `${BASE_URL}${authenticated ? '/api/v1/insights' : '/api/insights'}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(
+        authenticated
+          ? { question }
+          : { question, portfolio: { holdings, transactions, baseCurrency } },
+      ),
+      signal,
     },
-    body: JSON.stringify({
-      question,
-      portfolio: { holdings, transactions, baseCurrency },
-    }),
-    signal,
-  });
+  );
 
-  if (!res.ok) {
-    throw new Error(`Insights request failed: ${res.status}`);
+  if (!response.ok) {
+    throw new Error(`Insights request failed: ${response.status}`);
   }
-  return (await res.json()) as InsightsResponse;
+  return (await response.json()) as InsightsResponse;
 }

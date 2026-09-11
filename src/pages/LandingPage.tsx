@@ -5,6 +5,10 @@ import { Button, Card } from '@/components/primitives';
 export function LandingPage() {
   return (
     <Page>
+      <Brand to="/" aria-label="FinVision home">
+        <BrandMark aria-hidden="true">F</BrandMark>
+        <BrandWord>FinVision</BrandWord>
+      </Brand>
       <Hero>
         <Eyebrow>FinVision portfolio workspace</Eyebrow>
         <Title>Understand your portfolio with clarity.</Title>
@@ -97,6 +101,32 @@ const Page = styled.div`
   gap: ${({ theme }) => theme.space[10]};
   max-width: 1080px;
   margin: 0 auto;
+`;
+
+const Brand = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[2]};
+  width: fit-content;
+  padding: ${({ theme }) => `${theme.space[5]} ${theme.space[4]} 0`};
+  color: ${({ theme }) => theme.color.text};
+  text-decoration: none;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const BrandMark = styled.span`
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => theme.color.primary};
+  color: ${({ theme }) => theme.color.primaryText};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+`;
+
+const BrandWord = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.lg};
 `;
 
 const Hero = styled.section`

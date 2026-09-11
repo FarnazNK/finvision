@@ -6,3 +6,5 @@ coverage
 *.db
 .env
 .env.local
+__pycache__/
+*.py[cod]

@@ -15,9 +15,9 @@ JWT_ALGORITHM = "HS256"
 
 def _secret() -> str:
     secret = os.getenv("FINVISION_JWT_SECRET", "")
-    if not secret and os.getenv("ENVIRONMENT", "development") == "production":
-        raise RuntimeError("FINVISION_JWT_SECRET is required in production")
-    return secret or "local-development-only-change-me"
+    if not secret:
+        raise RuntimeError("FINVISION_JWT_SECRET is required")
+    return secret
 
 
 def hash_password(password: str) -> str:

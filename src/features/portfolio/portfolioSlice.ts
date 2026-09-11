@@ -25,6 +25,13 @@ const portfolioSlice = createSlice({
   name: 'portfolio',
   initialState,
   reducers: {
+    holdingsLoaded(state, action: PayloadAction<Holding[]>) {
+      state.holdings = action.payload;
+      state.curve = [];
+      state.lastUpdated = new Date().toISOString();
+      state.loading = false;
+      state.error = null;
+    },
     holdingsRepriced(state, action: PayloadAction<MarketTick[]>) {
       const bySymbol = new Map(action.payload.map((t) => [t.symbol, t]));
       for (const h of state.holdings) {
@@ -51,7 +58,7 @@ const portfolioSlice = createSlice({
   },
 });
 
-export const { holdingsRepriced, curvePointAppended, portfolioReset } =
+export const { holdingsLoaded, holdingsRepriced, curvePointAppended, portfolioReset } =
   portfolioSlice.actions;
 export default portfolioSlice.reducer;
 

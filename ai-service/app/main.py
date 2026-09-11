@@ -23,6 +23,7 @@ from .security import (
 )
 from .schemas import (
     InsightsRequest,
+    AuthenticatedInsightsRequest,
     InsightsResponse,
     ResearchCitation,
     ResearchIngestRequest,
@@ -38,6 +39,7 @@ from .schemas import (
     LoginRequest,
     RegisterRequest,
     UserResponse,
+    PortfolioSnapshot,
 )
 
 app = FastAPI(title="FinVision AI Service", version="1.1.0")
@@ -65,8 +67,18 @@ _requests: dict[str, deque[float]] = defaultdict(deque)
 
 def authorize(authorization: str | None = Header(default=None)) -> None:
     configured_key = os.getenv("FINVISION_API_KEY", "")
+    if not configured_key and os.getenv("ENVIRONMENT", "development") == "production":
+        raise HTTPException(status_code=503, detail="API authentication is not configured")
     if configured_key and authorization != f"Bearer {configured_key}":
         raise HTTPException(status_code=401, detail="Invalid API key")
+
+
+def authorize_metrics(authorization: str | None = Header(default=None)) -> None:
+    configured_key = os.getenv("FINVISION_METRICS_KEY") or os.getenv("FINVISION_API_KEY", "")
+    if not configured_key:
+        raise HTTPException(status_code=503, detail="Metrics authentication is not configured")
+    if authorization != f"Bearer {configured_key}":
+        raise HTTPException(status_code=401, detail="Invalid metrics credential")
 
 
 def current_user(authorization: str | None = Header(default=None)) -> UserRecord:
@@ -100,13 +112,13 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/metrics")
-def metrics() -> dict[str, dict[str, int]]:
+@app.get("/metrics", include_in_schema=False)
+def metrics(_: None = Depends(authorize_metrics)) -> dict[str, dict[str, int]]:
     return {"requests_total": request_metrics()}
 
 
 @app.post("/api/auth/register", response_model=AuthResponse, status_code=201)
-def register(req: RegisterRequest) -> AuthResponse:
+def register(req: RegisterRequest, _: None = Depends(enforce_rate_limit)) -> AuthResponse:
     email = req.email.strip().lower()
     with SessionLocal() as session:
         if session.scalar(select(UserRecord).where(UserRecord.email == email)):
@@ -119,7 +131,7 @@ def register(req: RegisterRequest) -> AuthResponse:
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
-def login(req: LoginRequest) -> AuthResponse:
+def login(req: LoginRequest, _: None = Depends(enforce_rate_limit)) -> AuthResponse:
     with SessionLocal() as session:
         user = session.scalar(select(UserRecord).where(UserRecord.email == req.email.strip().lower()))
         if user is None or not verify_password(req.password, user.password_hash):
@@ -147,6 +159,8 @@ def list_holdings(user: UserRecord = Depends(current_user)) -> list[HoldingRespo
                 quantity=record.quantity,
                 costBasis=record.cost_basis,
                 currency=record.currency,
+                price=record.cost_basis,
+                dayChangePct=0,
             )
             for record in records
         ]
@@ -178,6 +192,8 @@ def create_holding(
             quantity=record.quantity,
             costBasis=record.cost_basis,
             currency=record.currency,
+            price=record.cost_basis,
+            dayChangePct=0,
         )
 
 
@@ -265,6 +281,37 @@ def insights(
     __: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
     return generate_insight(req.question, req.portfolio)
+
+
+@app.post("/api/v1/insights", response_model=InsightsResponse)
+def authenticated_insights(
+    req: AuthenticatedInsightsRequest,
+    user: UserRecord = Depends(current_user),
+    _: None = Depends(enforce_rate_limit),
+) -> InsightsResponse:
+    with SessionLocal() as session:
+        records = session.scalars(
+            select(HoldingRecord).where(HoldingRecord.user_id == user.id).order_by(HoldingRecord.id)
+        ).all()
+        snapshot = PortfolioSnapshot(
+            holdings=[
+                {
+                    "id": str(record.id),
+                    "symbol": record.symbol,
+                    "name": record.name,
+                    "assetClass": record.asset_class,
+                    "quantity": record.quantity,
+                    "costBasis": record.cost_basis,
+                    "price": record.cost_basis,
+                    "dayChangePct": 0,
+                    "currency": record.currency,
+                }
+                for record in records
+            ],
+            transactions=[],
+            baseCurrency="USD",
+        )
+    return generate_insight(req.question, snapshot)
 
 @app.post(
     "/api/research/ingest",
