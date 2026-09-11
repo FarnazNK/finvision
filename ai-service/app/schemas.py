@@ -1,8 +1,7 @@
 """Pydantic schemas.
 
-These intentionally mirror `src/types/domain.ts` on the frontend so the same
-portfolio payload the React app already holds in its Redux store can be POSTed
-here without a translation layer.
+These intentionally mirror the frontend portfolio payload while also defining
+stable contracts for the document-grounded Research Assistant.
 """
 from __future__ import annotations
 
@@ -39,7 +38,7 @@ class Transaction(BaseModel):
 
 
 class PortfolioSnapshot(BaseModel):
-    """The context the client sends so answers are grounded in *this* account."""
+    """The context the client sends so answers are grounded in this account."""
 
     holdings: list[Holding] = Field(default_factory=list)
     transactions: list[Transaction] = Field(default_factory=list)
@@ -52,13 +51,88 @@ class InsightsRequest(BaseModel):
 
 
 class Citation(BaseModel):
-    """Which holdings/transactions grounded a given answer, for auditability."""
+    """Which holdings, transactions, or documents grounded a response."""
 
-    kind: Literal["holding", "transaction", "metric"]
+    kind: Literal["holding", "transaction", "metric", "document"]
     ref: str
+    source: Optional[str] = None
 
 
 class InsightsResponse(BaseModel):
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     model: str
+
+
+class ResearchDocument(BaseModel):
+    documentId: str = Field(..., min_length=1, max_length=200)
+    title: str = Field(..., min_length=1, max_length=300)
+    sourceUrl: str = Field(..., min_length=1, max_length=2000)
+    symbol: Optional[str] = Field(default=None, max_length=20)
+    publishedAt: Optional[str] = None
+    text: str = Field(..., min_length=1, max_length=100_000)
+
+
+class ResearchIngestRequest(BaseModel):
+    document: ResearchDocument
+
+
+class ResearchIngestResponse(BaseModel):
+    documentId: str
+    chunksCreated: int
+
+
+class ResearchRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=1000)
+    symbol: Optional[str] = Field(default=None, max_length=20)
+    limit: int = Field(default=5, ge=1, le=10)
+
+
+class ResearchCitation(BaseModel):
+    chunkId: str
+    documentId: str
+    title: str
+    sourceUrl: str
+    score: float
+    excerpt: str
+
+
+class ResearchResponse(BaseModel):
+    answer: str
+    citations: list[ResearchCitation] = Field(default_factory=list)
+    model: str = "retrieval-only"
+
+
+class MarketQuote(BaseModel):
+    symbol: str
+    current: float
+    change: float
+    changePercent: float
+    high: float
+    low: float
+    open: float
+    previousClose: float
+    timestamp: int
+
+
+class MarketCandle(BaseModel):
+    symbol: str
+    resolution: str
+    timestamps: list[int]
+    open: list[float]
+    high: list[float]
+    low: list[float]
+    close: list[float]
+    volume: list[float]
+    status: str
+
+
+class MarketSearchResult(BaseModel):
+    symbol: str
+    description: str
+    type: str
+    exchange: Optional[str] = None
+
+
+class MarketSearchResponse(BaseModel):
+    results: list[MarketSearchResult]

@@ -9,9 +9,24 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .llm import generate_insight
-from .schemas import InsightsRequest, InsightsResponse
+from .market_data import FinnhubClient, MarketDataError
+from .rag import Document, InMemoryRetriever
+from .schemas import (
+    InsightsRequest,
+    InsightsResponse,
+    ResearchCitation,
+    ResearchIngestRequest,
+    ResearchIngestResponse,
+    ResearchRequest,
+    ResearchResponse,
+    MarketCandle,
+    MarketQuote,
+    MarketSearchResponse,
+)
 
-app = FastAPI(title="FinVision AI Service", version="1.0.0")
+app = FastAPI(title="FinVision AI Service", version="1.1.0")
+retriever = InMemoryRetriever()
+market_client = FinnhubClient()
 
 allowed_origins = [
     origin.strip()
@@ -53,6 +68,83 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+def _market_error(exc: MarketDataError) -> HTTPException:
+    return HTTPException(status_code=503, detail=str(exc))
+
+
+@app.get("/api/markets/quote", response_model=MarketQuote)
+def market_quote(
+    symbol: str,
+    _: None = Depends(enforce_rate_limit),
+) -> MarketQuote:
+    try:
+        data = market_client.quote(symbol)
+    except (MarketDataError, ValueError) as exc:
+        raise _market_error(exc) from exc
+    return MarketQuote(
+        symbol=symbol.strip().upper(),
+        current=data.get("c", 0),
+        change=data.get("d", 0),
+        changePercent=data.get("dp", 0),
+        high=data.get("h", 0),
+        low=data.get("l", 0),
+        open=data.get("o", 0),
+        previousClose=data.get("pc", 0),
+        timestamp=data.get("t", 0),
+    )
+
+
+@app.get("/api/markets/history", response_model=MarketCandle)
+def market_history(
+    symbol: str,
+    resolution: str = "D",
+    start: int = 0,
+    end: int = 0,
+    _: None = Depends(enforce_rate_limit),
+) -> MarketCandle:
+    if start <= 0 or end <= start:
+        raise HTTPException(status_code=400, detail="start and end must be valid Unix timestamps")
+    try:
+        data = market_client.candles(symbol, resolution, start, end)
+    except (MarketDataError, ValueError) as exc:
+        raise _market_error(exc) from exc
+    return MarketCandle(
+        symbol=symbol.strip().upper(),
+        resolution=resolution,
+        timestamps=data.get("t", []),
+        open=data.get("o", []),
+        high=data.get("h", []),
+        low=data.get("l", []),
+        close=data.get("c", []),
+        volume=data.get("v", []),
+        status=data.get("s", "unknown"),
+    )
+
+
+@app.get("/api/markets/search", response_model=MarketSearchResponse)
+def market_search(
+    q: str,
+    _: None = Depends(enforce_rate_limit),
+) -> MarketSearchResponse:
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="q is required")
+    try:
+        data = market_client.search(q)
+    except MarketDataError as exc:
+        raise _market_error(exc) from exc
+    return MarketSearchResponse(
+        results=[
+            {
+                "symbol": item.get("symbol", ""),
+                "description": item.get("description", ""),
+                "type": item.get("type", ""),
+                "exchange": item.get("exchange"),
+            }
+            for item in data.get("result", [])
+        ]
+    )
+
+
 @app.post("/api/insights", response_model=InsightsResponse)
 def insights(
     req: InsightsRequest,
@@ -60,3 +152,60 @@ def insights(
     __: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
     return generate_insight(req.question, req.portfolio)
+
+@app.post(
+    "/api/research/ingest",
+    response_model=ResearchIngestResponse,
+)
+@app.post(
+    "/api/research/documents",
+    response_model=ResearchIngestResponse,
+    include_in_schema=False,
+)
+def ingest_research_document(
+    req: ResearchIngestRequest,
+    _: None = Depends(authorize),
+    __: None = Depends(enforce_rate_limit),
+) -> ResearchIngestResponse:
+    document = Document(
+        document_id=req.document.documentId,
+        title=req.document.title,
+        source_url=req.document.sourceUrl,
+        symbol=req.document.symbol,
+        published_at=req.document.publishedAt,
+        text=req.document.text,
+    )
+    chunks_created = retriever.add_document(document)
+    return ResearchIngestResponse(
+        documentId=document.document_id,
+        chunksCreated=chunks_created,
+    )
+
+
+@app.post("/api/research", response_model=ResearchResponse)
+def research(
+    req: ResearchRequest,
+    _: None = Depends(authorize),
+    __: None = Depends(enforce_rate_limit),
+) -> ResearchResponse:
+    matches = retriever.search(req.question, symbol=req.symbol, limit=req.limit)
+    if not matches:
+        return ResearchResponse(
+            answer="I could not find a relevant indexed document for that question.",
+        )
+    citations = [
+        ResearchCitation(
+            chunkId=match.chunk.chunk_id,
+            documentId=match.chunk.document_id,
+            title=match.chunk.title,
+            sourceUrl=match.chunk.source_url,
+            score=round(match.score, 4),
+            excerpt=match.chunk.text[:500],
+        )
+        for match in matches
+    ]
+    answer = "Relevant research passages:\n\n" + "\n\n".join(
+        f"[{index}] {citation.excerpt}"
+        for index, citation in enumerate(citations, start=1)
+    )
+    return ResearchResponse(answer=answer, citations=citations)

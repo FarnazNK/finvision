@@ -13,6 +13,7 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Currency display selection and transaction search
 - Accessible UI primitives with keyboard navigation, labels, focus states, and reduced-motion support
 - AI portfolio insights grounded in holdings and transaction data
+- Document-grounded Research Assistant API with source citations
 - Deterministic analytics tools and citations for auditable AI responses
 - Offline AI fallback when no Anthropic API key is configured
 - Dockerized frontend and AI service with nginx SPA routing
@@ -22,12 +23,12 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 
 ```text
 React + TypeScript + Redux Toolkit
-            ¦
-            ¦ POST /api/insights
-            ¦ question + portfolio snapshot
+            ï¿½
+            ï¿½ POST /api/insights
+            ï¿½ question + portfolio snapshot
             ?
 FastAPI + Pydantic + Anthropic SDK
-            ¦
+            ï¿½
             ?
 Deterministic portfolio analytics tools
 ```
@@ -35,6 +36,24 @@ Deterministic portfolio analytics tools
 The frontend is a Vite-built single-page application. The AI service is isolated in `ai-service/` and exposes a small HTTP API. The model may call deterministic analytics tools for portfolio calculations; it does not receive permission to invent financial figures or perform unsupported arithmetic.
 
 See [`ai-service/README.md`](./ai-service/README.md) for service-specific details.
+
+### Research Assistant
+
+The backend also includes a dependency-free retrieval vertical slice for financial
+research documents. Documents are metadata-aware and split into bounded overlapping
+chunks; `/api/research` returns ranked excerpts with source URLs and chunk IDs so
+answers remain auditable. The current in-memory retriever is intentionally
+deterministic for demos and CI, with a `Retriever` protocol ready for a
+PostgreSQL/pgvector implementation.
+
+```text
+POST /api/research/ingest  -> document chunks + metadata
+POST /api/research         -> ranked excerpts + citations
+```
+
+This is not yet durable or user-scoped. Production work still requires
+authentication, per-user ownership, persistent storage, embedding generation,
+ingestion workers, and retrieval/grounding evaluation.
 
 ## Technology stack
 
@@ -109,6 +128,9 @@ The AI service supports these environment variables:
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Enables Anthropic-backed responses | Empty / offline mode |
 | `FINVISION_MODEL` | Anthropic model identifier | `claude-sonnet-5` |
+| `FINNHUB_API_KEY` | Enables server-side Finnhub market endpoints | Empty / disabled |
+| `FINVISION_MARKET_CACHE_TTL` | Market response cache duration in seconds | `30` |
+| `FINVISION_MARKET_TIMEOUT` | Finnhub request timeout in seconds | `8` |
 | `FINVISION_ALLOWED_ORIGINS` | Comma-separated CORS origins | Local ports `3000` and `8080` |
 | `FINVISION_API_KEY` | Optional bearer-token protection for `/api/insights` | Empty / disabled |
 | `FINVISION_RATE_LIMIT` | Requests per client per minute | `30` |
