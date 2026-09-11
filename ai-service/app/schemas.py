@@ -50,6 +50,10 @@ class InsightsRequest(BaseModel):
     portfolio: PortfolioSnapshot
 
 
+class AuthenticatedInsightsRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=1000)
+
+
 class Citation(BaseModel):
     """Which holdings, transactions, or documents grounded a response."""
 
@@ -168,3 +172,5 @@ class HoldingCreate(BaseModel):
 
 class HoldingResponse(HoldingCreate):
     id: int
+    price: float = 0
+    dayChangePct: float = 0

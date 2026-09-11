@@ -25,9 +25,9 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Dockerized frontend and AI service with nginx SPA routing
 - GitHub Actions CI for frontend, backend, Compose, and production container builds
 - GitHub Container Registry publishing for `main` and version tags
-- Redux state persistence across browser refreshes
+- Authenticated portfolio hydration from the FastAPI service; financial Redux state is not persisted to browser storage
 - PostgreSQL-compatible persistence, JWT authentication, and request metrics
-- Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
+- Sign-in and registration flow for user-scoped portfolio APIs
 - SEO-ready public landing page at `/welcome` with Open Graph metadata and sitemap
 - Portfolio profile guidance describing the information users can monitor and the AI-assisted research available to them
 - Server-side Finnhub quote, history, and symbol-search adapters with caching
@@ -251,6 +251,8 @@ When running the service locally, execute commands from `ai-service` or set `PYT
 ## Configuration
 
 The frontend value `VITE_AI_SERVICE_URL` is embedded into the browser bundle at build time. Set it to the public AI service URL before building the web image.
+No private API key is embedded in the frontend. Authenticated AI requests use the
+user's bearer token, and the backend loads that user's portfolio context server-side.
 
 The AI service supports these environment variables:
 
@@ -260,11 +262,12 @@ The AI service supports these environment variables:
 | `FINVISION_MODEL` | Anthropic model identifier | `claude-sonnet-5` |
 | `FINNHUB_API_KEY` | Enables server-side Finnhub market endpoints | Empty / disabled |
 | `DATABASE_URL` | SQLAlchemy database URL for users and portfolios | Local SQLite |
-| `FINVISION_JWT_SECRET` | JWT signing secret for user authentication | Development-only fallback |
+| `FINVISION_JWT_SECRET` | JWT signing secret for user authentication | Required |
 | `FINVISION_MARKET_CACHE_TTL` | Market response cache duration in seconds | `30` |
 | `FINVISION_MARKET_TIMEOUT` | Finnhub request timeout in seconds | `8` |
 | `FINVISION_ALLOWED_ORIGINS` | Comma-separated CORS origins | Local ports `3000` and `8080` |
-| `FINVISION_API_KEY` | Optional bearer-token protection for `/api/insights` | Empty / disabled |
+| `FINVISION_API_KEY` | Server-side credential for demo API authentication | Required when deployed |
+| `FINVISION_METRICS_KEY` | Internal observability credential | Required for metrics access |
 | `FINVISION_RATE_LIMIT` | Requests per client per minute | `30` |
 | `FINVISION_REQUEST_TIMEOUT` | Anthropic request timeout in seconds | `20` |
 
