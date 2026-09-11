@@ -28,6 +28,7 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Redux state persistence across browser refreshes
 - PostgreSQL-compatible persistence, JWT authentication, and request metrics
 - Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
+- SEO-ready public landing page at `/welcome` with Open Graph metadata and sitemap
 - Server-side Finnhub quote, history, and symbol-search adapters with caching
 
 ## Architecture
@@ -91,6 +92,10 @@ The application is not currently hosted at a public URL. It runs locally through
 Docker Compose and is ready to deploy to a frontend host such as Vercel or
 Cloudflare Pages and a backend host such as Railway, Render, or Fly.io.
 
+The public landing page is available at `/welcome` after deployment. It is the
+recommended page to submit to Google Search Console; authenticated dashboard
+routes are intentionally not presented as public marketing pages.
+
 ### CI/CD and Docker images
 
 Every pull request runs frontend type checking, linting, tests, a production
@@ -116,6 +121,19 @@ Before deploying, configure:
 4. `VITE_AI_SERVICE_URL` pointing to the deployed API before building the frontend.
 5. `FINVISION_ALLOWED_ORIGINS` containing the deployed frontend origin.
 6. `ANTHROPIC_API_KEY` only on the backend if hosted AI responses are enabled.
+
+For a free frontend deployment, use Vercel or Cloudflare Pages with:
+
+```text
+Build command: npm run build
+Output directory: dist
+Node.js: 20
+```
+
+After deployment, replace the `finvision.pages.dev` URLs in `index.html`,
+`public/robots.txt`, and `public/sitemap.xml` with the actual site URL, then
+submit that sitemap in Google Search Console. Search indexing is controlled by
+Google and may take time; publishing a site does not guarantee ranking.
 
 Do not claim the demo provides live market data until the provider plan permits
 redistribution and the deployment displays the provider's required attribution

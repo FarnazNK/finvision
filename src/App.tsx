@@ -7,6 +7,7 @@ import { TransactionsPage } from '@/pages/TransactionsPage';
 import { WatchlistPage } from '@/pages/WatchlistPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AuthPage } from '@/pages/AuthPage';
+import { LandingPage } from '@/pages/LandingPage';
 import { useMarketFeed } from '@/hooks/useMarketFeed';
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
     <AppShell>
       <Routes>
         <Route path="/" element={<OverviewPage />} />
+        <Route path="/welcome" element={<LandingPage />} />
         <Route path="/holdings" element={<HoldingsPage />} />
         <Route path="/markets" element={<MarketsPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />

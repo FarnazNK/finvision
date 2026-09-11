@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /welcome
+Allow: /markets
+
+Sitemap: https://finvision.pages.dev/sitemap.xml
