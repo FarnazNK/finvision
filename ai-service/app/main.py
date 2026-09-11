@@ -5,12 +5,22 @@ import os
 import time
 from collections import defaultdict, deque
 
+import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
 
 from .llm import generate_insight
 from .market_data import FinnhubClient, MarketDataError
+from .observability import RequestMetricsMiddleware, request_metrics
+from .persistence import HoldingRecord, SessionLocal, UserRecord
 from .rag import Document, InMemoryRetriever
+from .security import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 from .schemas import (
     InsightsRequest,
     InsightsResponse,
@@ -22,11 +32,18 @@ from .schemas import (
     MarketCandle,
     MarketQuote,
     MarketSearchResponse,
+    AuthResponse,
+    HoldingCreate,
+    HoldingResponse,
+    LoginRequest,
+    RegisterRequest,
+    UserResponse,
 )
 
 app = FastAPI(title="FinVision AI Service", version="1.1.0")
 retriever = InMemoryRetriever()
 market_client = FinnhubClient()
+app.add_middleware(RequestMetricsMiddleware)
 
 allowed_origins = [
     origin.strip()
@@ -52,6 +69,21 @@ def authorize(authorization: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
+def current_user(authorization: str | None = Header(default=None)) -> UserRecord:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        user_id = decode_access_token(authorization[7:])
+    except (jwt.InvalidTokenError, RuntimeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+    with SessionLocal() as session:
+        user = session.get(UserRecord, user_id)
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        session.expunge(user)
+        return user
+
+
 def enforce_rate_limit(request: Request) -> None:
     now = time.monotonic()
     window = _requests[request.client.host if request.client else "unknown"]
@@ -66,6 +98,87 @@ def enforce_rate_limit(request: Request) -> None:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics() -> dict[str, dict[str, int]]:
+    return {"requests_total": request_metrics()}
+
+
+@app.post("/api/auth/register", response_model=AuthResponse, status_code=201)
+def register(req: RegisterRequest) -> AuthResponse:
+    email = req.email.strip().lower()
+    with SessionLocal() as session:
+        if session.scalar(select(UserRecord).where(UserRecord.email == email)):
+            raise HTTPException(status_code=409, detail="Email is already registered")
+        user = UserRecord(email=email, password_hash=hash_password(req.password))
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        return AuthResponse(accessToken=create_access_token(user.id))
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+def login(req: LoginRequest) -> AuthResponse:
+    with SessionLocal() as session:
+        user = session.scalar(select(UserRecord).where(UserRecord.email == req.email.strip().lower()))
+        if user is None or not verify_password(req.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        return AuthResponse(accessToken=create_access_token(user.id))
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+def me(user: UserRecord = Depends(current_user)) -> UserResponse:
+    return UserResponse(id=user.id, email=user.email)
+
+
+@app.get("/api/portfolio/holdings", response_model=list[HoldingResponse])
+def list_holdings(user: UserRecord = Depends(current_user)) -> list[HoldingResponse]:
+    with SessionLocal() as session:
+        records = session.scalars(
+            select(HoldingRecord).where(HoldingRecord.user_id == user.id).order_by(HoldingRecord.id)
+        ).all()
+        return [
+            HoldingResponse(
+                id=record.id,
+                symbol=record.symbol,
+                name=record.name,
+                assetClass=record.asset_class,
+                quantity=record.quantity,
+                costBasis=record.cost_basis,
+                currency=record.currency,
+            )
+            for record in records
+        ]
+
+
+@app.post("/api/portfolio/holdings", response_model=HoldingResponse, status_code=201)
+def create_holding(
+    req: HoldingCreate,
+    user: UserRecord = Depends(current_user),
+) -> HoldingResponse:
+    record = HoldingRecord(
+        user_id=user.id,
+        symbol=req.symbol.strip().upper(),
+        name=req.name.strip(),
+        asset_class=req.assetClass,
+        quantity=req.quantity,
+        cost_basis=req.costBasis,
+        currency=req.currency.upper(),
+    )
+    with SessionLocal() as session:
+        session.add(record)
+        session.commit()
+        session.refresh(record)
+        return HoldingResponse(
+            id=record.id,
+            symbol=record.symbol,
+            name=record.name,
+            assetClass=record.asset_class,
+            quantity=record.quantity,
+            costBasis=record.cost_basis,
+            currency=record.currency,
+        )
 
 
 def _market_error(exc: MarketDataError) -> HTTPException:

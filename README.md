@@ -18,6 +18,8 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Offline AI fallback when no Anthropic API key is configured
 - Dockerized frontend and AI service with nginx SPA routing
 - Redux state persistence across browser refreshes
+- PostgreSQL-compatible persistence, JWT authentication, and request metrics
+- Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
 
 ## Architecture
 
@@ -129,6 +131,8 @@ The AI service supports these environment variables:
 | `ANTHROPIC_API_KEY` | Enables Anthropic-backed responses | Empty / offline mode |
 | `FINVISION_MODEL` | Anthropic model identifier | `claude-sonnet-5` |
 | `FINNHUB_API_KEY` | Enables server-side Finnhub market endpoints | Empty / disabled |
+| `DATABASE_URL` | SQLAlchemy database URL for users and portfolios | Local SQLite |
+| `FINVISION_JWT_SECRET` | JWT signing secret for user authentication | Development-only fallback |
 | `FINVISION_MARKET_CACHE_TTL` | Market response cache duration in seconds | `30` |
 | `FINVISION_MARKET_TIMEOUT` | Finnhub request timeout in seconds | `8` |
 | `FINVISION_ALLOWED_ORIGINS` | Comma-separated CORS origins | Local ports `3000` and `8080` |

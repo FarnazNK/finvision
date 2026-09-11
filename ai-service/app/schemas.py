@@ -136,3 +136,35 @@ class MarketSearchResult(BaseModel):
 
 class MarketSearchResponse(BaseModel):
     results: list[MarketSearchResult]
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=320)
+    password: str = Field(..., min_length=12, max_length=128)
+
+
+class LoginRequest(RegisterRequest):
+    pass
+
+
+class AuthResponse(BaseModel):
+    accessToken: str
+    tokenType: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+
+
+class HoldingCreate(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=20)
+    name: str = Field(..., min_length=1, max_length=200)
+    assetClass: AssetClass = "equity"
+    quantity: float = Field(..., gt=0)
+    costBasis: float = Field(..., ge=0)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+
+
+class HoldingResponse(HoldingCreate):
+    id: int

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
@@ -7,6 +7,7 @@ import { Card } from '@/components/primitives';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
+import { fetchQuote, type MarketQuote } from '@/services/marketClient';
 
 interface Mover {
   symbol: string;
@@ -18,6 +19,33 @@ interface Mover {
 export function MarketsPage() {
   const holdings = useAppSelector(selectHoldings);
   const history = useAppSelector(selectMarketHistory);
+  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all(
+      holdings
+        .filter((holding) => holding.assetClass !== 'cash')
+        .map(async (holding) => {
+          try {
+            return await fetchQuote(holding.symbol, controller.signal);
+          } catch {
+            return null;
+          }
+        }),
+    ).then((results) => {
+      if (controller.signal.aborted) return;
+      setQuotes(
+        Object.fromEntries(
+          results.filter((quote): quote is MarketQuote => quote !== null).map((quote) => [
+            quote.symbol,
+            quote,
+          ]),
+        ),
+      );
+    });
+    return () => controller.abort();
+  }, [holdings]);
 
   const movers: Mover[] = useMemo(
     () =>
@@ -26,10 +54,12 @@ export function MarketsPage() {
         .map((h) => ({
           symbol: h.symbol,
           name: h.name,
-          price: h.price,
-          changePct: h.dayChangePct,
+          price: quotes[h.symbol]?.current ?? h.price,
+          changePct: quotes[h.symbol]?.changePercent
+            ? quotes[h.symbol].changePercent / 100
+            : h.dayChangePct,
         })),
-    [holdings],
+    [holdings, quotes],
   );
 
   const gainers = useMemo(
@@ -47,7 +77,9 @@ export function MarketsPage() {
         <div>
           <Eyebrow>Markets</Eyebrow>
           <Title>Live movers</Title>
-          <Subtitle>Streaming updates for the symbols in your portfolio.</Subtitle>
+          <Subtitle>
+            Provider quotes are used when configured; simulated updates remain available for demos.
+          </Subtitle>
         </div>
       </PageHeader>
 

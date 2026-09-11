@@ -15,8 +15,18 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-5}
       - FINVISION_API_KEY=${FINVISION_API_KEY:-}
+      - FINVISION_JWT_SECRET=${FINVISION_JWT_SECRET:-local-compose-change-me}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://finvision:finvision@postgres:5432/finvision}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
       - FINVISION_RATE_LIMIT=${FINVISION_RATE_LIMIT:-30}
       - FINVISION_REQUEST_TIMEOUT=${FINVISION_REQUEST_TIMEOUT:-20}
+    volumes:
+      - finvision-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   web:
     build:
@@ -29,3 +39,24 @@ services:
       - "8080:80"
     depends_on:
       - ai-service
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: finvision
+      POSTGRES_USER: finvision
+      POSTGRES_PASSWORD: finvision
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finvision -d finvision"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  finvision-data:
+  postgres-data:

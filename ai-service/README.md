@@ -28,10 +28,16 @@ pytest                                 # tests
 | Method | Path            | Description                              |
 |--------|-----------------|------------------------------------------|
 | GET    | `/health`       | Liveness probe                           |
+| GET    | `/metrics`       | Lightweight request counters for monitoring |
 | POST   | `/api/insights` | `{question, portfolio}` → grounded answer|
 | GET    | `/api/markets/quote?symbol=AAPL` | Current quote from Finnhub |
 | GET    | `/api/markets/history?symbol=AAPL&start=...&end=...` | Historical candles |
 | GET    | `/api/markets/search?q=apple` | Symbol search |
+| POST   | `/api/auth/register` | Create a user account |
+| POST   | `/api/auth/login` | Issue a short-lived access token |
+| GET    | `/api/auth/me` | Return the authenticated user |
+| GET    | `/api/portfolio/holdings` | List the authenticated user's holdings |
+| POST   | `/api/portfolio/holdings` | Add a holding to the authenticated user's portfolio |
 | POST   | `/api/research/ingest` | Index a document into the retrieval store |
 | POST   | `/api/research` | Retrieve relevant passages with citations |
 
@@ -39,6 +45,14 @@ Market endpoints keep the Finnhub credential on the server and cache responses
 in-process to avoid repeated provider requests. Set `FINNHUB_API_KEY` before
 starting the service. The API returns `503` when the key is not configured, so
 local development remains explicit rather than silently showing fake provider data.
+
+## Persistence and authentication
+
+Set `DATABASE_URL` to a PostgreSQL connection string in deployed environments.
+The local default is SQLite so the API can be tested without external services.
+Users authenticate with a short-lived JWT issued by `/api/auth/login`; portfolio
+queries derive ownership from that token and never accept a browser-supplied
+`user_id`. Set `FINVISION_JWT_SECRET` to a long random value in production.
 
 ## Research Assistant and RAG seam
 
