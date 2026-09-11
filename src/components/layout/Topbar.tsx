@@ -100,15 +100,17 @@ const Bar = styled.header`
   height: ${({ theme }) => theme.layout.headerHeight};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.space[4]};
-  padding: 0 ${({ theme }) => theme.space[4]};
+  gap: ${({ theme }) => theme.space[3]};
+  padding: 0 ${({ theme }) => theme.space[3]};
 
-  ${media.md`padding: 0 ${({ theme }) => theme.space[6]};`}
+  ${media.sm`gap: ${({ theme }) => theme.space[4]}; padding: 0 ${({ theme }) => theme.space[4]};`}
+  ${media.md`padding: 0 ${({ theme }) => theme.space[8]};`}
 `;
 
 const SearchWrap = styled.div`
   flex: 1;
-  max-width: 480px;
+  min-width: 0;
+  max-width: 520px;
 `;
 
 const Right = styled.div`
@@ -204,4 +206,8 @@ const CurrencySelect = styled.select`
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.color.surface};
   color: ${({ theme }) => theme.color.text};
+
+  @media (max-width: 520px) {
+    display: none;
+  }
 `;

@@ -6,12 +6,11 @@ export function LandingPage() {
   return (
     <Page>
       <Hero>
-        <Eyebrow>Public product demo</Eyebrow>
+        <Eyebrow>FinVision portfolio workspace</Eyebrow>
         <Title>Understand your portfolio with clarity.</Title>
         <Subtitle>
-          FinVision is a production-minded portfolio analytics platform. This public
-          demo shows the product experience while authenticated data and AI services
-          remain behind a protected API.
+          Monitor holdings, market movement, transactions, allocation, and research
+          in one consistent workspace. Sign in to connect your own portfolio data.
         </Subtitle>
         <Actions>
           <Link to="/auth?mode=register">
@@ -32,8 +31,8 @@ export function LandingPage() {
           <Eyebrow>Protected workspace</Eyebrow>
           <AccessTitle>Ready to work with your own portfolio?</AccessTitle>
           <AccessText>
-            Sign in to use the authenticated portfolio workflow. The public demo never
-            presents seeded data as a personal account.
+            Sign in to use the authenticated portfolio workflow. Demo data is clearly
+            labeled and is never presented as a personal account.
           </AccessText>
         </div>
         <Link to="/auth">

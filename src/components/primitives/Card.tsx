@@ -56,6 +56,10 @@ const Header = styled.header`
   gap: ${({ theme }) => theme.space[4]};
   padding: ${({ theme }) => `${theme.space[5]} ${theme.space[6]}`};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
+
+  @media (max-width: 520px) {
+    padding: ${({ theme }) => `${theme.space[4]} ${theme.space[4]}`};
+  }
 `;
 
 const HeaderText = styled.div`

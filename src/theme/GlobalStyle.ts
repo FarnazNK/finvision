@@ -18,6 +18,7 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   body {
+    overflow-x: hidden;
     transition:
       background ${({ theme }) => theme.motion.base},
       color ${({ theme }) => theme.motion.base};
@@ -46,6 +47,8 @@ export const GlobalStyle = createGlobalStyle`
   a:hover { text-decoration: underline; }
 
   button { font-family: inherit; cursor: pointer; }
+
+  input, select, textarea { font: inherit; }
 
   /* High-contrast keyboard focus, hidden for mouse users — accessibility win. */
   :focus { outline: none; }

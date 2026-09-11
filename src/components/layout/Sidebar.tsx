@@ -26,11 +26,11 @@ export function Sidebar() {
   return (
     <Aside aria-label="Primary" $collapsed={collapsed}>
       <Brand>
-        <BrandMark aria-hidden="true">M</BrandMark>
-        {!collapsed && <BrandWord>Portfolio</BrandWord>}
+        <BrandMark aria-hidden="true">F</BrandMark>
+        {!collapsed && <BrandWord>FinVision</BrandWord>}
       </Brand>
 
-      <Nav>
+      <Nav id="primary-nav">
         <ul>
           {NAV.map((item) => (
             <li key={item.to}>
