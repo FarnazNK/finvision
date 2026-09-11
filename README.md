@@ -2,13 +2,13 @@
 
 FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market movements, transactions, allocation, and watchlists in one place. It combines a responsive React application with a FastAPI insights service that grounds answers in the portfolio snapshot supplied by the client.
 
-> **Status:** Working prototype / portfolio project. Market data and account data are currently simulated. Review the production considerations before using the project with real financial information.
+> **Status:** Deployable portfolio-project milestone. The repository includes authenticated user accounts, PostgreSQL-compatible portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. A public deployment still requires provider credentials, hosted infrastructure, and production security configuration.
 
 ## Highlights
 
 - Portfolio overview with value, return, day-change, allocation, and top-holdings KPIs
 - Holdings, markets, transactions, and watchlist views
-- Simulated live price feed with pause/resume controls and a synchronized equity curve
+- Simulated live price feed with pause/resume controls and a synchronized equity curve for offline demos
 - Light, dark, and system theme modes
 - Currency display selection and transaction search
 - Accessible UI primitives with keyboard navigation, labels, focus states, and reduced-motion support
@@ -20,19 +20,23 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Redux state persistence across browser refreshes
 - PostgreSQL-compatible persistence, JWT authentication, and request metrics
 - Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
+- Server-side Finnhub quote, history, and symbol-search adapters with caching
 
 ## Architecture
 
 ```text
 React + TypeScript + Redux Toolkit
-            �
-            � POST /api/insights
-            � question + portfolio snapshot
-            ?
-FastAPI + Pydantic + Anthropic SDK
-            �
-            ?
-Deterministic portfolio analytics tools
+            │ HTTPS
+            ▼
+FastAPI API gateway
+   ┌────────┼─────────┐
+   ▼        ▼         ▼
+Auth   Portfolio   Markets
+   │        │         │
+   └──── PostgreSQL  └── Finnhub
+            │
+            ├── AI orchestration + tools
+            └── Research retrieval + citations
 ```
 
 The frontend is a Vite-built single-page application. The AI service is isolated in `ai-service/` and exposes a small HTTP API. The model may call deterministic analytics tools for portfolio calculations; it does not receive permission to invent financial figures or perform unsupported arithmetic.
@@ -53,9 +57,28 @@ POST /api/research/ingest  -> document chunks + metadata
 POST /api/research         -> ranked excerpts + citations
 ```
 
-This is not yet durable or user-scoped. Production work still requires
-authentication, per-user ownership, persistent storage, embedding generation,
-ingestion workers, and retrieval/grounding evaluation.
+Research documents are not yet durable or user-scoped. Production RAG work still
+requires pgvector, embedding generation, object storage, ingestion workers, and
+retrieval/grounding evaluation.
+
+## Public deployment status
+
+The application is not currently hosted at a public URL. It runs locally through
+Docker Compose and is ready to deploy to a frontend host such as Vercel or
+Cloudflare Pages and a backend host such as Railway, Render, or Fly.io.
+
+Before deploying, configure:
+
+1. A hosted PostgreSQL `DATABASE_URL`.
+2. A long random `FINVISION_JWT_SECRET`.
+3. A licensed `FINNHUB_API_KEY` if market data will be enabled.
+4. `VITE_AI_SERVICE_URL` pointing to the deployed API before building the frontend.
+5. `FINVISION_ALLOWED_ORIGINS` containing the deployed frontend origin.
+6. `ANTHROPIC_API_KEY` only on the backend if hosted AI responses are enabled.
+
+Do not claim the demo provides live market data until the provider plan permits
+redistribution and the deployment displays the provider's required attribution
+and delayed-data notice.
 
 ## Technology stack
 
