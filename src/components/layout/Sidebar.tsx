@@ -12,7 +12,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/app', label: 'Overview', icon: iconHome() },
+  { to: '/', label: 'Overview', icon: iconHome() },
   { to: '/holdings', label: 'Holdings', icon: iconBriefcase() },
   { to: '/markets', label: 'Markets', icon: iconChart() },
   { to: '/transactions', label: 'Transactions', icon: iconReceipt() },

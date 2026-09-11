@@ -15,13 +15,12 @@ export function App() {
   useMarketFeed();
   const location = useLocation();
   const isPublicRoute =
-    location.pathname === '/' ||
     location.pathname === '/welcome' ||
     location.pathname === '/auth';
 
   const routes = (
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<OverviewPage />} />
         <Route path="/welcome" element={<LandingPage />} />
         <Route path="/app" element={<OverviewPage />} />
         <Route path="/holdings" element={<HoldingsPage />} />

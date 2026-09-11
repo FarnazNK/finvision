@@ -47,17 +47,47 @@ export function LandingPage() {
         <Card title="Grounded AI research" description="Ask questions about indexed documents and receive source URLs, excerpts, and retrieval scores." />
       </FeatureGrid>
 
-      <Story>
-        <Eyebrow>Engineering showcase</Eyebrow>
-        <StoryTitle>Staff-level engineering practices in a focused full-stack system.</StoryTitle>
-        <StoryText>
-          The architecture demonstrates React and Redux state management, typed FastAPI
-          APIs, PostgreSQL-compatible persistence, JWT authentication, Docker, CI/CD,
-          deterministic analytics, and retrieval-augmented generation. Use the demo,
-          then sign in to exercise the protected workflow when an API is configured.
-        </StoryText>
-        <StoryLink>Engineering documentation is available with the project.</StoryLink>
-      </Story>
+      <ProfileSection>
+        <Eyebrow>Your portfolio profile</Eyebrow>
+        <ProfileTitle>Everything a person needs to understand their investments.</ProfileTitle>
+        <ProfileIntro>
+          A personal workspace brings the important details together without requiring
+          spreadsheets or switching between multiple market websites.
+        </ProfileIntro>
+        <ProfileGrid>
+          <ProfileCard>
+            <ProfileCardTitle>See your position</ProfileCardTitle>
+            <ProfileList>
+              <li>Total portfolio value and cost basis</li>
+              <li>Daily and total gains with percentage returns</li>
+              <li>Allocation by asset class and holding</li>
+              <li>Concentration and diversification signals</li>
+            </ProfileList>
+          </ProfileCard>
+          <ProfileCard>
+            <ProfileCardTitle>Track what changes</ProfileCardTitle>
+            <ProfileList>
+              <li>Holdings, transactions, and watchlists</li>
+              <li>Price history and portfolio performance curves</li>
+              <li>Search across symbols and account activity</li>
+              <li>Currency, theme, and live-feed preferences</li>
+            </ProfileList>
+          </ProfileCard>
+          <ProfileCard>
+            <ProfileCardTitle>Ask AI for context</ProfileCardTitle>
+            <ProfileList>
+              <li>Summarize a company, filing, or market event</li>
+              <li>Explain movements using your portfolio snapshot</li>
+              <li>Compare exposure, allocation, and historical trends</li>
+              <li>Show document excerpts and source citations</li>
+            </ProfileList>
+          </ProfileCard>
+        </ProfileGrid>
+        <ProfileNote>
+          AI responses are informational summaries grounded in available data and
+          sources. They are not personalized investment recommendations.
+        </ProfileNote>
+      </ProfileSection>
     </Page>
   );
 }
@@ -116,6 +146,60 @@ const FeatureGrid = styled.div`
   gap: ${({ theme }) => theme.space[4]};
 `;
 
+const ProfileSection = styled.section`
+  padding: ${({ theme }) => `${theme.space[8]} ${theme.space[4]}`};
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const ProfileTitle = styled.h2`
+  max-width: 700px;
+  margin: ${({ theme }) => `${theme.space[3]} 0 ${theme.space[2]}`};
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  letter-spacing: -0.03em;
+`;
+
+const ProfileIntro = styled.p`
+  max-width: 700px;
+  margin: 0;
+  color: ${({ theme }) => theme.color.textMuted};
+  line-height: 1.7;
+`;
+
+const ProfileGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: ${({ theme }) => theme.space[4]};
+  margin-top: ${({ theme }) => theme.space[6]};
+`;
+
+const ProfileCard = styled.article`
+  padding: ${({ theme }) => theme.space[5]};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+`;
+
+const ProfileCardTitle = styled.h3`
+  margin: 0 0 ${({ theme }) => theme.space[4]};
+  font-size: ${({ theme }) => theme.fontSize.lg};
+`;
+
+const ProfileList = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.space[3]};
+  margin: 0;
+  padding-left: ${({ theme }) => theme.space[5]};
+  color: ${({ theme }) => theme.color.textMuted};
+  line-height: 1.5;
+`;
+
+const ProfileNote = styled.p`
+  margin: ${({ theme }) => `${theme.space[5]} 0 0`};
+  color: ${({ theme }) => theme.color.textSubtle};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+`;
+
 const AccessPanel = styled.section`
   display: flex;
   align-items: center;
@@ -142,28 +226,4 @@ const AccessText = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.color.textMuted};
   line-height: 1.6;
-`;
-
-const Story = styled.section`
-  padding: ${({ theme }) => `${theme.space[8]} ${theme.space[4]}`};
-  border-top: 1px solid ${({ theme }) => theme.color.border};
-`;
-
-const StoryTitle = styled.h2`
-  max-width: 640px;
-  margin: ${({ theme }) => `${theme.space[3]} 0`};
-  font-size: ${({ theme }) => theme.fontSize['2xl']};
-`;
-
-const StoryText = styled.p`
-  max-width: 680px;
-  color: ${({ theme }) => theme.color.textMuted};
-  line-height: 1.7;
-`;
-
-const StoryLink = styled.p`
-  display: inline-block;
-  margin-top: ${({ theme }) => theme.space[3]};
-  color: ${({ theme }) => theme.color.primary};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
 `;
