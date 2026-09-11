@@ -1,183 +1,189 @@
-# FinVision — AI-Powered Wealth Dashboard
+# FinVision
 
-A wealth-management dashboard with an **LLM portfolio analyst** at its center.
-Users ask natural-language questions about their holdings ("Am I over-concentrated
-in tech?", "What was my biggest mover today?") and get answers that are computed,
-grounded, and auditable — not hallucinated.
+FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market movements, transactions, allocation, and watchlists in one place. It combines a responsive React application with a FastAPI insights service that grounds answers in the portfolio snapshot supplied by the client.
 
-The frontend is a React + TypeScript + Redux SPA; the AI lives in a separate
-FastAPI microservice (`ai-service/`) and the whole thing runs with a single
-`docker compose up`.
+> **Status:** Working prototype / portfolio project. Market data and account data are currently simulated. Review the production considerations before using the project with real financial information.
 
-## AI architecture
+## Highlights
 
-The insights feature is deliberately built the way a production fintech AI
-system has to be:
+- Portfolio overview with value, return, day-change, allocation, and top-holdings KPIs
+- Holdings, markets, transactions, and watchlist views
+- Simulated live price feed with pause/resume controls and a synchronized equity curve
+- Light, dark, and system theme modes
+- Currency display selection and transaction search
+- Accessible UI primitives with keyboard navigation, labels, focus states, and reduced-motion support
+- AI portfolio insights grounded in holdings and transaction data
+- Deterministic analytics tools and citations for auditable AI responses
+- Offline AI fallback when no Anthropic API key is configured
+- Dockerized frontend and AI service with nginx SPA routing
+- Redux state persistence across browser refreshes
 
-- **Tool use, not hallucinated math.** The model never does portfolio
-  arithmetic itself. It calls deterministic Python analytics functions via
-  Anthropic function calling, so every financial figure is correct and
-  reproducible.
-- **Grounded in the live account.** The React app posts its current Redux
-  portfolio snapshot with each question; the model answers about *this* account,
-  not a generic one.
-- **Auditable.** Every response carries `citations` pointing at the metrics and
-  records that produced it.
-- **Degrades gracefully.** With no `ANTHROPIC_API_KEY`, the service returns a
-  deterministic templated answer, so demos run offline and CI is hermetic.
+## Architecture
 
-```
-React SPA  ──POST /api/insights (question + portfolio snapshot)──▶  FastAPI
-                                                                      │
-                                                     agentic tool-use loop
-                                                                      │
-                                              deterministic analytics (Python)
+```text
+React + TypeScript + Redux Toolkit
+            �
+            � POST /api/insights
+            � question + portfolio snapshot
+            ?
+FastAPI + Pydantic + Anthropic SDK
+            �
+            ?
+Deterministic portfolio analytics tools
 ```
 
-See [`ai-service/README.md`](./ai-service/README.md) for the service internals.
+The frontend is a Vite-built single-page application. The AI service is isolated in `ai-service/` and exposes a small HTTP API. The model may call deterministic analytics tools for portfolio calculations; it does not receive permission to invent financial figures or perform unsupported arithmetic.
 
-## Stack
+See [`ai-service/README.md`](./ai-service/README.md) for service-specific details.
 
-**Frontend** — React 18 + TypeScript (strict), Redux Toolkit (memoised
-selectors, typed hooks), styled-components (token theme, light/dark), React
-Router v6, Recharts, Jest + RTL, Vite.
+## Technology stack
 
-**AI service** — Python 3.12, FastAPI, Pydantic v2, Anthropic SDK (tool use),
-pytest.
+- **Frontend:** React 18, TypeScript, Vite, Redux Toolkit, React Router, styled-components, Recharts
+- **AI service:** Python 3.12, FastAPI, Pydantic v2, Anthropic SDK
+- **Testing:** Jest, React Testing Library, pytest
+- **Delivery:** Docker, Docker Compose, nginx
+- **Quality:** TypeScript strict mode, ESLint, typed Redux hooks, CI via GitHub Actions
 
-**Infra** — Docker + docker-compose for both services.
+## Quick start
 
-## Run the full stack
+### Prerequisites
+
+- Node.js 20 or newer
+- npm
+- Python 3.12 for running the service outside Docker
+- Docker Desktop for the full-stack workflow
+
+### Run with Docker Compose
+
+The default configuration runs the web application on port `8080` and the AI service on port `8000`. Anthropic access is optional; without it, the service uses its deterministic offline response.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-...   # optional — omit for offline mode
-docker compose up --build
-# web:        http://localhost:8080
-# AI service: http://localhost:8000/docs
-```
+export ANTHROPIC_API_KEY=sk-...   # optional
+export VITE_AI_SERVICE_URL=http://localhost:8000
 
-## Configuration and deployment checks
-
-The frontend is built with Vite, so `VITE_AI_SERVICE_URL` must be supplied at
-image build time. For local Docker Compose, the default is
-`http://localhost:8000`; for production, set it to the public URL of the AI
-service before building the web image.
-
-```bash
-# Optional Anthropic access; omit for deterministic offline mode
-$env:ANTHROPIC_API_KEY = 'sk-...'
-$env:VITE_AI_SERVICE_URL = 'https://ai.example.com'
-$env:FINVISION_API_KEY = 'use-a-user-facing-authenticated-proxy-in-production'
 docker compose up --build
 ```
 
-The web image includes an nginx SPA fallback, so direct navigation and refreshes
-on routes such as `/holdings` and `/transactions` work correctly. The AI service
-supports configurable CORS origins, API-key authorization, request timeouts,
-and per-client rate limiting through `FINVISION_ALLOWED_ORIGINS`,
-`FINVISION_API_KEY`, `FINVISION_REQUEST_TIMEOUT`, and `FINVISION_RATE_LIMIT`.
-Do not put a shared production secret in a `VITE_*` variable: Vite embeds those
-values in the browser bundle. Use a server-side proxy or user-scoped tokens for
-production authentication.
+Open:
 
-## Verification
+- Web application: <http://localhost:8080>
+- AI service health: <http://localhost:8000/health>
+- Interactive API docs: <http://localhost:8000/docs>
 
-Run the existing checks before publishing changes:
+On PowerShell:
+
+```powershell
+$env:ANTHROPIC_API_KEY = 'sk-...' # optional
+$env:VITE_AI_SERVICE_URL = 'http://localhost:8000'
+docker compose up --build
+```
+
+### Run the frontend locally
+
+```bash
+npm ci
+npm run dev
+```
+
+The Vite development server listens on port `3000`.
+
+### Run the AI service locally
+
+```bash
+cd ai-service
+python -m venv .venv
+# Activate the virtual environment using the command for your shell.
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload
+```
+
+When running the service locally, execute commands from `ai-service` or set `PYTHONPATH` to that directory so the `app` package can be imported.
+
+## Configuration
+
+The frontend value `VITE_AI_SERVICE_URL` is embedded into the browser bundle at build time. Set it to the public AI service URL before building the web image.
+
+The AI service supports these environment variables:
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | Enables Anthropic-backed responses | Empty / offline mode |
+| `FINVISION_MODEL` | Anthropic model identifier | `claude-sonnet-5` |
+| `FINVISION_ALLOWED_ORIGINS` | Comma-separated CORS origins | Local ports `3000` and `8080` |
+| `FINVISION_API_KEY` | Optional bearer-token protection for `/api/insights` | Empty / disabled |
+| `FINVISION_RATE_LIMIT` | Requests per client per minute | `30` |
+| `FINVISION_REQUEST_TIMEOUT` | Anthropic request timeout in seconds | `20` |
+
+**Security:** Never put a shared production secret in a `VITE_*` variable. Vite embeds those values in public browser JavaScript. Use a server-side proxy, private service networking, or user-scoped authentication for production deployments.
+
+The web container includes an nginx `try_files` fallback, so direct navigation and browser refreshes on routes such as `/holdings`, `/markets`, and `/transactions` continue to serve the SPA entry point.
+
+## Available scripts
+
+```bash
+npm run dev                    # Start Vite on port 3000
+npm run typecheck              # TypeScript check
+npm run lint                   # ESLint
+npm test -- --runInBand        # Frontend tests
+npm run build                  # Production frontend build
+```
+
+Backend tests:
+
+```bash
+cd ai-service
+python -m pytest -v
+```
+
+## Verification checklist
+
+Run the following before publishing a change:
 
 ```bash
 npm run typecheck
 npm run lint
 npm test -- --runInBand
 npm run build
-Set-Location ai-service
-python -m pytest
-Set-Location ..
+cd ai-service
+python -m pytest -v
+cd ..
 docker compose config
 docker compose build
 ```
 
-For a runtime smoke test, open `http://localhost:8080/holdings` and refresh the
-page, open `http://localhost:8000/health`, and submit an Insights question from
-the Overview page. The expected health response is `{"status":"ok"}` and the
-Insights request should return either the configured model response or the
-`offline-fallback` response when no Anthropic key is configured.
+For a runtime smoke test:
 
-## Scripts
+1. Open `/holdings` directly at `http://localhost:8080/holdings` and refresh the page.
+2. Confirm `http://localhost:8000/health` returns `{"status":"ok"}`.
+3. Ask a question in the Overview page's Insights panel.
+4. Confirm the portfolio value and equity curve respond to live-feed ticks.
 
-```
-npm install
-npm run dev          # Vite dev server on :3000
-npm test             # Jest test suite
-npm run typecheck    # tsc --noEmit
-npm run build        # production bundle
-npm run lint         # ESLint with jsx-a11y
-```
+## Repository layout
 
-## Architecture notes
-
-### Redux
-
-Five slices live under `src/features/*`. Each ships its actions, reducer, and
-selectors together. Heavy selectors (allocation, total return, day's change)
-go through `createSelector`. Parameterised selectors use the `makeSelectX(arg)`
-factory pattern with `useMemo` at the call site for per-row selectors in
-tables.
-
-### Theming
-
-Every visual primitive reads from a single design-token theme
-(`src/theme/tokens.ts`). The theme is augmented into styled-components's
-`DefaultTheme`, so `({ theme }) => theme.color.primary` is fully typed. Light,
-dark, and system modes are supported, with a `prefers-color-scheme`
-subscription.
-
-### Real-time data
-
-`src/services/marketFeed.ts` simulates a market-data WebSocket. It picks a
-handful of holdings each tick, walks their prices, and dispatches batched
-`tickReceived` actions. The portfolio slice listens to the same action and
-reprices holdings deterministically. Pausing the feed flips a UI flag — the
-hook (`useMarketFeed`) reacts and stops the interval.
-
-### Accessibility
-
-- Skip-to-main-content link in `AppShell`
-- Form inputs have associated labels and `aria-describedby` wiring for hints
-  and errors; errors render with `role="alert"`
-- `SegmentedControl` is a `radiogroup` with arrow-key navigation
-- Tables use `aria-sort` on sortable column headers
-- `:focus-visible` styling
-- `prefers-reduced-motion` honoured throughout
-- KPI tiles expose change percentages via `aria-label`
-- Buttons announce loading state with `aria-busy`
-
-### Testing
-
-Tests cover slices, selectors, format utilities, and component behaviour
-including keyboard navigation and ARIA wiring. The `renderWithProviders`
-helper wraps components in the real Provider, ThemeProvider, and MemoryRouter.
-
-## Project structure
-
-```
+```text
 src/
-├── app/             # Store config, typed hooks
-├── components/
-│   ├── primitives/  # Button, Card, KpiTile, Badge, Input, SegmentedControl, Skeleton
-│   ├── charts/      # PortfolioCurveChart, AllocationDonut, Sparkline
-│   └── layout/      # Sidebar, Topbar, AppShell
-├── features/        # Redux slices: portfolio, markets, transactions, watchlist, ui
-├── hooks/           # useMarketFeed
-├── pages/           # Overview, Holdings, Markets, Transactions, Watchlist, NotFound
-├── services/        # marketFeed (mock WS), seed data
-├── theme/           # Design tokens, GlobalStyle, AppThemeProvider
-├── test/            # Jest setup, renderWithProviders helper
-├── types/           # Domain types
-└── utils/           # Formatters, responsive helpers
++-- app/             Store configuration and typed Redux hooks
++-- components/      Layout, charts, and reusable UI primitives
++-- features/        Portfolio, markets, transactions, watchlist, UI, insights
++-- hooks/           Application hooks such as useMarketFeed
++-- pages/           Overview, Holdings, Markets, Transactions, Watchlist
++-- services/        Market feed, seed data, and AI client
++-- theme/           Design tokens and global styling
++-- test/            Shared test setup and rendering helpers
++-- types/           Shared domain types
++-- utils/           Formatting and responsive helpers
+
+ai-service/
++-- app/             FastAPI entrypoint, schemas, analytics, and LLM orchestration
++-- tests/           API and analytics tests
 ```
 
-## What's mocked
+## Product and production considerations
 
-The market feed and seed data are local — no backend. The slice shapes were
-designed for the swap to be straightforward: a single `tickReceived` action is
-the only contract the feed exposes to the store.
+This repository intentionally uses seed holdings and a simulated market feed. A production financial product would additionally require authenticated user accounts, durable per-user storage, real market-data licensing, broker or manual holdings ingestion, subscription and billing controls, operational monitoring, privacy and terms documentation, and a professional legal/compliance review.
+
+The insights feature is descriptive rather than a source of personalized investment advice. Do not use the prototype as a substitute for professional financial guidance.
+
+## License
+
+No open-source license has been declared yet. Treat the repository as all rights reserved unless the project owner adds a license.
