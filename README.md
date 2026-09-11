@@ -122,7 +122,20 @@ Before deploying, configure:
 5. `FINVISION_ALLOWED_ORIGINS` containing the deployed frontend origin.
 6. `ANTHROPIC_API_KEY` only on the backend if hosted AI responses are enabled.
 
-For a free frontend deployment, use Vercel or Cloudflare Pages with:
+### Free deployment option
+
+The repository includes a GitHub Pages workflow for a public, static demo:
+
+```text
+https://farnaznk.github.io/finvision/
+```
+
+Enable Pages once in GitHub under **Settings → Pages → Source: GitHub Actions**.
+Every push to `main` then publishes the `/welcome` landing page and offline demo.
+Set the repository variable `VITE_AI_SERVICE_URL` if the static demo should call
+the separately hosted FastAPI service.
+
+For an alternative free frontend deployment, use Vercel or Cloudflare Pages with:
 
 ```text
 Build command: npm run build
@@ -134,6 +147,11 @@ After deployment, replace the `finvision.pages.dev` URLs in `index.html`,
 `public/robots.txt`, and `public/sitemap.xml` with the actual site URL, then
 submit that sitemap in Google Search Console. Search indexing is controlled by
 Google and may take time; publishing a site does not guarantee ranking.
+
+The repository also includes [render.yaml](./render.yaml) for deploying the
+FastAPI service on Render's free plan. It requires a hosted PostgreSQL
+`DATABASE_URL` such as Supabase's free database and provider credentials only
+when those integrations are enabled.
 
 Do not claim the demo provides live market data until the provider plan permits
 redistribution and the deployment displays the provider's required attribution

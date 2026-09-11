@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: finvision-api
+    runtime: python
+    rootDir: ai-service
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: FINVISION_JWT_SECRET
+        generateValue: true
+      - key: FINVISION_ALLOWED_ORIGINS
+        sync: false
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FINVISION_MODEL
+        value: claude-sonnet-5

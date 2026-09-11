@@ -2,4 +2,4 @@ User-agent: *
 Allow: /welcome
 Allow: /markets
 
-Sitemap: https://finvision.pages.dev/sitemap.xml
+Sitemap: https://farnaznk.github.io/finvision/sitemap.xml

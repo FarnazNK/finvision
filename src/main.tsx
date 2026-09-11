@@ -13,7 +13,7 @@ ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <Provider store={store}>
       <AppThemeProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <App />
         </BrowserRouter>
       </AppThemeProvider>

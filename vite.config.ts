@@ -7,6 +7,7 @@ import path from 'path';
 // If desired, add `babel-plugin-styled-components` to enable SSR-friendly class
 // names and component display names automatically.
 export default defineConfig({
+  base: process.env.GITHUB_PAGES === 'true' ? '/finvision/' : '/',
   plugins: [react()],
   define: {
     __FINVISION_DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
