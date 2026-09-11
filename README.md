@@ -17,6 +17,8 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Deterministic analytics tools and citations for auditable AI responses
 - Offline AI fallback when no Anthropic API key is configured
 - Dockerized frontend and AI service with nginx SPA routing
+- GitHub Actions CI for frontend, backend, Compose, and production container builds
+- GitHub Container Registry publishing for `main` and version tags
 - Redux state persistence across browser refreshes
 - PostgreSQL-compatible persistence, JWT authentication, and request metrics
 - Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
@@ -82,6 +84,23 @@ retrieval/grounding evaluation.
 The application is not currently hosted at a public URL. It runs locally through
 Docker Compose and is ready to deploy to a frontend host such as Vercel or
 Cloudflare Pages and a backend host such as Railway, Render, or Fly.io.
+
+### CI/CD and Docker images
+
+Every pull request runs frontend type checking, linting, tests, a production
+build, backend pytest, Compose validation, and production container builds.
+Pushes to `main` publish these images to GitHub Container Registry:
+
+```text
+ghcr.io/farnaznk/finvision-web:latest
+ghcr.io/farnaznk/finvision-ai-service:latest
+```
+
+Version tags such as `v1.0.0` also trigger the image-publishing workflow. Set the
+repository variable `VITE_AI_SERVICE_URL` before publishing if the web image
+should point at a hosted API. Publishing images is not the same as deploying
+them; a hosting provider or orchestrator must still run the images with
+production secrets and a managed PostgreSQL database.
 
 Before deploying, configure:
 
