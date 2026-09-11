@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
+import { selectCurrency } from '@/features/ui/uiSlice';
 import {
   makeSelectTopHoldings,
   selectAllocationByAssetClass,
@@ -50,6 +51,7 @@ export function OverviewPage() {
   const holdingsCount = useAppSelector(selectHoldingsCount);
   const topHoldingsSelector = useMemo(() => makeSelectTopHoldings(5), []);
   const topHoldings = useAppSelector(topHoldingsSelector);
+  const currency = useAppSelector(selectCurrency);
 
   return (
     <Page>
@@ -65,23 +67,23 @@ export function OverviewPage() {
         <Card padded>
           <KpiTile
             label="Total value"
-            value={formatMoney(totalValue)}
+            value={formatMoney(totalValue, { currency })}
             changePct={dayChangePct}
-            secondary={`${formatMoney(dayChange, { signed: true })} today`}
+            secondary={`${formatMoney(dayChange, { currency, signed: true })} today`}
           />
         </Card>
         <Card padded>
           <KpiTile
             label="Total return"
-            value={formatMoney(totalGain, { signed: true })}
+            value={formatMoney(totalGain, { currency, signed: true })}
             changePct={totalGainPct}
-            secondary={`Cost basis ${formatMoney(costBasis, { compact: true })}`}
+            secondary={`Cost basis ${formatMoney(costBasis, { currency, compact: true })}`}
           />
         </Card>
         <Card padded>
           <KpiTile
             label="Day's change"
-            value={formatMoney(dayChange, { signed: true })}
+            value={formatMoney(dayChange, { currency, signed: true })}
             changePct={dayChangePct}
             secondary="Across all positions"
           />
@@ -140,7 +142,7 @@ export function OverviewPage() {
                     </RowSub>
                   </RowText>
                   <RowValue>
-                    <strong>{formatMoney(value, { compact: true })}</strong>
+                    <strong>{formatMoney(value, { currency, compact: true })}</strong>
                     <RowPct $positive={h.dayChangePct >= 0}>
                       {formatPercent(h.dayChangePct)}
                     </RowPct>

@@ -1,6 +1,10 @@
 import type { AppDispatch, RootState } from '@/app/store';
 import { tickReceived } from '@/features/markets/marketsSlice';
-import { holdingsRepriced } from '@/features/portfolio/portfolioSlice';
+import {
+  curvePointAppended,
+  holdingsRepriced,
+  selectTotalValue,
+} from '@/features/portfolio/portfolioSlice';
 import type { MarketTick } from '@/types/domain';
 
 /**
@@ -46,7 +50,7 @@ export function createMarketFeed(
       .map((h) => {
         const drift = (Math.random() - 0.5) * 2 * volatility;
         const newPrice = round(h.price * (1 + drift), 4);
-        const changePct = (newPrice - h.costBasis) / h.costBasis;
+        const changePct = (newPrice - h.price) / h.price;
         return {
           symbol: h.symbol,
           price: newPrice,
@@ -58,6 +62,7 @@ export function createMarketFeed(
     if (ticks.length === 0) return;
     dispatch(tickReceived(ticks));
     dispatch(holdingsRepriced(ticks));
+    dispatch(curvePointAppended({ t: Date.now(), value: selectTotalValue(getState()) }));
   };
 
   return {

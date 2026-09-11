@@ -30,7 +30,8 @@ const portfolioSlice = createSlice({
       for (const h of state.holdings) {
         const tick = bySymbol.get(h.symbol);
         if (!tick) continue;
-        const prevDayBase = h.price / (1 + h.dayChangePct);
+        const dayFactor = 1 + h.dayChangePct;
+        const prevDayBase = dayFactor > 0 ? h.price / dayFactor : h.price;
         h.price = tick.price;
         h.dayChangePct = (tick.price - prevDayBase) / prevDayBase;
       }

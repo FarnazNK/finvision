@@ -19,7 +19,7 @@ import os
 from . import analytics
 from .schemas import Citation, InsightsResponse, PortfolioSnapshot
 
-MODEL = os.getenv("FINVISION_MODEL", "claude-sonnet-4-6")
+MODEL = os.getenv("FINVISION_MODEL", "claude-sonnet-5")
 
 SYSTEM_PROMPT = """You are FinVision's portfolio analyst assistant.
 Rules:
@@ -50,7 +50,9 @@ def _tool_specs() -> list[dict]:
 
 
 def _run_tool(name: str, snapshot: PortfolioSnapshot):
-    fn = analytics.TOOLS[name]
+    fn = analytics.TOOLS.get(name)
+    if fn is None:
+        raise ValueError(f"Unknown analytics tool: {name}")
     return fn(snapshot)
 
 
@@ -80,11 +82,33 @@ def generate_insight(question: str, snapshot: PortfolioSnapshot) -> InsightsResp
 
     from anthropic import Anthropic  # imported lazily so offline mode needs no dep
 
-    client = Anthropic(api_key=api_key)
+    client = Anthropic(
+        api_key=api_key,
+        timeout=float(os.getenv("FINVISION_REQUEST_TIMEOUT", "20")),
+    )
     tools = _tool_specs()
     used: list[str] = []
 
-    messages = [{"role": "user", "content": question}]
+    snapshot_summary = json.dumps(
+        {
+            "baseCurrency": snapshot.baseCurrency,
+            "holdings": [
+                {
+                    "symbol": h.symbol,
+                    "quantity": h.quantity,
+                    "price": h.price,
+                    "costBasis": h.costBasis,
+                    "dayChangePct": h.dayChangePct,
+                }
+                for h in snapshot.holdings
+            ],
+        },
+        separators=(",", ":"),
+    )
+    messages = [{
+        "role": "user",
+        "content": f"Portfolio snapshot (source of truth): {snapshot_summary}\n\nQuestion: {question}",
+    }]
     # Agentic loop: let the model call tools until it produces a final answer.
     for _ in range(6):
         resp = client.messages.create(
@@ -107,7 +131,10 @@ def generate_insight(question: str, snapshot: PortfolioSnapshot) -> InsightsResp
         for block in resp.content:
             if block.type == "tool_use":
                 used.append(block.name)
-                out = _run_tool(block.name, snapshot)
+                try:
+                    out = _run_tool(block.name, snapshot)
+                except ValueError as exc:
+                    out = {"error": str(exc)}
                 results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,

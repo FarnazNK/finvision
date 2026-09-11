@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { selectCurrency } from '@/features/ui/uiSlice';
 import {
   filterChanged,
   searchChanged,
@@ -26,6 +27,7 @@ const FILTER_OPTIONS = [
 
 export function TransactionsPage() {
   const dispatch = useAppDispatch();
+  const currency = useAppSelector(selectCurrency);
   const filter = useAppSelector(selectTxFilter);
   const search = useAppSelector(selectTxSearch);
   const items = useAppSelector(selectFilteredTransactions);
@@ -102,7 +104,7 @@ export function TransactionsPage() {
                     </Td>
                     <Td $align="right">
                       <Amount $positive={tx.amount >= 0}>
-                        {formatMoney(tx.amount, { signed: true })}
+                        {formatMoney(tx.amount, { currency, signed: true })}
                       </Amount>
                     </Td>
                   </Tr>

@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useAppSelector } from '@/app/hooks';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/app/hooks';
 import { selectLiveFeed } from '@/features/ui/uiSlice';
 import { createMarketFeed, type MarketFeed } from '@/services/marketFeed';
-import { store } from '@/app/store';
 
 /**
  * Subscribes to the simulated market feed for the lifetime of the app.
@@ -14,11 +13,13 @@ import { store } from '@/app/store';
  */
 export function useMarketFeed(): void {
   const liveFeed = useAppSelector(selectLiveFeed);
+  const dispatch = useAppDispatch();
+  const appStore = useAppStore();
   const feedRef = useRef<MarketFeed | null>(null);
 
   useEffect(() => {
     if (!feedRef.current) {
-      feedRef.current = createMarketFeed(store.dispatch, store.getState);
+      feedRef.current = createMarketFeed(dispatch, appStore.getState);
     }
     if (liveFeed) feedRef.current.start();
     else feedRef.current.stop();
@@ -26,5 +27,5 @@ export function useMarketFeed(): void {
     return () => {
       feedRef.current?.stop();
     };
-  }, [liveFeed]);
+  }, [appStore, dispatch, liveFeed]);
 }

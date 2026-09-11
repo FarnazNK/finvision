@@ -13,12 +13,18 @@ services:
       - "8000:8000"
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-4-6}
+      - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-5}
+      - FINVISION_API_KEY=${FINVISION_API_KEY:-}
+      - FINVISION_RATE_LIMIT=${FINVISION_RATE_LIMIT:-30}
+      - FINVISION_REQUEST_TIMEOUT=${FINVISION_REQUEST_TIMEOUT:-20}
 
   web:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        VITE_AI_SERVICE_URL: ${VITE_AI_SERVICE_URL:-http://localhost:8000}
+        VITE_AI_SERVICE_API_KEY: ${FINVISION_API_KEY:-}
     ports:
       - "8080:80"
     depends_on:
