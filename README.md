@@ -24,24 +24,40 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 
 ## Architecture
 
-```text
-React + TypeScript + Redux Toolkit
-            │ HTTPS
-            ▼
-FastAPI API gateway
-   ┌────────┼─────────┐
-   ▼        ▼         ▼
-Auth   Portfolio   Markets
-   │        │         │
-   └──── PostgreSQL  └── Finnhub
-            │
-            ├── AI orchestration + tools
-            └── Research retrieval + citations
+```mermaid
+flowchart LR
+    browser["React + TypeScript<br/>Redux Toolkit"] -->|HTTPS| api["FastAPI API"]
+
+    api --> auth["Authentication<br/>JWT"]
+    api --> portfolio["Portfolio API<br/>Holdings + users"]
+    api --> markets["Market API<br/>Quotes + history + search"]
+    api --> insights["AI orchestrator<br/>Anthropic + tools"]
+    api --> research["Research API<br/>Chunking + retrieval + citations"]
+
+    auth --> postgres[("PostgreSQL<br/>users + holdings")]
+    portfolio --> postgres
+    markets --> finnhub["Finnhub<br/>optional provider"]
+    insights --> analytics["Deterministic<br/>portfolio analytics"]
+    research --> documents[("Document store<br/>in-memory prototype")]
+
+    redis[("Redis<br/>cache/jobs")] -. planned .-> api
+    pgvector[("pgvector<br/>embeddings")] -. planned .-> research
+    objectstore[("Object storage<br/>PDFs/docs")] -. planned .-> research
+
+    classDef current fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef planned fill:#fff8e1,stroke:#f9a825,color:#6d4c00,stroke-dasharray: 5 5
+    class browser,api,auth,portfolio,markets,insights,research,postgres,finnhub,analytics,documents current
+    class redis,pgvector,objectstore planned
 ```
 
 The frontend is a Vite-built single-page application. The AI service is isolated in `ai-service/` and exposes a small HTTP API. The model may call deterministic analytics tools for portfolio calculations; it does not receive permission to invent financial figures or perform unsupported arithmetic.
 
 See [`ai-service/README.md`](./ai-service/README.md) for service-specific details.
+
+The diagram uses green for components implemented in this repository and dashed
+yellow components for the next production milestone. Redis, pgvector, and object
+storage are intentionally shown as planned integrations rather than claimed as
+already operational.
 
 ### Research Assistant
 
