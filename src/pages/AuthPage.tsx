@@ -29,6 +29,10 @@ export function AuthPage() {
 
   return (
     <Page>
+      <Brand to="/" aria-label="FinVision home">
+        <BrandMark aria-hidden="true">F</BrandMark>
+        <BrandWord>FinVision</BrandWord>
+      </Brand>
       <Card title={mode === 'login' ? 'Sign in to FinVision' : 'Create your FinVision account'}>
         <Form onSubmit={submit}>
           <Input
@@ -73,6 +77,33 @@ export function AuthPage() {
 const Page = styled.div`
   max-width: 440px;
   margin: ${({ theme }) => `${theme.space[12]} auto`};
+`;
+
+const Brand = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.space[2]};
+  width: fit-content;
+  margin: 0 auto ${({ theme }) => theme.space[6]};
+  color: ${({ theme }) => theme.color.text};
+  text-decoration: none;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const BrandMark = styled.span`
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => theme.color.primary};
+  color: ${({ theme }) => theme.color.primaryText};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+`;
+
+const BrandWord = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.lg};
 `;
 
 const Form = styled.form`

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { selectSidebarCollapsed, sidebarToggled } from '@/features/ui/uiSlice';
@@ -25,7 +25,7 @@ export function Sidebar() {
 
   return (
     <Aside aria-label="Primary" $collapsed={collapsed}>
-      <Brand>
+      <Brand to="/" aria-label="FinVision home">
         <BrandMark aria-hidden="true">F</BrandMark>
         {!collapsed && <BrandWord>FinVision</BrandWord>}
       </Brand>
@@ -74,12 +74,14 @@ const Aside = styled.aside<{ $collapsed: boolean }>`
   ${media.md`display: flex;`}
 `;
 
-const Brand = styled.div`
+const Brand = styled(Link)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space[2]};
   padding: 0 ${({ theme }) => theme.space[2]};
   height: 32px;
+  color: ${({ theme }) => theme.color.text};
+  text-decoration: none;
 `;
 
 const BrandMark = styled.div`
