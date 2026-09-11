@@ -113,7 +113,10 @@ and delayed-data notice.
 - Python 3.12 for running the service outside Docker
 - Docker Desktop for the full-stack workflow
 
-### Run with Docker Compose
+### Run locally with Docker Compose
+
+These are local-development URLs on your own computer. They are not public
+internet links and do not mean the application has been deployed.
 
 The default configuration runs the web application on port `8080` and the AI service on port `8000`. Anthropic access is optional; without it, the service uses its deterministic offline response.
 
@@ -126,9 +129,9 @@ docker compose up --build
 
 Open:
 
-- Web application: <http://localhost:8080>
-- AI service health: <http://localhost:8000/health>
-- Interactive API docs: <http://localhost:8000/docs>
+- Local web application: <http://localhost:8080>
+- Local AI service health: <http://localhost:8000/health>
+- Local interactive API docs: <http://localhost:8000/docs>
 
 On PowerShell:
 
@@ -200,7 +203,7 @@ cd ai-service
 python -m pytest -v
 ```
 
-## Verification checklist
+## Local verification checklist
 
 Run the following before publishing a change:
 
@@ -218,8 +221,9 @@ docker compose build
 
 For a runtime smoke test:
 
-1. Open `/holdings` directly at `http://localhost:8080/holdings` and refresh the page.
-2. Confirm `http://localhost:8000/health` returns `{"status":"ok"}`.
+1. Start Docker Compose locally.
+2. Open `/holdings` directly at `http://localhost:8080/holdings` and refresh the page.
+3. Confirm `http://localhost:8000/health` returns `{"status":"ok"}`.
 3. Ask a question in the Overview page's Insights panel.
 4. Confirm the portfolio value and equity curve respond to live-feed ticks.
 
