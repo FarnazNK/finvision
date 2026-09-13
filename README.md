@@ -8,7 +8,7 @@
 
 FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market movements, transactions, allocation, and watchlists in one place. It combines a responsive React application with a FastAPI insights service that grounds answers in the portfolio snapshot supplied by the client.
 
-> **Status:** Public frontend demo is live on GitHub Pages. The repository includes authenticated user accounts, PostgreSQL-compatible portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. The FastAPI service still requires a separate public deployment and production secrets.
+> **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Render with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
 
 ## Highlights
 
@@ -101,17 +101,19 @@ retrieval/grounding evaluation.
 
 ## Public deployment status
 
-The frontend demo is currently deployed on GitHub Pages:
+The portfolio demo is deployed across GitHub Pages and Render:
 
 - **Dashboard demo:** <https://farnaznk.github.io/finvision/>
 - **Public landing page:** <https://farnaznk.github.io/finvision/welcome>
 - **Sign-in and registration:** <https://farnaznk.github.io/finvision/auth>
+- **FastAPI service:** <https://finvision-api.onrender.com>
+- **API health:** <https://finvision-api.onrender.com/health>
+- **Interactive API docs:** <https://finvision-api.onrender.com/docs>
 
-The root URL opens the portfolio dashboard demo. The `/welcome` route explains
-the product and the `/auth` route provides the sign-in and registration interface.
-The static Pages deployment does not provide a hosted database or FastAPI service;
-authenticated persistence, provider-backed market data, and hosted AI require
-deploying the backend separately.
+The GitHub Pages build is configured to call the public Render API. The backend
+uses managed PostgreSQL for authenticated portfolio persistence. Finnhub and
+Anthropic remain optional integrations; without those provider keys the demo keeps
+its simulated/offline behavior where supported.
 
 ### CI/CD and Docker images
 
@@ -166,10 +168,10 @@ After deployment, replace the `finvision.pages.dev` URLs in `index.html`,
 submit that sitemap in Google Search Console. Search indexing is controlled by
 Google and may take time; publishing a site does not guarantee ranking.
 
-The repository also includes [render.yaml](./render.yaml) for deploying the
-FastAPI service on Render's free plan. It has not been deployed yet and requires
-a hosted PostgreSQL `DATABASE_URL` such as Supabase's free database plus provider
-credentials when those integrations are enabled.
+The repository also includes [render.yaml](./render.yaml) as reproducible Render
+deployment configuration. The public FastAPI service is currently deployed at
+<https://finvision-api.onrender.com> and uses managed Neon PostgreSQL. Provider
+credentials are only required for the optional external integrations.
 
 Do not claim the demo provides live market data until the provider plan permits
 redistribution and the deployment displays the provider's required attribution
