@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './apiConfig';
+
 export interface MarketQuote {
   symbol: string;
   current: number;
@@ -10,8 +12,6 @@ export interface MarketQuote {
   timestamp: number;
 }
 
-const BASE_URL =
-  (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ?? '/ai-service';
 const TOKEN_KEY = 'finvision-access-token';
 
 export async function fetchQuote(
@@ -19,7 +19,7 @@ export async function fetchQuote(
   signal?: AbortSignal,
 ): Promise<MarketQuote> {
   const response = await fetch(
-    `${BASE_URL}/api/markets/quote?symbol=${encodeURIComponent(symbol)}`,
+    `${API_BASE_URL}/api/markets/quote?symbol=${encodeURIComponent(symbol)}`,
     {
       signal,
       headers: getAuthHeaders(),
