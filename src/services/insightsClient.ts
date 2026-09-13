@@ -1,15 +1,13 @@
 /**
- * Client for the FinVision AI service (`ai-service/`).
+ * Client for the FinVision AI service.
  *
  * The whole portfolio snapshot is sent with each question so answers are
- * grounded in the user's real holdings. Base URL is configurable via
- * `VITE_AI_SERVICE_URL` and defaults to the local uvicorn dev server.
+ * grounded in the user's real holdings. The service URL is configured through
+ * VITE_AI_SERVICE_URL, with safe defaults for local development and production.
  */
 import type { Holding, Transaction } from '@/types/domain';
+import { API_BASE_URL } from './apiConfig';
 
-const BASE_URL =
-  (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ??
-  '/ai-service';
 const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
 export interface Citation {
@@ -30,7 +28,7 @@ export async function askInsight(
   baseCurrency = 'USD',
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
-  const res = await fetch(`${BASE_URL}/api/insights`, {
+  const res = await fetch(`${API_BASE_URL}/api/insights`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
