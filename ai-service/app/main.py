@@ -95,6 +95,16 @@ def enforce_rate_limit(request: Request) -> None:
     window.append(now)
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "name": "FinVision API",
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
