@@ -1,10 +1,10 @@
+import { API_BASE_URL } from './apiConfig';
+
 export interface AuthResponse {
   accessToken: string;
   tokenType: string;
 }
 
-const BASE_URL =
-  (import.meta.env?.VITE_AI_SERVICE_URL as string | undefined) ?? '/ai-service';
 const TOKEN_KEY = 'finvision-access-token';
 
 export function getAccessToken(): string | null {
@@ -20,7 +20,7 @@ export async function authenticate(
   email: string,
   password: string,
 ): Promise<void> {
-  const response = await fetch(`${BASE_URL}/api/auth/${path}`, {
+  const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
