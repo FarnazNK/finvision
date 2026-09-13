@@ -42,7 +42,7 @@ jobs:
       - name: Build public demo
         env:
           GITHUB_PAGES: "true"
-          VITE_AI_SERVICE_URL: ${{ vars.VITE_AI_SERVICE_URL }}
+          VITE_AI_SERVICE_URL: https://finvision-api.onrender.com
         run: |
           npm run build
           cp dist/index.html dist/404.html
