@@ -81,6 +81,16 @@ def authorize(authorization: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="Invalid or expired credential") from exc
 
 
+def require_service_api_key(authorization: str | None = Header(default=None)) -> None:
+    configured_key = os.getenv("FINVISION_API_KEY", "")
+    if not configured_key:
+        raise HTTPException(status_code=503, detail="Research ingestion is disabled")
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Service API key required")
+    if not hmac.compare_digest(authorization[7:], configured_key):
+        raise HTTPException(status_code=401, detail="Invalid service API key")
+
+
 def current_user(authorization: str | None = Header(default=None)) -> UserRecord:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
@@ -121,7 +131,7 @@ def health() -> dict:
 
 
 @app.get("/metrics")
-def metrics() -> dict[str, dict[str, int]]:
+def metrics(_: None = Depends(authorize)) -> dict[str, dict[str, int]]:
     return {"requests_total": request_metrics()}
 
 
@@ -305,7 +315,7 @@ def insights(
 )
 def ingest_research_document(
     req: ResearchIngestRequest,
-    _: None = Depends(authorize),
+    _: None = Depends(require_service_api_key),
     __: None = Depends(enforce_rate_limit),
 ) -> ResearchIngestResponse:
     document = Document(
