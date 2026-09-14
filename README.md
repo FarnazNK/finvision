@@ -27,7 +27,6 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Dockerized frontend and AI service with nginx SPA routing
 - GitHub Actions CI for frontend, backend, Compose, and production container builds
 - GitHub Container Registry publishing for `main` and version tags
-- AWS Lambda/SAM deployment path with GitHub OIDC, Function URLs, CloudWatch logging, and cost caps
 - Redux state persistence across browser refreshes
 - PostgreSQL-compatible persistence, JWT authentication, and request metrics
 - Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
@@ -260,7 +259,3 @@ The AI service supports these environment variables:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-
-## AWS deployment
-
-This repository includes an AWS Lambda/SAM deployment path under [`infra/aws/`](./infra/aws/README.md). It uses GitHub OIDC rather than long-lived AWS access keys, exposes the FastAPI backend through a Lambda Function URL, sends logs to CloudWatch, and applies low-cost portfolio defaults. AWS is prepared but is not claimed as live until an AWS account/role is connected and the deployment workflow succeeds.
