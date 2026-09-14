@@ -6,6 +6,8 @@
 [![Security](https://img.shields.io/badge/security-OWASP%20Top%2010-informational)](https://owasp.org/www-project-top-ten/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
+**Live:** [Dashboard](https://farnaznk.github.io/finvision/) · [API](https://finvision-api.onrender.com) · [API Docs](https://finvision-api.onrender.com/docs)
+
 FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market movements, transactions, allocation, and watchlists in one place. It combines a responsive React application with a FastAPI insights service that grounds answers in the portfolio snapshot supplied by the client.
 
 > **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Render with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
