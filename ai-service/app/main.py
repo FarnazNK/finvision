@@ -1,6 +1,7 @@
 """FastAPI entrypoint for FinVision's AI insights service."""
 from __future__ import annotations
 
+import hmac
 import os
 import time
 from collections import defaultdict, deque
@@ -62,12 +63,22 @@ app.add_middleware(
 )
 
 _requests: dict[str, deque[float]] = defaultdict(deque)
+_DUMMY_PASSWORD_HASH = hash_password("finvision-dummy-password-not-a-real-account")
 
 
 def authorize(authorization: str | None = Header(default=None)) -> None:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Bearer credential required")
+
+    credential = authorization[7:]
     configured_key = os.getenv("FINVISION_API_KEY", "")
-    if configured_key and authorization != f"Bearer {configured_key}":
-        raise HTTPException(status_code=401, detail="Invalid API key")
+    if configured_key and hmac.compare_digest(credential, configured_key):
+        return
+
+    try:
+        decode_access_token(credential)
+    except (jwt.InvalidTokenError, RuntimeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired credential") from exc
 
 
 def current_user(authorization: str | None = Header(default=None)) -> UserRecord:
@@ -115,7 +126,10 @@ def metrics() -> dict[str, dict[str, int]]:
 
 
 @app.post("/api/auth/register", response_model=AuthResponse, status_code=201)
-def register(req: RegisterRequest) -> AuthResponse:
+def register(
+    req: RegisterRequest,
+    _: None = Depends(enforce_rate_limit),
+) -> AuthResponse:
     email = req.email.strip().lower()
     with SessionLocal() as session:
         if session.scalar(select(UserRecord).where(UserRecord.email == email)):
@@ -128,10 +142,15 @@ def register(req: RegisterRequest) -> AuthResponse:
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
-def login(req: LoginRequest) -> AuthResponse:
+def login(
+    req: LoginRequest,
+    _: None = Depends(enforce_rate_limit),
+) -> AuthResponse:
     with SessionLocal() as session:
         user = session.scalar(select(UserRecord).where(UserRecord.email == req.email.strip().lower()))
-        if user is None or not verify_password(req.password, user.password_hash):
+        password_hash = user.password_hash if user is not None else _DUMMY_PASSWORD_HASH
+        password_ok = verify_password(req.password, password_hash)
+        if user is None or not password_ok:
             raise HTTPException(status_code=401, detail="Invalid email or password")
         return AuthResponse(accessToken=create_access_token(user.id))
 
