@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './apiConfig';
+import { getAccessToken } from './authClient';
 
 export interface MarketQuote {
   symbol: string;
@@ -11,8 +12,6 @@ export interface MarketQuote {
   previousClose: number;
   timestamp: number;
 }
-
-const TOKEN_KEY = 'finvision-access-token';
 
 export async function fetchQuote(
   symbol: string,
@@ -32,6 +31,6 @@ export async function fetchQuote(
 }
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
