@@ -8,11 +8,11 @@ export interface AuthResponse {
 const TOKEN_KEY = 'finvision-access-token';
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function clearAccessToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export async function authenticate(
@@ -30,5 +30,5 @@ export async function authenticate(
     throw new Error(body?.detail ?? `Authentication failed: ${response.status}`);
   }
   const data = (await response.json()) as AuthResponse;
-  localStorage.setItem(TOKEN_KEY, data.accessToken);
+  sessionStorage.setItem(TOKEN_KEY, data.accessToken);
 }
