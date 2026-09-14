@@ -7,6 +7,7 @@
  */
 import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
+import { getAccessToken } from './authClient';
 
 const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
@@ -28,11 +29,14 @@ export async function askInsight(
   baseCurrency = 'USD',
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
+  const accessToken = getAccessToken();
+  const credential = API_KEY || accessToken;
+
   const res = await fetch(`${API_BASE_URL}/api/insights`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
+      ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
     },
     body: JSON.stringify({
       question,
