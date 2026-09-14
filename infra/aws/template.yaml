@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FinVision portfolio API on AWS Lambda
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  AllowedOrigins:
+    Type: String
+    Default: https://farnaznk.github.io
+  ServiceApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+
+Resources:
+  FinVisionApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../ai-service/
+      Handler: app.lambda_handler.handler
+      Runtime: python3.12
+      Architectures: [x86_64]
+      MemorySize: 512
+      Timeout: 30
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          ENVIRONMENT: production
+          DATABASE_URL: !Ref DatabaseUrl
+          FINVISION_JWT_SECRET: !Ref JwtSecret
+          FINVISION_ALLOWED_ORIGINS: !Ref AllowedOrigins
+          FINVISION_API_KEY: !Ref ServiceApiKey
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - https://farnaznk.github.io
+          AllowMethods: [GET, POST]
+          AllowHeaders: [Authorization, Content-Type]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  FinVisionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FinVisionApi}
+      RetentionInDays: 7
+
+Outputs:
+  ApiUrl:
+    Description: FinVision Lambda Function URL
+    Value: !GetAtt FinVisionApiUrl.FunctionUrl
