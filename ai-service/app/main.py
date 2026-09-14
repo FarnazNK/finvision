@@ -9,7 +9,6 @@ from collections import defaultdict, deque
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
 from .llm import generate_insight
@@ -118,11 +117,13 @@ def enforce_rate_limit(request: Request) -> None:
 
 
 @app.get("/", include_in_schema=False)
-def root() -> RedirectResponse:
-    return RedirectResponse(
-        url="https://farnaznk.github.io/finvision/",
-        status_code=307,
-    )
+def root() -> dict[str, str]:
+    return {
+        "name": "FinVision API",
+        "status": "online",
+        "health": "/health",
+        "docs": "/docs",
+    }
 
 
 @app.get("/health")
