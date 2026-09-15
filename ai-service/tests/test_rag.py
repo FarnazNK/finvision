@@ -39,7 +39,8 @@ def test_retriever_ranks_matching_symbol_and_terms():
 
 
 def test_research_ingest_and_query_returns_citations(monkeypatch):
-    monkeypatch.delenv("FINVISION_API_KEY", raising=False)
+    monkeypatch.setenv("FINVISION_API_KEY", "test-api-key")
+    headers = {"Authorization": "Bearer test-api-key"}
     payload = {
         "document": {
             "documentId": "aapl-report",
@@ -50,13 +51,14 @@ def test_research_ingest_and_query_returns_citations(monkeypatch):
             "text": "Apple describes services growth and supply chain risks.",
         }
     }
-    ingest = client.post("/api/research/ingest", json=payload)
+    ingest = client.post("/api/research/ingest", json=payload, headers=headers)
     assert ingest.status_code == 200
     assert ingest.json()["chunksCreated"] == 1
 
     response = client.post(
         "/api/research",
         json={"question": "What supply chain risks are described?", "symbol": "AAPL"},
+        headers=headers,
     )
     assert response.status_code == 200
     body = response.json()
