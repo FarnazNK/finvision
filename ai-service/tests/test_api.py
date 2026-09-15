@@ -23,7 +23,12 @@ def test_health():
 
 def test_insights_offline(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    r = client.post("/api/insights", json=PAYLOAD)
+    monkeypatch.setenv("FINVISION_API_KEY", "test-api-key")
+    r = client.post(
+        "/api/insights",
+        json=PAYLOAD,
+        headers={"Authorization": "Bearer test-api-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert "1,500" in body["answer"] or "1500" in body["answer"]
