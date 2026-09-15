@@ -21,18 +21,36 @@ export function MarketsPage() {
   const history = useAppSelector(selectMarketHistory);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
 
+  // Simulated price ticks replace the holdings array frequently. Depend on the
+  // stable set of symbols instead so we do not refetch every quote on each tick.
+  const quoteSymbolsKey = useMemo(
+    () =>
+      [...new Set(
+        holdings
+          .filter((holding) => holding.assetClass !== 'cash')
+          .map((holding) => holding.symbol),
+      )]
+        .sort()
+        .join('|'),
+    [holdings],
+  );
+
   useEffect(() => {
+    const symbols = quoteSymbolsKey ? quoteSymbolsKey.split('|') : [];
+    if (symbols.length === 0) {
+      setQuotes({});
+      return;
+    }
+
     const controller = new AbortController();
     void Promise.all(
-      holdings
-        .filter((holding) => holding.assetClass !== 'cash')
-        .map(async (holding) => {
-          try {
-            return await fetchQuote(holding.symbol, controller.signal);
-          } catch {
-            return null;
-          }
-        }),
+      symbols.map(async (symbol) => {
+        try {
+          return await fetchQuote(symbol, controller.signal);
+        } catch {
+          return null;
+        }
+      }),
     ).then((results) => {
       if (controller.signal.aborted) return;
       setQuotes(
@@ -44,8 +62,9 @@ export function MarketsPage() {
         ),
       );
     });
+
     return () => controller.abort();
-  }, [holdings]);
+  }, [quoteSymbolsKey]);
 
   const movers: Mover[] = useMemo(
     () =>
