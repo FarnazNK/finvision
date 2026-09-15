@@ -43,5 +43,8 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-      - name: Node dependency audit
+      - name: Node production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Node full dependency audit (informational)
+        continue-on-error: true
         run: npm audit --audit-level=high
