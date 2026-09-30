@@ -1,4 +1,4 @@
-# FinVision
+# FinVision — AI-Assisted Portfolio Intelligence Platform
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -8,22 +8,23 @@
 
 **Live:** [Dashboard](https://farnaznk.github.io/finvision/) · [API Live](https://finvision-api.onrender.com/) · [API Health](https://finvision-api.onrender.com/health) · [API Docs](https://finvision-api.onrender.com/docs)
 
-FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market movements, transactions, allocation, and watchlists in one place. It combines a responsive React application with a FastAPI insights service that grounds answers in the portfolio snapshot supplied by the client.
+FinVision is a production-oriented portfolio intelligence platform that combines deterministic financial analytics, authenticated portfolio data, market-data adapters, document-grounded research, and AI-assisted insights. The React/TypeScript client provides the product surface while a FastAPI backend keeps calculations, retrieval, provider access, authentication, and persistence behind explicit service boundaries.
+
+The AI layer is deliberately grounded: portfolio figures come from deterministic analytics tools and supplied portfolio state, while research responses return source citations. The model is used for interpretation and orchestration rather than as the source of financial calculations.
 
 > **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Render with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
 
-## Highlights
+## What this project demonstrates
 
-- Portfolio overview with value, return, day-change, allocation, and top-holdings KPIs
-- Holdings, markets, transactions, and watchlist views
-- Simulated live price feed with pause/resume controls and a synchronized equity curve for offline demos
-- Light, dark, and system theme modes
-- Currency display selection and transaction search
-- Accessible UI primitives with keyboard navigation, labels, focus states, and reduced-motion support
-- AI portfolio insights grounded in holdings and transaction data
-- Document-grounded Research Assistant API with source citations
-- Deterministic analytics tools and citations for auditable AI responses
-- Offline AI fallback when no Anthropic API key is configured
+- **Grounded AI insights** over authenticated holdings and transaction state
+- **Deterministic financial tools** for portfolio calculations instead of model-generated arithmetic
+- **Document-grounded research** with ranked excerpts, source URLs, chunk identifiers, and citations
+- **Market-data adapters** for quotes, history, and symbol search with server-side caching
+- **Backend boundaries** for authentication, portfolio state, market providers, AI orchestration, and research retrieval
+- **Production persistence** with PostgreSQL-backed user accounts and portfolio data
+- **Provider-independent local behavior** with deterministic/offline AI fallback when hosted model access is unavailable
+- Portfolio KPIs, holdings, markets, transactions, allocation, watchlists, and synchronized equity-curve views
+- Accessible React/TypeScript client with persistent Redux state
 - Dockerized frontend and AI service with nginx SPA routing
 - GitHub Actions CI for frontend, backend, Compose, and production container builds
 - GitHub Container Registry publishing for `main` and version tags
@@ -34,7 +35,7 @@ FinVision is an AI-assisted portfolio dashboard for monitoring holdings, market 
 - Portfolio profile guidance describing the information users can monitor and the AI-assisted research available to them
 - Server-side Finnhub quote, history, and symbol-search adapters with caching
 
-## Architecture
+## Backend & AI architecture
 
 ```mermaid
 flowchart LR
