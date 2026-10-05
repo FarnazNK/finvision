@@ -14,19 +14,33 @@ jobs:
   verify-live-apis:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      FINVISION_API_URL: ${{ vars.VITE_AI_SERVICE_URL }}
+      GROUNDED_API_URL: ${{ vars.GROUNDED_API_URL }}
+      SECURESHOP_API_URL: ${{ vars.SECURESHOP_API_URL }}
     steps:
+      - name: Require deployed API origins
+        run: |
+          for name in FINVISION_API_URL GROUNDED_API_URL SECURESHOP_API_URL; do
+            value="${!name}"
+            if [[ ! "$value" =~ ^https://[^/]+/?$ ]]; then
+              echo "::error::Set $name to its verified HTTPS API origin."
+              exit 1
+            fi
+          done
+
       - name: FinVision API
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://finvision-api.onrender.com/
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://finvision-api.onrender.com/health
+          curl --fail --silent --show-error --max-time 60 "${FINVISION_API_URL%/}/docs"
+          curl --fail --silent --show-error --max-time 60 ${FINVISION_API_URL%/}/health
 
       - name: RAG Agent API
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://rag-agent-api-2uau.onrender.com/
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://rag-agent-api-2uau.onrender.com/health/live
+          curl --fail --silent --show-error --max-time 60 "${GROUNDED_API_URL%/}/docs"
+          curl --fail --silent --show-error --max-time 60 ${GROUNDED_API_URL%/}/health/ready
 
       - name: SecureShop API
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://secureshop-api-zckt.onrender.com/
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://secureshop-api-zckt.onrender.com/api/v1/health
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://secureshop-api-zckt.onrender.com/api/v1/products
+          curl --fail --silent --show-error --max-time 60 "${SECURESHOP_API_URL%/}/api/reference"
+          curl --fail --silent --show-error --max-time 60 ${SECURESHOP_API_URL%/}/api/v1/health
+          curl --fail --silent --show-error --max-time 60 ${SECURESHOP_API_URL%/}/api/v1/products
