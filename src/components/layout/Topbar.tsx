@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
@@ -18,6 +18,7 @@ import { media } from '@/utils/responsive';
 
 export function Topbar() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const themeMode = useAppSelector(selectThemeMode);
   const liveFeed = useAppSelector(selectLiveFeed);
   const currency = useAppSelector(selectCurrency);
@@ -33,10 +34,10 @@ export function Topbar() {
   return (
     <Bar role="banner">
       <SearchWrap>
-        <Input
-          label="Search"
+        {location.pathname === "/transactions" ? <Input
+          label="Search transactions"
           hideLabel
-          placeholder="Search holdings, transactions, symbols…"
+          placeholder="Filter transactions by name or symbol…"
           onChange={(e) => dispatch(searchChanged(e.target.value))}
           iconStart={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -44,7 +45,7 @@ export function Topbar() {
               <path d="m20 20-3.5-3.5" />
             </svg>
           }
-        />
+        /> : <ActivityLink to="/transactions">Search activity →</ActivityLink>}
       </SearchWrap>
 
       <Right>
@@ -61,11 +62,11 @@ export function Topbar() {
           type="button"
           onClick={() => dispatch(liveFeedToggled())}
           aria-pressed={liveFeed}
-          aria-label={liveFeed ? 'Pause live data feed' : 'Resume live data feed'}
+          aria-label={liveFeed ? 'Pause simulated price updates' : 'Resume simulated price updates'}
         >
           <Dot $live={liveFeed} aria-hidden="true" />
           <LiveLabel>
-            {liveFeed ? 'Live' : 'Paused'}
+            {liveFeed ? 'Demo prices' : 'Demo paused'}
             {lastUpdated && (
               <LiveSub aria-hidden="true">{formatRelativeTime(lastUpdated)}</LiveSub>
             )}
@@ -97,7 +98,12 @@ const Bar = styled.header`
   z-index: ${({ theme }) => theme.z.sticky};
   background: ${({ theme }) => theme.color.surface};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
-  height: ${({ theme }) => theme.layout.headerHeight};
+  min-height: ${({ theme }) => theme.layout.headerHeight};
+  flex-wrap: wrap;
+  @media (max-width: 520px) {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space[3]};
@@ -111,6 +117,10 @@ const SearchWrap = styled.div`
   flex: 1;
   min-width: 0;
   max-width: 520px;
+  @media (max-width: 520px) {
+    order: 2;
+    flex-basis: 100%;
+  }
 `;
 
 const Right = styled.div`
@@ -210,4 +220,12 @@ const CurrencySelect = styled.select`
   @media (max-width: 520px) {
     display: none;
   }
+`;
+
+const ActivityLink = styled(Link)`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  text-decoration: none;
+  &:hover { color: ${({ theme }) => theme.color.primary}; }
+  &:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 `;
