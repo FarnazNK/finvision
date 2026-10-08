@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
@@ -18,6 +18,7 @@ import { media } from '@/utils/responsive';
 
 export function Topbar() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const themeMode = useAppSelector(selectThemeMode);
   const liveFeed = useAppSelector(selectLiveFeed);
   const currency = useAppSelector(selectCurrency);
@@ -33,7 +34,7 @@ export function Topbar() {
   return (
     <Bar role="banner">
       <SearchWrap>
-        <Input
+        {location.pathname === "/transactions" ? <Input
           label="Search transactions"
           hideLabel
           placeholder="Filter transactions by name or symbol…"
@@ -44,7 +45,7 @@ export function Topbar() {
               <path d="m20 20-3.5-3.5" />
             </svg>
           }
-        />
+        /> : <ActivityLink to="/transactions">Search activity →</ActivityLink>}
       </SearchWrap>
 
       <Right>
@@ -219,4 +220,12 @@ const CurrencySelect = styled.select`
   @media (max-width: 520px) {
     display: none;
   }
+`;
+
+const ActivityLink = styled(Link)`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  text-decoration: none;
+  &:hover { color: ${({ theme }) => theme.color.primary}; }
+  &:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 `;
