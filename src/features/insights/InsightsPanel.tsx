@@ -43,6 +43,7 @@ export function InsightsPanel() {
 
     setLoading(true);
     setError(null);
+    setResult(null);
     try {
       const res = await askInsight(
         trimmed,
@@ -54,7 +55,7 @@ export function InsightsPanel() {
       setResult(res);
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
-        setError('Could not reach the insights service. Is ai-service running?');
+        setError('Insights are temporarily unavailable. Please try again in a moment.');
       }
     } finally {
       setLoading(false);
@@ -64,7 +65,7 @@ export function InsightsPanel() {
   return (
     <Card
       title="Portfolio Insights"
-      description="Ask a question about your holdings — answers are grounded in your live account."
+      description="Ask about the portfolio shown here. Answers use its holdings and transactions; demo prices are simulated."
     >
       <Row>
         <Field
@@ -74,14 +75,14 @@ export function InsightsPanel() {
           placeholder="e.g. Am I too concentrated in tech?"
           aria-label="Ask about your portfolio"
         />
-        <Ask onClick={() => run(question)} disabled={loading}>
+        <Ask onClick={() => run(question)} disabled={loading || !question.trim()}>
           {loading ? 'Thinking…' : 'Ask'}
         </Ask>
       </Row>
 
       <Chips>
         {SUGGESTIONS.map((s) => (
-          <Chip key={s} onClick={() => { setQuestion(s); run(s); }}>
+          <Chip key={s} disabled={loading} onClick={() => { setQuestion(s); run(s); }}>
             {s}
           </Chip>
         ))}
@@ -90,7 +91,7 @@ export function InsightsPanel() {
       {error && <ErrorText role="alert">{error}</ErrorText>}
 
       {result && !error && (
-        <Answer>
+        <Answer role="status" aria-live="polite">
           <p>{result.answer}</p>
           <Meta>
             model: {result.model}
@@ -110,6 +111,7 @@ const Row = styled.div`
 
 const Field = styled.input`
   flex: 1;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -145,6 +147,7 @@ const Chip = styled.button`
   font-size: 12px;
   cursor: pointer;
   &:hover { color: ${({ theme }) => theme.color.text}; }
+  &:disabled { opacity: 0.6; cursor: wait; }
 `;
 
 const Answer = styled.div`
