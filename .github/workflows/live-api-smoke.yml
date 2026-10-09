@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      FINVISION_API_URL: ${{ vars.VITE_AI_SERVICE_URL }}
-      GROUNDED_API_URL: ${{ vars.GROUNDED_API_URL }}
-      SECURESHOP_API_URL: ${{ vars.SECURESHOP_API_URL }}
+      FINVISION_API_URL: https://finvision-api.vercel.app
+      GROUNDED_API_URL: https://grounded-agent-api.vercel.app
+      SECURESHOP_API_URL: https://secureshop-api.vercel.app
     steps:
       - name: Require deployed API origins
         run: |
