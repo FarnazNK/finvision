@@ -6,7 +6,7 @@
 [![Security](https://img.shields.io/badge/security-OWASP%20Top%2010-informational)](https://owasp.org/www-project-top-ten/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**Live:** [Dashboard](https://farnaznk.github.io/finvision/) · [API Live](https://finvision-api.onrender.com/) · [API Health](https://finvision-api.onrender.com/health) · [API Docs](https://finvision-api.onrender.com/docs)
+**Live:** [Dashboard](https://farnaznk.github.io/finvision/) · [API Live](https://finvision-api.vercel.app/) · [API Health](https://finvision-api.vercel.app/health) · [API Docs](https://finvision-api.vercel.app/docs)
 
 FinVision is a production-oriented portfolio intelligence platform that combines deterministic financial analytics, authenticated portfolio data, market-data adapters, document-grounded research, and AI-assisted insights. The React/TypeScript client provides the product surface while a FastAPI backend keeps calculations, retrieval, provider access, authentication, and persistence behind explicit service boundaries.
 
@@ -109,8 +109,8 @@ The portfolio demo is deployed across GitHub Pages and Render:
 - **Dashboard demo:** <https://farnaznk.github.io/finvision/>
 - **Public landing page:** <https://farnaznk.github.io/finvision/welcome>
 - **Sign-in and registration:** <https://farnaznk.github.io/finvision/auth>
-- **API health:** <https://finvision-api.onrender.com/health>
-- **Interactive API docs:** <https://finvision-api.onrender.com/docs>
+- **API health:** <https://finvision-api.vercel.app/health>
+- **Interactive API docs:** <https://finvision-api.vercel.app/docs>
 
 The GitHub Pages build is configured to call the public Render API. The backend
 uses managed PostgreSQL for authenticated portfolio persistence. Finnhub and
@@ -172,7 +172,7 @@ Google and may take time; publishing a site does not guarantee ranking.
 
 The repository also includes [render.yaml](./render.yaml) as reproducible Render
 deployment configuration. The public FastAPI service is currently deployed at
-<https://finvision-api.onrender.com> and uses managed Neon PostgreSQL. Provider
+<https://finvision-api.vercel.app> and uses managed Neon PostgreSQL. Provider
 credentials are only required for the optional external integrations.
 
 Do not claim the demo provides live market data until the provider plan permits
