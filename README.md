@@ -12,7 +12,7 @@ FinVision is a production-oriented portfolio intelligence platform that combines
 
 The AI layer is deliberately grounded: portfolio figures come from deterministic analytics tools and supplied portfolio state, while research responses return source citations. The model is used for interpretation and orchestration rather than as the source of financial calculations.
 
-> **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Render with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
+> **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Vercel Hobby with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
 
 ## What this project demonstrates
 
@@ -104,7 +104,7 @@ retrieval/grounding evaluation.
 
 ## Public deployment status
 
-The portfolio demo is deployed across GitHub Pages and Render:
+The portfolio demo is deployed across GitHub Pages and Vercel Hobby:
 
 - **Dashboard demo:** <https://farnaznk.github.io/finvision/>
 - **Public landing page:** <https://farnaznk.github.io/finvision/welcome>
@@ -112,7 +112,7 @@ The portfolio demo is deployed across GitHub Pages and Render:
 - **API health:** <https://finvision-api.vercel.app/health>
 - **Interactive API docs:** <https://finvision-api.vercel.app/docs>
 
-The GitHub Pages build is configured to call the public Render API. The backend
+The GitHub Pages build is configured to call the public Vercel API. The backend
 uses managed PostgreSQL for authenticated portfolio persistence. Finnhub and
 Anthropic remain optional integrations; without those provider keys the demo keeps
 its simulated/offline behavior where supported.
