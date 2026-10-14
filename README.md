@@ -196,41 +196,6 @@ and delayed-data notice.
 - Python 3.12 for running the service outside Docker
 - Docker Desktop for the full-stack workflow
 
-### Run locally with Docker Compose
-
-These are local-development URLs on your own computer. They are not public
-internet links and do not mean the application has been deployed.
-
-The default configuration runs the web application on port `8080` and the AI service on port `8000`. Anthropic access is optional; without it, the service uses its deterministic offline response.
-
-```bash
-export ANTHROPIC_API_KEY=sk-...   # optional
-export VITE_AI_SERVICE_URL=http://localhost:8000
-
-docker compose up --build
-```
-
-Open:
-
-- Local web application: <http://localhost:8080>
-- Local AI service health: <http://localhost:8000/health>
-- Local interactive API docs: <http://localhost:8000/docs>
-
-On Windows PowerShell, run the equivalent commands below from the repository root:
-
-```powershell
-# Optional: set this only if you have an Anthropic API key.
-$env:ANTHROPIC_API_KEY = 'sk-your-key'
-$env:VITE_AI_SERVICE_URL = 'http://localhost:8000'
-docker compose up --build
-```
-
-Once the containers are ready, open the same local URLs listed above:
-
-- Web application: <http://localhost:8080>
-- AI service health: <http://localhost:8000/health>
-- Interactive API docs: <http://localhost:8000/docs>
-
 ### Run the frontend locally
 
 ```bash
