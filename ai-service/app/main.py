@@ -17,6 +17,7 @@ from .market_data import FinnhubClient, MarketDataError
 from .observability import RequestMetricsMiddleware, request_metrics
 from .persistence import HoldingRecord, SessionLocal, UserRecord
 from .rag import Document, InMemoryRetriever
+from .sec_edgar import recent_filings
 from .security import (
     create_access_token,
     decode_access_token,
@@ -373,3 +374,15 @@ def research(
         for index, citation in enumerate(citations, start=1)
     )
     return ResearchResponse(answer=answer, citations=citations)
+
+@app.get("/api/research/sec-filings")
+def sec_filings(cik: str, limit: int = 8, _: None = Depends(enforce_rate_limit)) -> dict:
+    """Retrieve recent public SEC filings using an official API and local cache."""
+    if not cik.isascii() or not cik.isdecimal() or len(cik) > 10:
+        raise HTTPException(status_code=422, detail="CIK must be 1–10 digits")
+    try:
+        return recent_filings(cik, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except MarketDataError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
