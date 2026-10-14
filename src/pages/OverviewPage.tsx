@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import { useAppSelector } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import {
@@ -57,10 +58,15 @@ export function OverviewPage() {
     <Page>
       <PageHeader>
         <div>
-          <Eyebrow>Overview</Eyebrow>
-          <Title>Your portfolio at a glance</Title>
-          <Subtitle>Review holdings, market movement, and grounded insights in one workspace.</Subtitle>
+          <Eyebrow>Portfolio workspace / Overview</Eyebrow>
+          <Title>Portfolio intelligence, made clear.</Title>
+          <Subtitle>Track performance, understand risk, and explore AI-assisted insights with transparent data sources.</Subtitle>
+          <HeaderNote><StatusDot aria-hidden="true" /> Demo workspace · Market values may be simulated</HeaderNote>
         </div>
+        <HeaderActions aria-label="Explore portfolio tools">
+          <SecondaryAction to="/holdings">Explore holdings <span aria-hidden="true">→</span></SecondaryAction>
+          <PrimaryAction href="#portfolio-insights">Ask AI assistant <span aria-hidden="true">↗</span></PrimaryAction>
+        </HeaderActions>
       </PageHeader>
 
       <KpiGrid>
@@ -98,7 +104,7 @@ export function OverviewPage() {
         </Card>
       </KpiGrid>
 
-      <FullWidth>
+      <FullWidth id="portfolio-insights">
         <InsightsPanel />
       </FullWidth>
 
@@ -115,7 +121,7 @@ export function OverviewPage() {
               options={RANGE_OPTIONS}
             />
           }
-          style={{ gridColumn: 'span 2' }}
+          className="wide-panel"
         >
           <PortfolioCurveChart points={curve} range={RANGE_DAYS[range]} />
         </Card>
@@ -197,8 +203,8 @@ const Subtitle = styled.p`
   font-size: ${({ theme }) => theme.fontSize.sm};
 `;
 
-const FullWidth = styled.div`
-  margin-bottom: 20px;
+const FullWidth = styled.section`
+  scroll-margin-top: 24px;
 `;
 
 const KpiGrid = styled.div`
@@ -215,7 +221,9 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.space[4]};
 
-  ${media.lg`grid-template-columns: repeat(3, 1fr);`}
+  ${media.lg`grid-template-columns: repeat(3, minmax(0, 1fr));`}
+  & > * { min-width: 0; }
+  ${media.lg`& > .wide-panel { grid-column: span 2; }`}
 `;
 
 const HoldingList = styled.ul`
@@ -284,4 +292,59 @@ const RowPct = styled.span<{ $positive: boolean }>`
   color: ${({ $positive, theme }) =>
     $positive ? theme.color.success : theme.color.danger};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+const HeaderNote = styled.p`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 7px 11px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.pill};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  background: ${({ theme }) => theme.color.surface};
+`;
+const StatusDot = styled.span`
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.warn};
+`;
+const HeaderActions = styled.nav`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+`;
+const SecondaryAction = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 15px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.color.borderStrong};
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.surface};
+  text-decoration: none;
+  font-weight: 600;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  &:hover { background: ${({ theme }) => theme.color.surfaceAlt}; }
+  &:focus-visible { outline: 3px solid ${({ theme }) => theme.color.focusRing}; outline-offset: 2px; }
+`;
+const PrimaryAction = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 15px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.color.primaryText};
+  background: ${({ theme }) => theme.color.primary};
+  text-decoration: none;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: 600;
+  &:hover { background: ${({ theme }) => theme.color.primaryHover}; }
+  &:focus-visible { outline: 3px solid ${({ theme }) => theme.color.focusRing}; outline-offset: 2px; }
 `;

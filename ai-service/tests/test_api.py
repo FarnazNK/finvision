@@ -33,3 +33,16 @@ def test_insights_offline(monkeypatch):
     body = r.json()
     assert "1,500" in body["answer"] or "1500" in body["answer"]
     assert body["model"] == "offline-fallback"
+
+
+def test_each_request_has_unique_correlation_id():
+    first = client.get("/health")
+    second = client.get("/health")
+    assert len(first.headers["x-request-id"]) == 32
+    assert first.headers["x-request-id"] != second.headers["x-request-id"]
+
+
+def test_unauthorized_response_still_has_correlation_id():
+    response = client.post("/api/insights", json=PAYLOAD)
+    assert response.status_code == 401
+    assert response.headers["x-request-id"]

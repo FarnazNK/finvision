@@ -74,7 +74,15 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Validate Compose configuration
+        env:
+          FINVISION_JWT_SECRET: ci-only-not-a-real-secret-replace-in-production
+          POSTGRES_PASSWORD: ci-only-database-password
+          DATABASE_URL: postgresql+psycopg://finvision:ci-only-database-password@postgres:5432/finvision
         run: docker compose config
 
       - name: Build production containers
+        env:
+          FINVISION_JWT_SECRET: ci-only-not-a-real-secret-replace-in-production
+          POSTGRES_PASSWORD: ci-only-database-password
+          DATABASE_URL: postgresql+psycopg://finvision:ci-only-database-password@postgres:5432/finvision
         run: docker compose build
