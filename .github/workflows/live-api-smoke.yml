@@ -6,6 +6,11 @@ on:
     paths:
       - ".github/workflows/live-api-smoke.yml"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/live-api-smoke.yml"
+  schedule:
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: read
@@ -29,6 +34,16 @@ jobs:
             fi
           done
 
+      - name: FinVision dashboard
+        run: |
+          curl --fail --silent --show-error --location --max-time 60 https://farnaznk.github.io/finvision/ -o /tmp/finvision.html
+          grep -qi "<html" /tmp/finvision.html
+
+      - name: SecureShop storefront
+        run: |
+          curl --fail --silent --show-error --location --max-time 60 https://secureshop-storefront.vercel.app/ -o /tmp/secureshop.html
+          grep -qi "<html" /tmp/secureshop.html
+
       - name: FinVision API
         run: |
           curl --fail --silent --show-error --max-time 60 "${FINVISION_API_URL%/}/docs"
@@ -43,4 +58,5 @@ jobs:
         run: |
           curl --fail --silent --show-error --max-time 60 "${SECURESHOP_API_URL%/}/api/reference"
           curl --fail --silent --show-error --max-time 60 ${SECURESHOP_API_URL%/}/api/v1/health
-          curl --fail --silent --show-error --max-time 60 ${SECURESHOP_API_URL%/}/api/v1/products
+          curl --fail --silent --show-error --max-time 60 "${SECURESHOP_API_URL%/}/api/v1/products" -o /tmp/secureshop-products.json
+          python -c 'import json; d=json.load(open("/tmp/secureshop-products.json")); assert isinstance(d["items"], list) and isinstance(d["meta"], dict), "Invalid products response"; assert d["items"], "Demo catalog is empty"'
