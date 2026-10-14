@@ -9,7 +9,6 @@ import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
 
-const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
 export interface Citation {
   kind: 'holding' | 'transaction' | 'metric';
@@ -30,13 +29,12 @@ export async function askInsight(
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
   const accessToken = getAccessToken();
-  const credential = API_KEY || accessToken;
 
   const res = await fetch(`${API_BASE_URL}/api/insights`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify({
       question,
