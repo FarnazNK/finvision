@@ -4,6 +4,7 @@ from __future__ import annotations
 import hmac
 import os
 import time
+from uuid import uuid4
 from collections import defaultdict, deque
 
 import jwt
@@ -45,6 +46,17 @@ app = FastAPI(title="FinVision AI Service", version="1.1.0")
 retriever = InMemoryRetriever()
 market_client = FinnhubClient()
 app.add_middleware(RequestMetricsMiddleware)
+
+
+@app.middleware("http")
+async def attach_request_id(request: Request, call_next):
+    """Generate an opaque correlation ID for tracing one API request."""
+    request_id = uuid4().hex
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
 
 allowed_origins = [
     origin.strip()
