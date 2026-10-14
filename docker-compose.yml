@@ -15,8 +15,8 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-5}
       - FINVISION_API_KEY=${FINVISION_API_KEY:-}
-      - FINVISION_JWT_SECRET=${FINVISION_JWT_SECRET:-local-compose-change-me}
-      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://finvision:finvision@postgres:5432/finvision}
+      - FINVISION_JWT_SECRET=${FINVISION_JWT_SECRET:?Set FINVISION_JWT_SECRET in your local .env}
+      - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL in your local .env}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
       - FINVISION_RATE_LIMIT=${FINVISION_RATE_LIMIT:-30}
       - FINVISION_REQUEST_TIMEOUT=${FINVISION_REQUEST_TIMEOUT:-20}
@@ -34,7 +34,6 @@ services:
       dockerfile: Dockerfile.web
       args:
         VITE_AI_SERVICE_URL: ${VITE_AI_SERVICE_URL:-http://localhost:8000}
-        VITE_AI_SERVICE_API_KEY: ${FINVISION_API_KEY:-}
     ports:
       - "8080:80"
     depends_on:
@@ -45,7 +44,7 @@ services:
     environment:
       POSTGRES_DB: finvision
       POSTGRES_USER: finvision
-      POSTGRES_PASSWORD: finvision
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
