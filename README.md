@@ -1,227 +1,92 @@
-# FinVision — AI-Assisted Portfolio Intelligence Platform
+# FinVision
+
+**AI-assisted portfolio intelligence · React · TypeScript · FastAPI · PostgreSQL**
+
+[Live dashboard](https://farnaznk.github.io/finvision/) · [API documentation](https://finvision-api.vercel.app/docs) · [API health](https://finvision-api.vercel.app/health) · [Source code](https://github.com/FarnazNK/finvision)
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Security](https://img.shields.io/badge/security-OWASP%20Top%2010-informational)](https://owasp.org/www-project-top-ten/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**Live:** [Dashboard](https://farnaznk.github.io/finvision/) · [API Live](https://finvision-api.vercel.app/) · [API Health](https://finvision-api.vercel.app/health) · [API Docs](https://finvision-api.vercel.app/docs)
+FinVision is a full-stack financial analytics project exploring **reliable backend services**, **deterministic portfolio calculations**, and **AI-assisted research**. It combines a responsive portfolio dashboard with authenticated APIs and explainable AI responses.
 
-FinVision is a production-oriented portfolio intelligence platform that combines deterministic financial analytics, authenticated portfolio data, market-data adapters, document-grounded research, and AI-assisted insights. The React/TypeScript client provides the product surface while a FastAPI backend keeps calculations, retrieval, provider access, authentication, and persistence behind explicit service boundaries.
+> **Demo transparency:** The public dashboard can use simulated portfolio prices. External market quotes depend on provider configuration and availability, and should not be treated as guaranteed real-time prices. FinVision is a portfolio engineering project, not an investment-advice service.
 
-The AI layer is deliberately grounded: portfolio figures come from deterministic analytics tools and supplied portfolio state, while research responses return source citations. The model is used for interpretation and orchestration rather than as the source of financial calculations.
+## Explore the application
 
-> **Status:** The public frontend demo is live on GitHub Pages and the FastAPI service is live on Vercel Hobby with managed Neon PostgreSQL. The repository includes authenticated user accounts, portfolio persistence, optional Finnhub market-data integration, AI insights, and a document-retrieval prototype. External market-data and hosted LLM providers remain optional.
+| Experience | Link |
+| --- | --- |
+| Portfolio dashboard | [Open FinVision](https://farnaznk.github.io/finvision/) |
+| Public product page | [View overview](https://farnaznk.github.io/finvision/welcome) |
+| Authentication | [Sign in / register](https://farnaznk.github.io/finvision/auth) |
+| FastAPI endpoints | [Browse API documentation](https://finvision-api.vercel.app/docs) |
 
-## What this project demonstrates
+## Engineering highlights
 
-- **Grounded AI insights** over authenticated holdings and transaction state
-- **Deterministic financial tools** for portfolio calculations instead of model-generated arithmetic
-- **Document-grounded research** with ranked excerpts, source URLs, chunk identifiers, and citations
-- **Market-data adapters** for quotes, history, and symbol search with server-side caching
-- **Backend boundaries** for authentication, portfolio state, market providers, AI orchestration, and research retrieval
-- **Production persistence** with PostgreSQL-backed user accounts and portfolio data
-- **Provider-independent local behavior** with deterministic/offline AI fallback when hosted model access is unavailable
-- Portfolio KPIs, holdings, markets, transactions, allocation, watchlists, and synchronized equity-curve views
-- Accessible React/TypeScript client with persistent Redux state
-- Dockerized frontend and AI service with nginx SPA routing
-- GitHub Actions CI for frontend, backend, Compose, and production container builds
-- GitHub Container Registry publishing for `main` and version tags
-- Redux state persistence across browser refreshes
-- PostgreSQL-compatible persistence, JWT authentication, and request metrics
-- Public `/auth` sign-in and registration flow for user-scoped portfolio APIs
-- SEO-ready public landing page at `/welcome` with Open Graph metadata and sitemap
-- Portfolio profile guidance describing the information users can monitor and the AI-assisted research available to them
-- Server-side Finnhub quote, history, and symbol-search adapters with caching
+### Backend engineering
 
-## Backend & AI architecture
+- **FastAPI and Pydantic:** Defined HTTP contracts for authentication, portfolios, market quotes, AI insights, and research.
+- **PostgreSQL and SQLAlchemy:** Persist users and holdings, with user-scoped portfolio reads and writes.
+- **JWT authentication:** Password hashing, signed access tokens, and authenticated portfolio endpoints.
+- **Market-data integration:** Optional server-side Finnhub adapter, bounded request timeouts, input validation, and in-process caching.
+- **Testing and delivery:** pytest, Docker, GitHub Actions, and container builds.
+
+### Applied AI
+
+- **Grounded portfolio insights:** AI interpretation uses supplied portfolio snapshots and deterministic calculation tools rather than model-invented arithmetic.
+- **Source-aware retrieval:** Research documents are chunked and ranked; retrieval responses include source URLs and chunk identifiers.
+- **Graceful fallback:** A deterministic response keeps core insights demonstrable without an external model provider.
+- **Honest boundaries:** Research retrieval currently uses an in-memory prototype; document persistence, tenant isolation, and production-grade retrieval evaluation require further work.
+
+### Frontend
+
+- **React + TypeScript:** Vite, Redux Toolkit, React Router, and styled-components.
+- **Financial visualizations:** Portfolio KPIs, performance charts, asset allocation, holdings, transactions, and watchlists.
+- **AI assistant interface:** Natural-language questions about the displayed portfolio.
+- **Responsive layout:** Desktop and mobile navigation with accessible interface components.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    browser["React + TypeScript<br/>Redux Toolkit"] -->|HTTPS| api["FastAPI API"]
-
-    api --> auth["Authentication<br/>JWT"]
-    api --> portfolio["Portfolio API<br/>Holdings + users"]
-    api --> markets["Market API<br/>Quotes + history + search"]
-    api --> insights["AI orchestrator<br/>Anthropic + tools"]
-    api --> research["Research API<br/>Chunking + retrieval + citations"]
-
-    auth --> postgres[("PostgreSQL<br/>users + holdings")]
-    portfolio --> postgres
-    markets --> finnhub["Finnhub<br/>optional provider"]
-    insights --> analytics["Deterministic<br/>portfolio analytics"]
-    research --> documents[("Document store<br/>in-memory prototype")]
-
-    redis[("Redis<br/>cache/jobs")] -. planned .-> api
-    pgvector[("pgvector<br/>embeddings")] -. planned .-> research
-    objectstore[("Object storage<br/>PDFs/docs")] -. planned .-> research
-
-    classDef current fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    classDef planned fill:#fff8e1,stroke:#f9a825,color:#6d4c00,stroke-dasharray: 5 5
-    class browser,api,auth,portfolio,markets,insights,research,postgres,finnhub,analytics,documents current
-    class redis,pgvector,objectstore planned
+    UI["React / TypeScript dashboard"] --> API["FastAPI"]
+    API --> AUTH["JWT authentication"]
+    API --> DB[("PostgreSQL: users + holdings")]
+    API --> MARKETS["Market data adapter"]
+    MARKETS --> FINNHUB["Finnhub (optional)"]
+    API --> AI["AI insights + calculation tools"]
+    API --> RAG["Research retrieval prototype"]
+    RAG --> MEMORY[("In-memory documents")]
 ```
 
-The frontend is a Vite-built single-page application. The AI service is isolated in `ai-service/` and exposes a small HTTP API. The model may call deterministic analytics tools for portfolio calculations; it does not receive permission to invent financial figures or perform unsupported arithmetic.
+Financial figures are calculated by deterministic backend functions; hosted AI is optional. Market quotes, authenticated portfolio records, and simulated demo values are different sources and should be distinguished in the UI.
 
-See [`ai-service/README.md`](./ai-service/README.md) for service-specific details.
+## Technology
 
-### Frontend routes
-
-| Route | Purpose |
+| Layer | Stack |
 | --- | --- |
-| `/` | Portfolio dashboard demo |
-| `/welcome` | Public product landing page |
-| `/auth` | Sign-in and registration |
-| `/holdings` | Holdings and position details |
-| `/markets` | Market quotes, history, and symbol search |
-| `/transactions` | Portfolio activity |
-| `/watchlist` | Saved symbols and monitoring |
+| Frontend | React 18, TypeScript, Vite, Redux Toolkit, styled-components, Recharts |
+| Backend | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL |
+| AI | Anthropic integration (optional), deterministic analytics, document retrieval |
+| Testing | Jest, React Testing Library, pytest |
+| Delivery | Docker, GitHub Actions, GitHub Pages, Vercel |
 
-The diagram uses green for components implemented in this repository and dashed
-yellow components for the next production milestone. Redis, pgvector, and object
-storage are intentionally shown as planned integrations rather than claimed as
-already operational.
+## Current limitations and next steps
 
-### Research Assistant
+FinVision is a portfolio project with a deployed demo, **not a claim of production-grade investment infrastructure**.
 
-The backend also includes a dependency-free retrieval vertical slice for financial
-research documents. Documents are metadata-aware and split into bounded overlapping
-chunks; `/api/research` returns ranked excerpts with source URLs and chunk IDs so
-answers remain auditable. The current in-memory retriever is intentionally
-deterministic for demos and CI, with a `Retriever` protocol ready for a
-PostgreSQL/pgvector implementation.
+- Quotes are provider-dependent; simulated values remain in the demo.
+- AI portfolio questions use a caller-supplied snapshot; authenticated server-derived snapshots are a future security improvement.
+- Research documents are not yet durable or tenant-isolated.
+- Planned work includes secure persistent retrieval, expanded retrieval and grounding evaluations, provider data freshness, and distributed observability.
 
-```text
-POST /api/research/ingest  -> document chunks + metadata
-POST /api/research         -> ranked excerpts + citations
-```
+## Repository guide
 
-Research documents are not yet durable or user-scoped. Production RAG work still
-requires pgvector, embedding generation, object storage, ingestion workers, and
-retrieval/grounding evaluation.
+- [Backend and AI service](./ai-service/)
+- [Frontend source](./src/)
+- [Security policy](./SECURITY.md)
+- [CI workflow](./.github/workflows/ci.yml)
 
-## Public deployment status
+For developer-focused installation details, consult the service documentation and project configuration files. **Never commit passwords, tokens, private keys, or populated environment files.** Configure secrets only in the deployment environment; rotate any credentials that have ever been exposed.
 
-The portfolio demo is deployed across GitHub Pages and Vercel Hobby:
+---
 
-- **Dashboard demo:** <https://farnaznk.github.io/finvision/>
-- **Public landing page:** <https://farnaznk.github.io/finvision/welcome>
-- **Sign-in and registration:** <https://farnaznk.github.io/finvision/auth>
-- **API health:** <https://finvision-api.vercel.app/health>
-- **Interactive API docs:** <https://finvision-api.vercel.app/docs>
-
-The GitHub Pages build is configured to call the public Vercel API. The backend
-uses managed PostgreSQL for authenticated portfolio persistence. Finnhub and
-Anthropic remain optional integrations; without those provider keys the demo keeps
-its simulated/offline behavior where supported.
-
-### CI/CD and Docker images
-
-Every pull request runs frontend type checking, linting, tests, a production
-build, backend pytest, Compose validation, and production container builds.
-Pushes to `main` publish these images to GitHub Container Registry:
-
-```text
-ghcr.io/farnaznk/finvision-web:latest
-ghcr.io/farnaznk/finvision-ai-service:latest
-```
-
-Version tags such as `v1.0.0` also trigger the image-publishing workflow. Set the
-repository variable `VITE_AI_SERVICE_URL` before publishing if the web image
-should point at a hosted API. Publishing images is not the same as deploying
-them; a hosting provider or orchestrator must still run the images with
-production secrets and a managed PostgreSQL database.
-
-Before deploying, configure:
-
-1. A hosted PostgreSQL `DATABASE_URL`.
-2. A long random `FINVISION_JWT_SECRET`.
-3. A licensed `FINNHUB_API_KEY` if market data will be enabled.
-4. `VITE_AI_SERVICE_URL` pointing to the deployed API before building the frontend.
-5. `FINVISION_ALLOWED_ORIGINS` containing the deployed frontend origin.
-6. `ANTHROPIC_API_KEY` only on the backend if hosted AI responses are enabled.
-
-### Free deployment option
-
-The repository includes a GitHub Pages workflow for the public frontend demo:
-
-```text
-https://farnaznk.github.io/finvision/
-```
-
-Enable Pages once in GitHub under **Settings → Pages → Source: GitHub Actions**.
-Every push to `main` builds and publishes the dashboard, `/welcome` landing page,
-authentication UI, and offline demo.
-Set the repository variable `VITE_AI_SERVICE_URL` if the static demo should call
-the separately hosted FastAPI service.
-
-For an alternative free frontend deployment, use Vercel or Cloudflare Pages with:
-
-```text
-Build command: npm run build
-Output directory: dist
-Node.js: 20
-```
-
-After deployment, replace the `finvision.pages.dev` URLs in `index.html`,
-`public/robots.txt`, and `public/sitemap.xml` with the actual site URL, then
-submit that sitemap in Google Search Console. Search indexing is controlled by
-Google and may take time; publishing a site does not guarantee ranking.
-
-The repository also includes [render.yaml](./render.yaml) as reproducible Render
-deployment configuration. The public FastAPI service is currently deployed at
-<https://finvision-api.vercel.app> and uses managed Neon PostgreSQL. Provider
-credentials are only required for the optional external integrations.
-
-Do not claim the demo provides live market data until the provider plan permits
-redistribution and the deployment displays the provider's required attribution
-and delayed-data notice.
-
-## Technology stack
-
-- **Frontend:** React 18, TypeScript, Vite, Redux Toolkit, React Router, styled-components, Recharts
-- **AI service:** Python 3.12, FastAPI, Pydantic v2, Anthropic SDK
-- **Testing:** Jest, React Testing Library, pytest
-- **Delivery:** Docker, Docker Compose, nginx
-- **Quality:** TypeScript strict mode, ESLint, typed Redux hooks, CI via GitHub Actions
-
-## Quick start
-
-### Prerequisites
-
-- Node.js 20 or newer
-- npm
-- Python 3.12 for running the service outside Docker
-- Docker Desktop for the full-stack workflow
-
-### Run the frontend locally
-
-```bash
-npm ci
-npm run dev
-```
-
-The Vite development server listens on port `3000`.
-
-### Run the AI service locally
-
-```bash
-cd ai-service
-python -m venv .venv
-# Activate the virtual environment using the command for your shell.
-pip install -r requirements-dev.txt
-uvicorn app.main:app --reload
-```
-
-When running the service locally, execute commands from `ai-service` or set `PYTHONPATH` to that directory so the `app` package can be imported.
-
-## Configuration
-
-The frontend value `VITE_AI_SERVICE_URL` is embedded into the browser bundle at build time. Set it to the public AI service URL before building the web image.
-
-The AI service supports these environment variables:
-
-| Variable | Purpose | Default |
-| --- | --- | --- |
+Built to demonstrate practical full-stack, backend, and applied-AI engineering.
