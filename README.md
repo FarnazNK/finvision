@@ -2,30 +2,23 @@
 
 **AI-assisted portfolio intelligence · React · TypeScript · FastAPI · PostgreSQL**
 
-[Live dashboard](https://farnaznk.github.io/finvision/) · **[Backend source (FastAPI)](./ai-service/app/main.py)** · [Backend directory](./ai-service/) · [API documentation](https://finvision-api.vercel.app/docs) · [API health](https://finvision-api.vercel.app/health)
-
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 
 FinVision is a full-stack financial analytics project exploring **reliable backend services**, **deterministic portfolio calculations**, and **AI-assisted research**. It combines a responsive portfolio dashboard with authenticated APIs and explainable AI responses.
 
 > **Demo transparency:** The public dashboard can use simulated portfolio prices. External market quotes depend on provider configuration and availability, and should not be treated as guaranteed real-time prices. FinVision is a portfolio engineering project, not an investment-advice service.
 
-## Where is the backend?
+## Project links
 
-**The backend is in this same repository, not a separate repo.** Its source lives in [`ai-service/`](./ai-service/). Start with the [FastAPI application and routes](./ai-service/app/main.py), [JWT authentication](./ai-service/app/security.py), [SQLAlchemy user/holding persistence](./ai-service/app/persistence.py), and [backend tests](./ai-service/tests/). The hosted API is deployed separately from the static frontend, at [finvision-api.vercel.app](https://finvision-api.vercel.app/docs).
-
-**What is mocked versus real?** Portfolio dashboard demo holdings and price ticks can be **simulated**; that does **not** mean the backend is mocked or absent. The backend implements real HTTP endpoints, JWT authentication, and SQLAlchemy storage, with PostgreSQL configured for the hosted deployment. External market quotes require an optional Finnhub key; the app must not present demo prices as guaranteed live market data. AI model responses likewise depend on optional provider configuration and can use a deterministic fallback.
-
-## Explore the application
-
-| Experience | Link |
+| Explore | Link |
 | --- | --- |
-| Portfolio dashboard | [Open FinVision](https://farnaznk.github.io/finvision/) |
-| Public product page | [View overview](https://farnaznk.github.io/finvision/welcome) |
-| Authentication | [Sign in / register](https://farnaznk.github.io/finvision/auth) |
-| FastAPI source code | [Explore backend implementation](./ai-service/app/main.py) |
-| Authentication and database | [JWT auth](./ai-service/app/security.py) · [SQLAlchemy models](./ai-service/app/persistence.py) |
-| FastAPI endpoints | [Browse hosted API documentation](https://finvision-api.vercel.app/docs) |
+| Live dashboard | [FinVision](https://farnaznk.github.io/finvision/) |
+| FastAPI backend implementation | [Backend source](./ai-service/) |
+| Hosted API documentation | [OpenAPI / Swagger UI](https://finvision-api.vercel.app/docs) |
+
+The backend lives **in this repository** under `ai-service/`, alongside the React frontend. It implements HTTP endpoints, JWT authentication, SQLAlchemy models, and PostgreSQL-compatible persistence. The frontend and API are deployed separately.
+
+**Data transparency:** The demo dashboard may use seeded holdings and simulated price ticks. External quotes depend on optional provider configuration and may be delayed. Simulated portfolio data does not mean the backend is mocked.
 
 ## Engineering highlights
 
