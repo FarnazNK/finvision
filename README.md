@@ -65,7 +65,7 @@ flowchart LR
     RAG --> MEMORY[("In-memory documents")]
 ```
 
-Financial figures are calculated by deterministic backend functions; hosted AI is optional. Market quotes, authenticated portfolio records, and simulated demo values are different sources and should be distinguished in the UI.
+Financial analytics tools in the backend use deterministic calculations, but **the frontend dashboard also calculates values from its current portfolio state**. The seeded/demo portfolio and simulated market ticks are not verified market prices. Hosted AI is optional; provider quotes, persisted user holdings, and demo data are distinct sources.
 
 ## Technology
 
