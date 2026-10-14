@@ -1,6 +1,10 @@
 # FinVision
 
-**AI-assisted portfolio intelligence · React · TypeScript · FastAPI · PostgreSQL**
+**AI-assisted portfolio intelligence**
+
+**Tech stack:** React · TypeScript · Vite · Redux Toolkit · FastAPI · Python · PostgreSQL · SQLAlchemy · JWT · Docker · GitHub Actions · pytest · Jest
+
+**AI & data:** Anthropic integration (optional) · Document retrieval prototype · Deterministic portfolio analytics · Finnhub market-data adapter (optional)
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 
