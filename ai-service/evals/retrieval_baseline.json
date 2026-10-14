@@ -1,0 +1,49 @@
+{
+  "description": "Synthetic retrieval sanity-check corpus; not production-grade financial facts.",
+  "documents": [
+    {
+      "id": "nvda-risk",
+      "title": "Semiconductor supply chain risks",
+      "source_url": "https://example.test/nvda",
+      "symbol": "NVDA",
+      "text": "Semiconductor manufacturing capacity and supply chain constraints create delivery risk."
+    },
+    {
+      "id": "aapl-service",
+      "title": "Services growth report",
+      "source_url": "https://example.test/aapl",
+      "symbol": "AAPL",
+      "text": "Services revenue increases due to subscriptions and recurring customer payments."
+    },
+    {
+      "id": "bond-duration",
+      "title": "Bond duration primer",
+      "source_url": "https://example.test/bonds",
+      "symbol": "BND",
+      "text": "Longer bond duration creates higher sensitivity to interest rate changes."
+    }
+  ],
+  "cases": [
+    {
+      "question": "Semiconductor manufacturing supply chain constraints",
+      "relevant_document_ids": [
+        "nvda-risk"
+      ],
+      "symbol": "NVDA"
+    },
+    {
+      "question": "Services subscription revenue",
+      "relevant_document_ids": [
+        "aapl-service"
+      ],
+      "symbol": "AAPL"
+    },
+    {
+      "question": "Bond duration interest rate sensitivity",
+      "relevant_document_ids": [
+        "bond-duration"
+      ],
+      "symbol": "BND"
+    }
+  ]
+}
