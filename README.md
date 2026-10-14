@@ -170,8 +170,7 @@ After deployment, replace the `finvision.pages.dev` URLs in `index.html`,
 submit that sitemap in Google Search Console. Search indexing is controlled by
 Google and may take time; publishing a site does not guarantee ranking.
 
-The repository also includes [render.yaml](./render.yaml) as reproducible Render
-deployment configuration. The public FastAPI service is currently deployed at
+The public FastAPI service is deployed on Vercel at
 <https://finvision-api.vercel.app> and uses managed Neon PostgreSQL. Provider
 credentials are only required for the optional external integrations.
 
