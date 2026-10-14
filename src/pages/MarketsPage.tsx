@@ -8,18 +8,25 @@ import { Sparkline } from '@/components/charts/Sparkline';
 import { formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
 import { fetchQuote, type MarketQuote } from '@/services/marketClient';
+import { fetchSecFilings, type SecFilingsResponse } from '@/services/secClient';
 
 interface Mover {
   symbol: string;
   name: string;
   price: number;
   changePct: number;
+  source: 'provider' | 'demo';
 }
 
 export function MarketsPage() {
   const holdings = useAppSelector(selectHoldings);
   const history = useAppSelector(selectMarketHistory);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  const [cik, setCik] = useState('320193');
+  const [filings, setFilings] = useState<SecFilingsResponse | null>(null);
+  const [filingsError, setFilingsError] = useState('');
+  const [filingsLoading, setFilingsLoading] = useState(false);
+  const [filingsController, setFilingsController] = useState<AbortController | null>(null);
 
   // Simulated price ticks replace the holdings array frequently. Depend on the
   // stable set of symbols instead so we do not refetch every quote on each tick.
@@ -66,6 +73,25 @@ export function MarketsPage() {
     return () => controller.abort();
   }, [quoteSymbolsKey]);
 
+  useEffect(() => () => filingsController?.abort(), [filingsController]);
+
+  async function loadFilings() {
+    if (!/^\\d{1,10}$/.test(cik.trim()) || filingsLoading) return;
+    const controller = new AbortController();
+    setFilingsController(controller);
+    setFilingsLoading(true);
+    setFilingsError('');
+    setFilings(null);
+    try {
+      const response = await fetchSecFilings(cik.trim(), controller.signal);
+      if (!controller.signal.aborted) setFilings(response);
+    } catch (error) {
+      if (!controller.signal.aborted) setFilingsError(error instanceof Error ? error.message : 'Could not load filings.');
+    } finally {
+      if (!controller.signal.aborted) setFilingsLoading(false);
+    }
+  }
+
   const movers: Mover[] = useMemo(
     () =>
       holdings
@@ -73,6 +99,7 @@ export function MarketsPage() {
         .map((h) => ({
           symbol: h.symbol,
           name: h.name,
+          source: quotes[h.symbol] ? 'provider' : 'demo',
           price: quotes[h.symbol]?.current ?? h.price,
           changePct: quotes[h.symbol]?.changePercent
             ? quotes[h.symbol].changePercent / 100
@@ -95,13 +122,32 @@ export function MarketsPage() {
       <PageHeader>
         <div>
           <Eyebrow>Markets</Eyebrow>
-          <Title>Live movers</Title>
+          <Title>Market intelligence</Title>
           <Subtitle>
-            Provider quotes are used when configured; simulated updates remain available for demos.
+            Compare provider quotes with demo values and explore actual SEC regulatory filings. Provider access may be limited or delayed.
           </Subtitle>
         </div>
       </PageHeader>
 
+      <Card title="Public SEC filings" description="Official SEC EDGAR records · Uses public data, not scraped HTML">
+        <FilingForm onSubmit={(event) => { event.preventDefault(); void loadFilings(); }}>
+          <FilingLabel htmlFor="sec-cik">Company CIK</FilingLabel>
+          <FilingInput id="sec-cik" inputMode="numeric" pattern="[0-9]{1,10}" value={cik} onChange={(event) => setCik(event.target.value)} placeholder="e.g. 320193" required />
+          <FilingButton type="submit" disabled={filingsLoading || !/^\\d{1,10}$/.test(cik.trim())}>{filingsLoading ? 'Loading…' : 'Find filings'}</FilingButton>
+        </FilingForm>
+        <SourceNote>Example CIK 320193 is Apple. Filings are public SEC records; these are not real-time stock prices.</SourceNote>
+        {filingsError && <ErrorMessage role="alert">{filingsError}</ErrorMessage>}
+        {filingsLoading && <SourceNote role="status">Retrieving official filing records…</SourceNote>}
+        {filings && <section aria-live="polite">
+          <CompanyHeading>{filings.company} · SEC CIK {filings.cik}</CompanyHeading>
+          {filings.filings.length === 0 ? <SourceNote>No 10-K, 10-Q, or 8-K filings found in the recent submission window.</SourceNote> :
+          <FilingList>{filings.filings.map((filing) => <li key={filing.url}>
+            <FilingLink href={filing.url} target="_blank" rel="noopener noreferrer">{filing.form} · Filed {filing.filedAt} <span aria-hidden="true">↗</span></FilingLink>
+          </li>)}</FilingList>}
+          <SourceNote>Source: {filings.source} · Cached server-side for up to 15 minutes</SourceNote>
+        </section>}
+      </Card>
+      <SourceNote>Market quote badges distinguish external provider data from simulated portfolio prices. A provider quote is not necessarily real-time.</SourceNote>
       <Grid>
         <Card title="Top gainers" description="Largest day's percentage gains">
           <MoverList movers={gainers} history={history} tone="positive" />
@@ -130,7 +176,7 @@ function MoverList({ movers, history, tone }: MoverListProps) {
             <Sym aria-hidden="true">{m.symbol.slice(0, 4)}</Sym>
             <Stack>
               <Main>{m.name}</Main>
-              <Sub>{m.symbol}</Sub>
+              <Sub>{m.symbol} · {m.source === 'provider' ? 'Provider quote' : 'Demo price'}</Sub>
             </Stack>
             <Spark>
               <Sparkline ticks={ticks} tone={tone} />
@@ -262,4 +308,61 @@ const Pct = styled.span<{ $positive: boolean }>`
   color: ${({ $positive, theme }) =>
     $positive ? theme.color.success : theme.color.danger};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+const FilingForm = styled.form`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+`;
+const FilingLabel = styled.label`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.text};
+`;
+const FilingInput = styled.input`
+  min-width: 150px;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.color.borderStrong};
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.surface};
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.focusRing}; }
+`;
+const FilingButton = styled.button`
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.md};
+  padding: 11px 16px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.primaryText};
+  background: ${({ theme }) => theme.color.primary};
+  cursor: pointer;
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+const SourceNote = styled.p`
+  margin-top: 12px;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  line-height: 1.5;
+`;
+const ErrorMessage = styled.p`
+  margin-top: 12px;
+  color: ${({ theme }) => theme.color.danger};
+`;
+const CompanyHeading = styled.h3`
+  margin-top: 20px;
+  font-size: ${({ theme }) => theme.fontSize.md};
+`;
+const FilingList = styled.ul`
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+`;
+const FilingLink = styled.a`
+  color: ${({ theme }) => theme.color.primary};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.focusRing}; }
 `;
