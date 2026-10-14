@@ -2,9 +2,19 @@
 
 **AI-assisted portfolio intelligence**
 
-**Tech stack:** React · TypeScript · Vite · Redux Toolkit · FastAPI · Python · PostgreSQL · SQLAlchemy · JWT · Docker · GitHub Actions · pytest · Jest
+### Technology stack
 
-**AI & data:** Anthropic integration (optional) · Document retrieval prototype · Deterministic portfolio analytics · Finnhub market-data adapter (optional)
+**Frontend**
+
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white) ![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-764ABC?logo=redux&logoColor=white) ![React Router](https://img.shields.io/badge/React_Router-CA4245?logo=reactrouter&logoColor=white) ![styled-components](https://img.shields.io/badge/styled--components-DB7093?logo=styledcomponents&logoColor=white) ![Recharts](https://img.shields.io/badge/Recharts-8884D8)
+
+**Backend & database**
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![Pydantic](https://img.shields.io/badge/Pydantic-E92063?logo=pydantic&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white) ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00) ![JWT](https://img.shields.io/badge/JWT-Authentication-444444?logo=jsonwebtokens&logoColor=white)
+
+**AI, testing & delivery**
+
+![Anthropic](https://img.shields.io/badge/Anthropic-Optional-191919?logo=anthropic&logoColor=white) ![Finnhub](https://img.shields.io/badge/Finnhub-Optional-4E8D7C) ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?logo=nginx&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white) ![Jest](https://img.shields.io/badge/Jest-C21325?logo=jest&logoColor=white) ![pytest](https://img.shields.io/badge/pytest-0A9EDC?logo=pytest&logoColor=white)
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 
