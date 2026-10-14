@@ -30,7 +30,7 @@ FinVision is a full-stack financial analytics project exploring **reliable backe
 | FastAPI backend implementation | [Backend source](./ai-service/) |
 | Hosted API documentation | [OpenAPI / Swagger UI](https://finvision-api.vercel.app/docs) |
 
-The backend lives **in this repository** under `ai-service/`, alongside the React frontend. It implements HTTP endpoints, JWT authentication, SQLAlchemy models, and PostgreSQL-compatible persistence. The frontend and API are deployed separately.
+The backend lives **in this repository** under `ai-service/`, alongside the React frontend. It implements HTTP endpoints, JWT authentication, and SQLAlchemy models for users and holdings. **Database configuration:** local development defaults to SQLite; the documented Vercel deployment is configured to use **Neon PostgreSQL** through the server-side `DATABASE_URL` environment variable. The frontend and API are deployed separately. This describes the documented deployment configuration, not an independently verified live database connection.
 
 **Data transparency:** The demo dashboard may use seeded holdings and simulated price ticks. External quotes depend on optional provider configuration and may be delayed. Simulated portfolio data does not mean the backend is mocked.
 
