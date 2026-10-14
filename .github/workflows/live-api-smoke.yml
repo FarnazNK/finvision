@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/live-api-smoke.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: read
@@ -28,6 +30,16 @@ jobs:
               exit 1
             fi
           done
+
+      - name: FinVision dashboard
+        run: |
+          curl --fail --silent --show-error --location --max-time 60 https://farnaznk.github.io/finvision/ -o /tmp/finvision.html
+          grep -qi "<html" /tmp/finvision.html
+
+      - name: SecureShop storefront
+        run: |
+          curl --fail --silent --show-error --location --max-time 60 https://secureshop-storefront.vercel.app/ -o /tmp/secureshop.html
+          grep -qi "<html" /tmp/secureshop.html
 
       - name: FinVision API
         run: |
