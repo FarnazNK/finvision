@@ -6,7 +6,7 @@
  * user is looking at. Includes a few suggested prompts to make the feature
  * discoverable.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 import { useAppSelector } from '@/app/hooks';
@@ -34,6 +34,8 @@ export function InsightsPanel() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => () => abortRef.current?.abort(), []);
+
   async function run(q: string) {
     const trimmed = q.trim();
     if (!trimmed || loading) return;
@@ -52,13 +54,13 @@ export function InsightsPanel() {
         currency,
         controller.signal,
       );
-      setResult(res);
+      if (!controller.signal.aborted) setResult(res);
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') {
+      if (!controller.signal.aborted && (e as Error).name !== 'AbortError') {
         setError('Insights are temporarily unavailable. Please try again in a moment.');
       }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }
 
@@ -67,20 +69,19 @@ export function InsightsPanel() {
       title="Portfolio Insights"
       description="Ask about the portfolio shown here. Answers use its holdings and transactions; demo prices are simulated."
     >
-      <Row>
+      <Row as="form" onSubmit={(e) => { e.preventDefault(); void run(question); }} aria-label="Portfolio question">
         <Field
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && run(question)}
           placeholder="e.g. Am I too concentrated in tech?"
           aria-label="Ask about your portfolio"
         />
-        <Ask onClick={() => run(question)} disabled={loading || !question.trim()}>
+        <Ask type="submit" disabled={loading || !question.trim()} aria-busy={loading}>
           {loading ? 'Thinking…' : 'Ask'}
         </Ask>
       </Row>
 
-      <Chips>
+      <Chips aria-label="Suggested portfolio questions">
         {SUGGESTIONS.map((s) => (
           <Chip key={s} disabled={loading} onClick={() => { setQuestion(s); run(s); }}>
             {s}
@@ -88,6 +89,7 @@ export function InsightsPanel() {
         ))}
       </Chips>
 
+      {loading && <Loading role="status" aria-live="polite">Analyzing the current portfolio…</Loading>}
       {error && <ErrorText role="alert">{error}</ErrorText>}
 
       {result && !error && (
@@ -169,4 +171,10 @@ const ErrorText = styled.p`
   margin-top: 12px;
   color: ${({ theme }) => theme.color.danger ?? '#c0392b'};
   font-size: 13px;
+`;
+
+const Loading = styled.p`
+  margin-top: 12px;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
 `;
