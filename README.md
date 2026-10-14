@@ -60,19 +60,83 @@ The backend lives **in this repository** under `ai-service/`, alongside the Reac
 
 ## Architecture
 
+FinVision separates the static React dashboard from its Python API. The diagram distinguishes **implemented components** (solid links) from **planned infrastructure** (dashed links).
+
 ```mermaid
-flowchart LR
-    UI["React / TypeScript dashboard"] --> API["FastAPI"]
-    API --> AUTH["JWT authentication"]
-    API --> DB[("PostgreSQL: users + holdings")]
-    API --> MARKETS["Market data adapter"]
-    MARKETS --> FINNHUB["Finnhub (optional)"]
-    API --> AI["AI insights + calculation tools"]
-    API --> RAG["Research retrieval prototype"]
-    RAG --> MEMORY[("In-memory documents")]
+flowchart TB
+    subgraph Client["Frontend · GitHub Pages"]
+        Pages["React 18 / TypeScript / Vite"]
+        Store["Redux Toolkit · portfolio + UI state"]
+        Charts["Recharts · KPIs / performance / allocation"]
+        InsightsUI["Portfolio insights interface"]
+        Demo["Seeded holdings + simulated market ticks"]
+        Pages --> Store
+        Store --> Charts
+        Store --> InsightsUI
+        Demo --> Store
+    end
+
+    subgraph Backend["FastAPI service · Vercel"]
+        API["HTTP API · Pydantic validation"]
+        Auth["Register / login / JWT auth"]
+        Holdings["User-scoped holdings API"]
+        Market["Market quotes / history / symbol search"]
+        Insights["AI insights orchestration"]
+        Analytics["Deterministic portfolio analytics tools"]
+        Research["Research ingest + ranked retrieval"]
+        Obs["Request metrics + rate limiting"]
+        API --> Auth
+        API --> Holdings
+        API --> Market
+        API --> Insights
+        Insights --> Analytics
+        API --> Research
+        API --> Obs
+    end
+
+    subgraph Persistence["Data & external dependencies"]
+        SQL[("SQLAlchemy / PostgreSQL · users + holdings")]
+        Finnhub["Finnhub API · optional"]
+        Anthropic["Anthropic model · optional"]
+        Docs[("In-memory document chunks")]
+    end
+
+    subgraph Future["Planned; not currently deployed"]
+        Vector[("Tenant-scoped pgvector")]
+        Blob[("Durable document storage")]
+        Cache[("Shared cache / jobs")]
+    end
+
+    Pages -->|"HTTPS API requests"| API
+    InsightsUI -->|"Portfolio snapshot + question"| Insights
+    Auth --> SQL
+    Holdings --> SQL
+    Market -->|"Server-side provider request"| Finnhub
+    Insights -->|"Optional model + tool calls"| Anthropic
+    Research --> Docs
+    Research -.-> Vector
+    Research -.-> Blob
+    API -.-> Cache
 ```
 
-Financial analytics tools in the backend use deterministic calculations, but **the frontend dashboard also calculates values from its current portfolio state**. The seeded/demo portfolio and simulated market ticks are not verified market prices. Hosted AI is optional; provider quotes, persisted user holdings, and demo data are distinct sources.
+### Frontend and data flow
+
+The frontend is a Vite-built single-page application with React Router, Redux Toolkit, styled-components, and Recharts. Redux-backed demo holdings and simulated ticks drive the dashboard; they should **not** be confused with exchange-verified live prices. The backend's user-scoped holdings API is separate from those browser-generated demo values.
+
+### Authentication and persistence
+
+The backend uses FastAPI/Pydantic contracts, password hashing, JWT access tokens, SQLAlchemy models, and user-scoped database queries. It supports local SQLite configuration and PostgreSQL for hosted deployments. Authorization is implemented on authenticated holdings endpoints; this does **not** imply all research data is tenant-isolated.
+
+### Market data and AI
+
+- The optional Finnhub adapter requests quotes, candles, and symbol search from the backend with timeout handling and a small in-process cache. Provider availability and quote freshness are not guaranteed.
+- The portfolio insights endpoint accepts a **caller-supplied portfolio snapshot**, runs deterministic analytics, and can use an optional Anthropic model for natural-language interpretation and tool calls. Without its API key, the service uses a deterministic fallback. The server does **not yet** derive that snapshot from the authenticated user's holdings.
+- The research prototype chunks documents and returns ranked excerpts with source metadata. Storage is **in memory**, not durable or tenant-isolated. A production retrieval system would need access controls, persistent ingestion, embeddings/vector search, and retrieval evaluation.
+
+### Operations and boundaries
+
+Docker and nginx provide containerized application packaging; GitHub Actions runs frontend and backend checks. The deployed demo uses GitHub Pages for its frontend and Vercel for its API. PostgreSQL is a runtime dependency for the configured hosted backend; Redis, pgvector, and object storage in the diagram are **future integrations**, not deployed features.
+
 
 ## Technology
 
