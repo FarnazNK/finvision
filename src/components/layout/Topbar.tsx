@@ -15,13 +15,13 @@ import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { Input } from '@/components/primitives/Input';
 import { media } from '@/utils/responsive';
-import { useAccountPortfolio, setDataMode } from '@/hooks/useAccountPortfolio';
+import { useDataMode, setDataMode, refreshAccountQuotes } from '@/hooks/useAccountPortfolio';
 import { clearAccessToken, getAccessToken } from '@/services/authClient';
 import { useNavigate } from 'react-router-dom';
 
 export function Topbar() {
   const dispatch = useAppDispatch();
-  const { mode, refresh } = useAccountPortfolio();
+  const mode = useDataMode();
   const navigate = useNavigate();
   const signedIn = Boolean(getAccessToken());
   const accountError = useAppSelector((state) => state.portfolio.error);
@@ -68,7 +68,7 @@ export function Topbar() {
           <option value="demo">Demo data</option>
           {signedIn && <option value="account">My account</option>}
         </ModeSelect>
-        {mode === 'account' && <LiveStatus type="button" onClick={refresh} aria-label="Refresh account quotes">Refresh quotes</LiveStatus>}
+        {mode === 'account' && <LiveStatus type="button" onClick={refreshAccountQuotes} aria-label="Refresh account quotes">Refresh quotes</LiveStatus>}
         {mode === 'account' && <StatusText role="status">{accountLoading ? 'Loading account…' : accountError ? accountError : 'Account holdings · provider quotes'}</StatusText>}
         <CurrencySelect
           aria-label="Display currency"
