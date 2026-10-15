@@ -78,6 +78,26 @@ export const GlobalStyle = createGlobalStyle`
     background: ${({ theme }) => theme.color.borderStrong};
   }
 
+  /* Premium financial workspace atmosphere */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 60% 45% at 90% -10%, color-mix(in srgb, ${({ theme }) => theme.color.primary} 9%, transparent), transparent 75%),
+      radial-gradient(ellipse 40% 35% at -15% 80%, color-mix(in srgb, ${({ theme }) => theme.color.info} 5%, transparent), transparent 80%);
+  }
+
+  button, a, input, select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
   /* Selection */
   ::selection {
     background: ${({ theme }) => theme.color.primary};
