@@ -113,7 +113,7 @@ export function OverviewPage() {
               options={RANGE_OPTIONS}
             />
           }
-          style={{ gridColumn: 'span 2' }}
+          className="wide-dashboard-card"
         >
           <PortfolioCurveChart points={curve} range={RANGE_DAYS[range]} />
         </Card>
@@ -217,7 +217,7 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.space[4]};
 
-  ${media.lg`grid-template-columns: repeat(3, 1fr);`}
+  ${media.lg`grid-template-columns: repeat(3, minmax(0, 1fr));\n    .wide-dashboard-card { grid-column: span 2; }`}
 `;
 
 const HoldingList = styled.ul`
