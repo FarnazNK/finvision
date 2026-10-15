@@ -37,8 +37,8 @@ export function AllocationDonut({ data, totalValue, height = 240 }: Props) {
             data={data}
             dataKey="value"
             nameKey="assetClass"
-            innerRadius="60%"
-            outerRadius="92%"
+            innerRadius="66%"
+            outerRadius="94%"
             paddingAngle={2}
             stroke={theme.color.surface}
             strokeWidth={2}
@@ -112,7 +112,7 @@ const Legend = styled.ul`
   margin: ${({ theme }) => theme.space[4]} 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: ${({ theme }) => theme.space[2]};
 `;
 

@@ -23,6 +23,7 @@ type SortDir = 'asc' | 'desc';
 export function HoldingsPage() {
   const holdings = useAppSelector(selectHoldings);
   const currency = useAppSelector(selectCurrency);
+  const [query, setQuery] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: 'value',
     dir: 'desc',
@@ -36,8 +37,8 @@ export function HoldingsPage() {
       if (va > vb) return sort.dir === 'asc' ? 1 : -1;
       return 0;
     };
-    return [...holdings].sort(cmp);
-  }, [holdings, sort]);
+    return holdings.filter((h) => `${h.name} ${h.symbol} ${h.assetClass}`.toLowerCase().includes(query.trim().toLowerCase())).sort(cmp);
+  }, [holdings, sort, query]);
 
   const totalValue = useMemo(
     () => holdings.reduce((s, h) => s + h.quantity * h.price, 0),
@@ -60,6 +61,16 @@ export function HoldingsPage() {
         </div>
       </PageHeader>
 
+      <SummaryGrid>
+        <SummaryCard><SummaryLabel>Portfolio value</SummaryLabel><SummaryValue>{formatMoney(totalValue, { currency })}</SummaryValue></SummaryCard>
+        <SummaryCard><SummaryLabel>Active positions</SummaryLabel><SummaryValue>{holdings.length}</SummaryValue></SummaryCard>
+        <SummaryCard><SummaryLabel>Asset classes</SummaryLabel><SummaryValue>{new Set(holdings.map((h) => h.assetClass)).size}</SummaryValue></SummaryCard>
+      </SummaryGrid>
+      <SearchBar>
+        <SearchLabel htmlFor="holding-search">Find an asset</SearchLabel>
+        <SearchInput id="holding-search" type="search" placeholder="Search holdings by name, symbol or class" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <ResultCount aria-live="polite">{sorted.length} of {holdings.length} positions</ResultCount>
+      </SearchBar>
       <Card padded={false}>
         <TableScroll>
           <Table role="table" aria-label="Holdings">
@@ -92,6 +103,7 @@ export function HoldingsPage() {
               </tr>
             </thead>
             <tbody>
+              {sorted.length === 0 && <tr><Td $align="left" colSpan={8}>No holdings match your search.</Td></tr>}
               {sorted.map((h) => (
                 <HoldingRow key={h.id} holding={h} currency={currency} />
               ))}
@@ -372,4 +384,58 @@ const ReturnStack = styled.div`
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
+`;
+
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+  ${media.sm`grid-template-columns: repeat(3, minmax(0, 1fr));`}
+`;
+const SummaryCard = styled.div`
+  padding: 22px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+`;
+const SummaryLabel = styled.div`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  text-transform: uppercase;
+  letter-spacing: .08em;
+`;
+const SummaryValue = styled.div`
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-weight: 700;
+  letter-spacing: -.04em;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+`;
+const SearchBar = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+const SearchLabel = styled.label`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: 600;
+`;
+const SearchInput = styled.input`
+  flex: 1;
+  min-width: 180px;
+  max-width: 460px;
+  padding: 12px 16px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.color.borderStrong};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.text};
+  font: inherit;
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.primary}; outline-offset: 2px; }
+`;
+const ResultCount = styled.span`
+  margin-left: auto;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
 `;

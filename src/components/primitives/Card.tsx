@@ -43,7 +43,17 @@ const Root = styled.section`
   background: ${({ theme }) => theme.color.surface};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.lg};
-  box-shadow: ${({ theme }) => theme.shadow.xs};
+  box-shadow: ({ theme }) => theme.shadow.sm;
+  transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+  &:hover {
+    border-color: ({ theme }) => theme.color.borderStrong;
+    box-shadow: ({ theme }) => theme.shadow.md;
+    transform: translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover { transform: none; }
+  }
   display: flex;
   flex-direction: column;
   min-width: 0;

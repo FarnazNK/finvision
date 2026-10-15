@@ -42,6 +42,11 @@ export function TransactionsPage() {
         </div>
       </PageHeader>
 
+      <SummaryGrid>
+        <SummaryCard><SummaryLabel>Visible activity</SummaryLabel><SummaryValue>{items.length}</SummaryValue></SummaryCard>
+        <SummaryCard><SummaryLabel>Incoming cash flow</SummaryLabel><SummaryValue>{formatMoney(items.filter((tx) => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0), { currency })}</SummaryValue></SummaryCard>
+        <SummaryCard><SummaryLabel>Outgoing cash flow</SummaryLabel><SummaryValue>{formatMoney(items.filter((tx) => tx.amount < 0).reduce((sum, tx) => sum + Math.abs(tx.amount), 0), { currency })}</SummaryValue></SummaryCard>
+      </SummaryGrid>
       <Toolbar>
         <SearchWrap>
           <Input
@@ -267,4 +272,31 @@ const EmptyHint = styled.div`
   margin-top: ${({ theme }) => theme.space[2]};
   font-size: ${({ theme }) => theme.fontSize.sm};
   color: ${({ theme }) => theme.color.textMuted};
+`;
+
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  ${media.sm`grid-template-columns: repeat(3, minmax(0, 1fr));`}
+`;
+const SummaryCard = styled.div`
+  padding: 22px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+`;
+const SummaryLabel = styled.div`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  text-transform: uppercase;
+  letter-spacing: .08em;
+`;
+const SummaryValue = styled.div`
+  margin-top: 10px;
+  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-weight: 700;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 `;

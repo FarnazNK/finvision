@@ -58,11 +58,12 @@ export function OverviewPage() {
       <PageHeader>
         <div>
           <Eyebrow>Overview</Eyebrow>
-          <Title>Your portfolio at a glance</Title>
-          <Subtitle>Review holdings, market movement, and grounded insights in one workspace.</Subtitle>
+          <Title>Your wealth, in focus.</Title>
+          <Subtitle>A clearer view of performance, allocation and the opportunities ahead.</Subtitle>
         </div>
       </PageHeader>
 
+      <SectionLabel>Portfolio snapshot</SectionLabel>
       <KpiGrid>
         <Card padded>
           <KpiTile
@@ -98,10 +99,7 @@ export function OverviewPage() {
         </Card>
       </KpiGrid>
 
-      <FullWidth>
-        <InsightsPanel />
-      </FullWidth>
-
+      <SectionLabel>Performance &amp; allocation</SectionLabel>
       <Grid>
         <Card
           title="Portfolio value"
@@ -115,7 +113,7 @@ export function OverviewPage() {
               options={RANGE_OPTIONS}
             />
           }
-          style={{ gridColumn: 'span 2' }}
+          className="wide-dashboard-card"
         >
           <PortfolioCurveChart points={curve} range={RANGE_DAYS[range]} />
         </Card>
@@ -153,6 +151,10 @@ export function OverviewPage() {
           </HoldingList>
         </Card>
       </Grid>
+      <SectionLabel>Intelligence</SectionLabel>
+      <FullWidth>
+        <InsightsPanel />
+      </FullWidth>
     </Page>
   );
 }
@@ -215,7 +217,8 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.space[4]};
 
-  ${media.lg`grid-template-columns: repeat(3, 1fr);`}
+  ${media.lg`grid-template-columns: repeat(3, minmax(0, 1fr)); 
+    .wide-dashboard-card { grid-column: span 2; }`}
 `;
 
 const HoldingList = styled.ul`
@@ -284,4 +287,12 @@ const RowPct = styled.span<{ $positive: boolean }>`
   color: ${({ $positive, theme }) =>
     $positive ? theme.color.success : theme.color.danger};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+const SectionLabel = styled.h2`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 `;
