@@ -95,7 +95,7 @@ export function MarketsPage() {
       <PageHeader>
         <div>
           <Eyebrow>Markets</Eyebrow>
-          <Title>Live movers</Title>
+          <Title>Market pulse</Title>
           <Subtitle>
             Provider quotes are used when configured; simulated updates remain available for demos.
           </Subtitle>
@@ -196,7 +196,7 @@ const List = styled.ul`
 
 const Row = styled.li`
   display: grid;
-  grid-template-columns: 36px 1fr auto auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: ${({ theme }) => theme.space[3]};
   padding: ${({ theme }) => `${theme.space[3]} 0`};
