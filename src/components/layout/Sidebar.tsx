@@ -63,7 +63,7 @@ const Aside = styled.aside<{ $collapsed: boolean }>`
   width: ${({ theme, $collapsed }) =>
     $collapsed ? '72px' : theme.layout.sidebarWidth};
   flex-shrink: 0;
-  background: ${({ theme }) => theme.color.surface};
+  background: linear-gradient(165deg, ${({ theme }) => theme.color.surface}, ${({ theme }) => theme.color.bg});
   border-right: 1px solid ${({ theme }) => theme.color.border};
   display: none;
   flex-direction: column;
@@ -140,6 +140,7 @@ const linkBase = css`
 const NavItemLink = styled(NavLink)`
   ${linkBase}
   &.active {
+    box-shadow: inset 3px 0 0 ${({ theme }) => theme.color.primary};
     background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 12%, transparent);
     color: ${({ theme }) => theme.color.primary};
   }
