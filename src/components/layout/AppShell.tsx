@@ -34,7 +34,7 @@ export function AppShell({ children }: Props) {
 const Root = styled.div`
   display: flex;
   min-height: 100vh;
-  background: ${({ theme }) => theme.color.bg};
+  background: transparent;
 `;
 
 const Stack = styled.div`
@@ -50,6 +50,16 @@ const Main = styled.main`
   max-width: ${({ theme }) => theme.layout.contentMaxWidth};
   width: 100%;
   margin: 0 auto;
+  animation: workspace-enter 480ms cubic-bezier(0.2, 0, 0, 1) both;
+
+  @keyframes workspace-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   &:focus {
     outline: none;
@@ -67,7 +77,9 @@ const MobileNav = styled.nav`
   z-index: ${({ theme }) => theme.z.sticky};
   padding: ${({ theme }) => `${theme.space[2]} ${theme.space[2]} calc(${theme.space[2]} + env(safe-area-inset-bottom))`};
   background: ${({ theme }) => theme.color.surface};
-  border-top: 1px solid ${({ theme }) => theme.color.border};
+  border-top: 1px solid ({ theme }) => theme.color.border;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(18px);
 
   ${media.md`display: none;`}
 `;
@@ -81,6 +93,7 @@ const MobileNavLink = styled(NavLink)`
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   text-align: center;
   text-decoration: none;
+  transition: background ({ theme }) => theme.motion.base, color ({ theme }) => theme.motion.base;
 
   &.active {
     background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 12%, transparent);
