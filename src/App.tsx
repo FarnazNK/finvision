@@ -9,10 +9,12 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { useMarketFeed } from '@/hooks/useMarketFeed';
+import { useAccountPortfolio } from '@/hooks/useAccountPortfolio';
 
 export function App() {
   // Boots the simulated market feed; toggled by the live-feed UI control.
-  useMarketFeed();
+  const { mode } = useAccountPortfolio();
+  useMarketFeed(mode === 'demo');
   const location = useLocation();
   const isPublicRoute =
     location.pathname === '/welcome' ||
