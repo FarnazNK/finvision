@@ -16,14 +16,26 @@ export function setDataMode(mode: DataMode): void {
   window.dispatchEvent(new Event('finvision-data-mode-changed'));
 }
 
-export function useAccountPortfolio(): { mode: DataMode; refresh: () => void } {
-  const dispatch = useAppDispatch();
+export function useDataMode(): DataMode {
   const [mode, setMode] = useState<DataMode>(getDataMode);
-  const [refreshCount, setRefreshCount] = useState(0);
   useEffect(() => {
     const update = () => setMode(getDataMode());
     window.addEventListener('finvision-data-mode-changed', update);
     return () => window.removeEventListener('finvision-data-mode-changed', update);
+  }, []);
+  return mode;
+}
+export function refreshAccountQuotes(): void {
+  window.dispatchEvent(new Event('finvision-account-refresh'));
+}
+export function useAccountPortfolio(): { mode: DataMode } {
+  const dispatch = useAppDispatch();
+  const mode = useDataMode();
+  const [refreshCount, setRefreshCount] = useState(0);
+  useEffect(() => {
+    const update = () => setRefreshCount((n) => n + 1);
+    window.addEventListener('finvision-account-refresh', update);
+    return () => window.removeEventListener('finvision-account-refresh', update);
   }, []);
   useEffect(() => {
     if (mode === 'demo') {
@@ -63,5 +75,5 @@ export function useAccountPortfolio(): { mode: DataMode; refresh: () => void } {
       if (timer) clearInterval(timer);
     };
   }, [dispatch, mode, refreshCount]);
-  return { mode, refresh: () => setRefreshCount((n) => n + 1) };
+  return { mode };
 }
