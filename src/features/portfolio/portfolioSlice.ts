@@ -25,6 +25,21 @@ const portfolioSlice = createSlice({
   name: 'portfolio',
   initialState,
   reducers: {
+    holdingsLoading(state) {
+      state.loading = true;
+      state.error = null;
+    },
+    holdingsLoaded(state, action: PayloadAction<Holding[]>) {
+      state.holdings = action.payload;
+      state.curve = [];
+      state.loading = false;
+      state.error = null;
+      state.lastUpdated = new Date().toISOString();
+    },
+    holdingsLoadFailed(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
     holdingsRepriced(state, action: PayloadAction<MarketTick[]>) {
       const bySymbol = new Map(action.payload.map((t) => [t.symbol, t]));
       for (const h of state.holdings) {
@@ -33,7 +48,7 @@ const portfolioSlice = createSlice({
         const dayFactor = 1 + h.dayChangePct;
         const prevDayBase = dayFactor > 0 ? h.price / dayFactor : h.price;
         h.price = tick.price;
-        h.dayChangePct = (tick.price - prevDayBase) / prevDayBase;
+        h.dayChangePct = tick.changePct;
       }
       state.lastUpdated = new Date().toISOString();
     },
@@ -51,7 +66,7 @@ const portfolioSlice = createSlice({
   },
 });
 
-export const { holdingsRepriced, curvePointAppended, portfolioReset } =
+export const { holdingsLoading, holdingsLoaded, holdingsLoadFailed, holdingsRepriced, curvePointAppended, portfolioReset } =
   portfolioSlice.actions;
 export default portfolioSlice.reducer;
 
