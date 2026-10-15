@@ -217,7 +217,8 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.space[4]};
 
-  ${media.lg`grid-template-columns: repeat(3, minmax(0, 1fr));\n    .wide-dashboard-card { grid-column: span 2; }`}
+  ${media.lg`grid-template-columns: repeat(3, minmax(0, 1fr)); 
+    .wide-dashboard-card { grid-column: span 2; }`}
 `;
 
 const HoldingList = styled.ul`
