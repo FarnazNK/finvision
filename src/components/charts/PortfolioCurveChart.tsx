@@ -19,7 +19,7 @@ interface Props {
   height?: number;
 }
 
-export function PortfolioCurveChart({ points, range, height = 280 }: Props) {
+export function PortfolioCurveChart({ points, range, height = 320 }: Props) {
   const theme = useTheme();
 
   const data = useMemo(() => {
@@ -45,7 +45,7 @@ export function PortfolioCurveChart({ points, range, height = 280 }: Props) {
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
         <defs>
-          <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="finvisionPortfolioCurveFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={theme.color.primary} stopOpacity={0.32} />
             <stop offset="100%" stopColor={theme.color.primary} stopOpacity={0} />
           </linearGradient>
@@ -86,8 +86,9 @@ export function PortfolioCurveChart({ points, range, height = 280 }: Props) {
           type="monotone"
           dataKey="value"
           stroke={theme.color.primary}
-          strokeWidth={2}
-          fill="url(#curveFill)"
+          strokeWidth={3}
+          activeDot={{ r: 5, stroke: theme.color.surface, strokeWidth: 2 }}
+          fill="url(#finvisionPortfolioCurveFill)"
           isAnimationActive={false}
         />
       </AreaChart>
