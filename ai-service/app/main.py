@@ -8,6 +8,8 @@ from collections import defaultdict, deque
 
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -408,3 +410,8 @@ async def agentcore_portfolio_ask(
 
 # Read-only GraphQL runs alongside the existing REST routes.
 app.include_router(build_graphql_router(current_user, enforce_rate_limit), prefix="/api/graphql")
+
+@app.get("/metrics", include_in_schema=False)
+def prometheus_metrics() -> Response:
+    """Prometheus exposition; bind cluster service to localhost only."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
