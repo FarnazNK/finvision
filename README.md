@@ -1,5 +1,18 @@
 # FinVision
 
+## AWS AgentCore — free portfolio demo
+
+An **optional, disabled-by-default** read-only portfolio assistant demonstrates an authenticated FastAPI integration with a mockable AgentCore runtime. The endpoint only reads holdings owned by the signed-in user and limits model context to asset names/symbols; it does not place trades or transmit balances or cost basis. The live dashboard and hosted API do **not** use AWS AgentCore unless explicitly configured.
+
+Run the offline demonstration without AWS credentials or charges:
+
+```bash
+python aws_agentcore/demo_offline.py
+```
+
+Tests: `python -m pytest aws_agentcore/test_agentcore_readonly.py -q` (with the backend's test dependencies). See [`aws_agentcore/PORTFOLIO.md`](aws_agentcore/PORTFOLIO.md) for design, access controls and deployment limitations. Live AWS integration has not been deployed or verified.
+
+
 **AI-assisted portfolio intelligence**
 
 ### Technology stack
