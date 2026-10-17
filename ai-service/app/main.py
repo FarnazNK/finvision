@@ -9,6 +9,10 @@ from collections import defaultdict, deque
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
+
+from .agentcore_client import AgentCoreUnavailable, invoke_readonly_agent
 from sqlalchemy import select
 
 from .llm import generate_insight
@@ -361,3 +365,41 @@ def research(
         for index, citation in enumerate(citations, start=1)
     )
     return ResearchResponse(answer=answer, citations=citations)
+class AgentCoreQuestion(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+
+
+@app.post("/api/agentcore/portfolio/ask")
+async def agentcore_portfolio_ask(
+    req: AgentCoreQuestion,
+    user: UserRecord = Depends(current_user),
+    _: None = Depends(enforce_rate_limit),
+) -> dict[str, str]:
+    """Read-only analysis with a strictly user-scoped, minimal portfolio context."""
+    if os.environ.get("FINVISION_ENABLE_AGENTCORE", "").lower() != "true":
+        raise HTTPException(status_code=404, detail="Not found")
+    with SessionLocal() as session:
+        holdings = session.scalars(
+            select(HoldingRecord)
+            .where(HoldingRecord.user_id == user.id)
+            .order_by(HoldingRecord.id)
+            .limit(30)
+        ).all()
+        # Deliberately exclude balances, quantity, account information, cost basis
+        # and all customer identifiers from the model context.
+        lines = [f"Asset: {h.symbol[:20]}; name: {h.name[:100]}" for h in holdings]
+    if not lines:
+        return {"answer": "No holdings are available for analysis."}
+    try:
+        answer = await run_in_threadpool(
+            invoke_readonly_agent,
+            prompt=req.question,
+            context="\n".join(lines)[:12000],
+            authorized=True,
+            tenant_id=str(user.id),
+        )
+    except AgentCoreUnavailable:
+        raise HTTPException(status_code=503, detail="Assistant unavailable") from None
+    return {"answer": answer}
+
+
