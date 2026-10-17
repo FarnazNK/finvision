@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import Any
 
 import strawberry
+from graphql import GraphQLError, parse
+from graphql.language.ast import FieldNode, OperationDefinitionNode
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from strawberry.fastapi import GraphQLRouter
@@ -56,9 +58,37 @@ def build_graphql_router(authenticate: Any, rate_limit: Any) -> GraphQLRouter:
         user: UserRecord = Depends(authenticate),
         _: None = Depends(rate_limit),
     ) -> dict[str, Any]:
-        document = (await request.body()).decode("utf-8", errors="replace")
-        if len(document) > 4096:
+        raw = await request.body()
+        if len(raw) > 4096:
             raise HTTPException(status_code=413, detail="GraphQL request too large")
+        try:
+            payload = await request.json()
+            query = payload["query"]
+            if not isinstance(query, str):
+                raise ValueError("Invalid query")
+            parsed = parse(query)
+            if len(parsed.definitions) != 1:
+                raise ValueError("Only one operation is allowed")
+            operation = parsed.definitions[0]
+            if not isinstance(operation, OperationDefinitionNode):
+                raise ValueError("Fragments are not supported")
+            if operation.operation.value != "query":
+                raise ValueError("Read-only GraphQL queries required")
+            fields = operation.selection_set.selections
+            if len(fields) != 1 or not isinstance(fields[0], FieldNode):
+                raise ValueError("Only one root field is allowed")
+            if fields[0].name.value != "holdings":
+                raise ValueError("Only holdings queries are allowed")
+            subfields = fields[0].selection_set
+            if subfields is None or len(subfields.selections) > 8:
+                raise ValueError("Invalid field selection")
+            if any(
+                not isinstance(field, FieldNode) or field.name.value.startswith("__")
+                for field in subfields.selections
+            ):
+                raise ValueError("Fragments and introspection are disabled")
+        except (ValueError, KeyError, TypeError, GraphQLError):
+            raise HTTPException(status_code=400, detail="Invalid GraphQL query") from None
         return {"user_id": user.id}
 
     return GraphQLRouter(
