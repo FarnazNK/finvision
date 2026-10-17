@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from .agentcore_client import AgentCoreUnavailable, invoke_readonly_agent
+from .graphql_portfolio import build_graphql_router
 from sqlalchemy import select
 
 from .llm import generate_insight
@@ -403,3 +404,7 @@ async def agentcore_portfolio_ask(
     return {"answer": answer}
 
 
+
+
+# Read-only GraphQL runs alongside the existing REST routes.
+app.include_router(build_graphql_router(current_user, enforce_rate_limit), prefix="/api/graphql")

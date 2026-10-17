@@ -1,5 +1,27 @@
 # FinVision
 
+## GraphQL portfolio API (read-only)
+
+FinVision keeps its existing **REST** endpoints for account management, portfolio changes and market data. An additional typed **GraphQL** API at `POST /api/graphql` demonstrates flexible dashboard field selection. It requires an authenticated user and applies the existing rate limit; resolvers only return holdings owned by that user. The endpoint is read-only and does not expose investment execution or cost-basis information. The demo rejects mutation operations, introspection, fragments, oversized requests and multi-root requests, and caps the holdings result at 50 items.
+
+```bash
+cd ai-service
+pip install -r requirements-dev.txt
+pytest tests/test_graphql.py -q
+```
+
+Example with your login token:
+
+```bash
+curl -X POST http://localhost:8000/api/graphql \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ holdings(limit: 10) { symbol name assetClass currency } }"}'
+```
+
+**No AWS or paid services are required.** The GraphQL API is an additive read-only portfolio feature; the existing REST API remains the primary application contract.
+
+
 ## AWS AgentCore — free portfolio demo
 
 An **optional, disabled-by-default** read-only portfolio assistant demonstrates an authenticated FastAPI integration with a mockable AgentCore runtime. The endpoint only reads holdings owned by the signed-in user and limits model context to asset names/symbols; it does not place trades or transmit balances or cost basis. The live dashboard and hosted API do **not** use AWS AgentCore unless explicitly configured.
