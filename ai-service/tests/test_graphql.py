@@ -18,7 +18,10 @@ def _create_account(client, name):
 def test_graphql_requires_jwt_and_disables_get():
     client = TestClient(app)
     assert client.post("/api/graphql", json={"query": "{ holdings { symbol } }"}).status_code == 401
-    assert client.get("/api/graphql?query=%7Bholdings%7Bsymbol%7D%7D").status_code in (404, 405)
+    url = "/api/graphql?query=%7Bholdings%7Bsymbol%7D%7D"
+    assert client.get(url).status_code == 401
+    headers = _create_account(client, "graphql-get-blocked")
+    assert client.get(url, headers=headers).status_code in (400, 404, 405)
 
 
 def test_graphql_isolates_portfolios():
