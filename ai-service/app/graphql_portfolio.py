@@ -94,6 +94,6 @@ def build_graphql_router(authenticate: Any, rate_limit: Any) -> GraphQLRouter:
     return GraphQLRouter(
         schema,
         context_getter=context,
-        graphiql=False,
+        graphql_ide=None,
         allow_queries_via_get=False,
     )
