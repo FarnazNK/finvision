@@ -61,8 +61,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Run backend tests
-        run: pytest -v
+      - name: Run backend tests\n        run: pytest -v\n\n      - name: AgentCore security regression tests\n        run: pytest ../aws_agentcore/test_agentcore_readonly.py -q
 
   containers:
     name: Container checks
