@@ -1,5 +1,16 @@
 # FinVision
 
+> **FinVision at a glance:** A React/TypeScript portfolio workspace with Redux Toolkit state, Recharts visualizations, responsive navigation, holdings/transactions/watchlist views, and a Python/FastAPI backend for authenticated portfolios, market data, and AI-assisted analysis.
+>
+> **Try it:** [Live dashboard](https://farnaznk.github.io/finvision/) · [API docs](https://finvision-api.vercel.app/docs) · [Frontend source](src/) · [Backend source](ai-service/)
+>
+> **Engineering highlights:** Typed React components and reusable UI primitives; interactive performance/allocation charts; deterministic portfolio calculations exposed as AI tools; JWT and user-scoped data APIs; Jest/React Testing Library and pytest.
+>
+> **Demo boundaries:** The public dashboard may show seeded holdings and simulated price ticks. External quotes and model responses depend on configuration. This is not investment advice.
+>
+> **Where to look:** `src/pages/OverviewPage.tsx` (dashboard), `src/components/layout/AppShell.tsx` (responsive navigation), `src/components/charts/` (data visualization), `ai-service/` (API and AI).
+
+
 ## Prometheus & Grafana — free local monitoring
 
 The optional [Prometheus and Grafana Kubernetes add-on](k8s/MONITORING.md) collects application HTTP metrics and provides dashboards on a **localhost-only kind cluster**, with no AWS costs. Prometheus and Grafana run as private ClusterIP Services, and Grafana's admin password is created as a Kubernetes Secret. CI validates the manifests; this is a locally runnable portfolio setup, **not** a live production monitoring deployment.
