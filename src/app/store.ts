@@ -27,7 +27,11 @@ type PersistedState = Partial<{
 function loadPersistedState(): PersistedState | undefined {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as PersistedState) : undefined;
+    if (!saved) return undefined;
+    const state = JSON.parse(saved) as PersistedState;
+    // Never restore account holdings into a demo or another user's session.
+    delete state.portfolio;
+    return state;
   } catch {
     return undefined;
   }
@@ -62,7 +66,8 @@ export const store = configureStore({
 store.subscribe(() => {
   const state = store.getState();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const persisted = { markets: state.markets, transactions: state.transactions, watchlist: state.watchlist, ui: state.ui };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   } catch {
     // Storage can be disabled or full; the in-memory store remains usable.
   }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Card, Input } from '@/components/primitives';
 import { authenticate } from '@/services/authClient';
+import { setDataMode } from '@/hooks/useAccountPortfolio';
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export function AuthPage() {
     setLoading(true);
     try {
       await authenticate(mode, email, password);
+      setDataMode('account');
       navigate('/');
     } catch (reason) {
       setError(reason instanceof globalThis.Error ? reason.message : 'Authentication failed');

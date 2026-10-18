@@ -11,7 +11,7 @@ import { createMarketFeed, type MarketFeed } from '@/services/marketFeed';
  * tests can construct a feed against `makeStore()` without colliding with
  * the singleton.
  */
-export function useMarketFeed(): void {
+export function useMarketFeed(enabled = true): void {
   const liveFeed = useAppSelector(selectLiveFeed);
   const dispatch = useAppDispatch();
   const appStore = useAppStore();
@@ -21,11 +21,11 @@ export function useMarketFeed(): void {
     if (!feedRef.current) {
       feedRef.current = createMarketFeed(dispatch, appStore.getState);
     }
-    if (liveFeed) feedRef.current.start();
+    if (liveFeed && enabled) feedRef.current.start();
     else feedRef.current.stop();
 
     return () => {
       feedRef.current?.stop();
     };
-  }, [appStore, dispatch, liveFeed]);
+  }, [appStore, dispatch, liveFeed, enabled]);
 }

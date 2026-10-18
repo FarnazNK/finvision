@@ -15,9 +15,17 @@ import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { Input } from '@/components/primitives/Input';
 import { media } from '@/utils/responsive';
+import { useDataMode, setDataMode, refreshAccountQuotes } from '@/hooks/useAccountPortfolio';
+import { clearAccessToken, getAccessToken } from '@/services/authClient';
+import { useNavigate } from 'react-router-dom';
 
 export function Topbar() {
   const dispatch = useAppDispatch();
+  const mode = useDataMode();
+  const navigate = useNavigate();
+  const signedIn = Boolean(getAccessToken());
+  const accountError = useAppSelector((state) => state.portfolio.error);
+  const accountLoading = useAppSelector((state) => state.portfolio.loading);
   const location = useLocation();
   const themeMode = useAppSelector(selectThemeMode);
   const liveFeed = useAppSelector(selectLiveFeed);
@@ -49,6 +57,19 @@ export function Topbar() {
       </SearchWrap>
 
       <Right>
+        <ModeSelect
+          aria-label="Portfolio data source"
+          value={mode}
+          onChange={(event) => {
+            if (event.target.value === 'account' && !signedIn) { navigate('/auth'); return; }
+            setDataMode(event.target.value as 'demo' | 'account');
+          }}
+        >
+          <option value="demo">Demo data</option>
+          {signedIn && <option value="account">My account</option>}
+        </ModeSelect>
+        {mode === 'account' && <LiveStatus type="button" onClick={refreshAccountQuotes} aria-label="Refresh account quotes">Refresh quotes</LiveStatus>}
+        {mode === 'account' && <StatusText role="status">{accountLoading ? 'Loading account…' : accountError ? accountError : 'Account holdings · provider quotes'}</StatusText>}
         <CurrencySelect
           aria-label="Display currency"
           value={currency}
@@ -58,7 +79,7 @@ export function Topbar() {
           <option value="CAD">CAD</option>
           <option value="EUR">EUR</option>
         </CurrencySelect>
-        <LiveStatus
+        {mode === 'demo' && <LiveStatus
           type="button"
           onClick={() => dispatch(liveFeedToggled())}
           aria-pressed={liveFeed}
@@ -71,7 +92,7 @@ export function Topbar() {
               <LiveSub aria-hidden="true">{formatRelativeTime(lastUpdated)}</LiveSub>
             )}
           </LiveLabel>
-        </LiveStatus>
+        </LiveStatus>}
 
         <ThemeToggle
           type="button"
@@ -86,7 +107,12 @@ export function Topbar() {
           {themeMode === 'light' ? '☀' : themeMode === 'dark' ? '☾' : '⌒'}
           <ThemeLabel>{themeMode}</ThemeLabel>
         </ThemeToggle>
-        <SignInLink to="/auth">Sign in</SignInLink>
+        {signedIn ? <SignInLink to="/auth" onClick={(event) => {
+          event.preventDefault();
+          clearAccessToken();
+          setDataMode('demo');
+          navigate('/');
+        }}>Sign out</SignInLink> : <SignInLink to="/auth">Sign in</SignInLink>}
       </Right>
     </Bar>
   );
@@ -228,4 +254,19 @@ const ActivityLink = styled(Link)`
   text-decoration: none;
   &:hover { color: ${({ theme }) => theme.color.primary}; }
   &:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+`;
+
+const ModeSelect = styled.select`
+  padding: 7px 10px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 9px;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.surface};
+  font-weight: 600;
+`;
+const StatusText = styled.span`
+  font-size: 11px;
+  max-width: 210px;
+  color: ${({ theme }) => theme.color.textMuted};
+  @media (max-width: 900px) { display: none; }
 `;
