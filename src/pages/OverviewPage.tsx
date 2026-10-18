@@ -58,11 +58,16 @@ export function OverviewPage() {
       <PageHeader>
         <div>
           <Eyebrow>Overview</Eyebrow>
-          <Title>Your wealth, in focus.</Title>
-          <Subtitle>A clearer view of performance, allocation and the opportunities ahead.</Subtitle>
+          <Title>Your portfolio, at a glance.</Title>
+          <Subtitle>Track performance, understand exposure, and explore grounded insights from one workspace.</Subtitle>
         </div>
       </PageHeader>
 
+      <nav aria-label="Portfolio quick navigation" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <a href="/holdings" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Explore holdings ↗</a>
+        <a href="/markets" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Market research ↗</a>
+        <a href="/watchlist" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Your watchlist ↗</a>
+      </nav>
       <SectionLabel>Portfolio snapshot</SectionLabel>
       <KpiGrid>
         <Card padded>
