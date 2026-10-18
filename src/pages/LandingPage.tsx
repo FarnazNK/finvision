@@ -26,6 +26,23 @@ export function LandingPage() {
         </Disclaimer>
       </Hero>
 
+      <section aria-labelledby="workflow-heading" style={{ padding: '2rem', borderRadius: '18px', border: '1px solid currentColor' }}>
+        <Eyebrow>Product walkthrough</Eyebrow>
+        <h2 id="workflow-heading" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', margin: '0.75rem 0' }}>Explore the workflow, not just the feature list.</h2>
+        <p style={{ maxWidth: '65ch', lineHeight: 1.7 }}>Follow a realistic journey from portfolio overview to market context and evidence-backed research. Each step links to an existing route.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+          <Card title="01 · Review your portfolio" description="See allocation, cost basis, returns and positions at a glance." />
+          <Card title="02 · Investigate movements" description="Explore market data and symbol-level context in the markets workspace." />
+          <Card title="03 · Verify AI context" description="Review source-grounded research with evidence, not unsupported recommendations." />
+        </div>
+        <nav aria-label="Explore FinVision features" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+          <Link to="/app"><Button>Open dashboard</Button></Link>
+          <Link to="/markets"><Button variant="secondary">Explore markets</Button></Link>
+          <Link to="/auth"><Button variant="secondary">Sign in for research</Button></Link>
+        </nav>
+        <p style={{ fontSize: '0.8rem', opacity: 0.75, marginTop: '1rem' }}>Demo data and authenticated data are distinct. AI output is informational; integrations depend on configuration.</p>
+      </section>
+
       <AccessPanel>
         <div>
           <Eyebrow>Protected workspace</Eyebrow>
