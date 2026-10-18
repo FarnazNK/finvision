@@ -46,6 +46,7 @@ const Stack = styled.div`
 
 const Main = styled.main`
   flex: 1;
+  min-width: 0;
   padding: ${({ theme }) => `${theme.space[5]} ${theme.space[4]} ${theme.space[10]}`};
   max-width: ${({ theme }) => theme.layout.contentMaxWidth};
   width: 100%;
@@ -77,10 +78,11 @@ const MobileNav = styled.nav`
   z-index: ${({ theme }) => theme.z.sticky};
   padding: ${({ theme }) => `${theme.space[2]} ${theme.space[2]} calc(${theme.space[2]} + env(safe-area-inset-bottom))`};
   background: ${({ theme }) => theme.color.surface};
-  border-top: 1px solid ({ theme }) => theme.color.border;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(18px);
 
+  @media (max-width: 360px) { gap: 0; padding-left: 0; padding-right: 0; }
   ${media.md`display: none;`}
 `;
 
@@ -93,7 +95,11 @@ const MobileNavLink = styled(NavLink)`
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   text-align: center;
   text-decoration: none;
-  transition: background ({ theme }) => theme.motion.base, color ({ theme }) => theme.motion.base;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.primary}; outline-offset: -2px; }
+  transition: background ${({ theme }) => theme.motion.base}, color ${({ theme }) => theme.motion.base};
 
   &.active {
     background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 12%, transparent);
