@@ -10,3 +10,4 @@ export type { InputProps } from './Input';
 export { SegmentedControl } from './SegmentedControl';
 export type { SegmentedOption } from './SegmentedControl';
 export { Skeleton } from './Skeleton';
+export { TickerBadge } from './TickerBadge';

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css, keyframes, useTheme } from 'styled-components';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 // three.js is ~150 kB gzipped, so the scene loads after the page text is on screen.
 const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
@@ -23,12 +24,7 @@ export function LandingPage() {
       <SkipLink href="#main">Skip to content</SkipLink>
 
       <Nav aria-label="Main">
-        <Brand to="/welcome" aria-label="FinVision home">
-          <BrandMark aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 17l5-5 4 4 8-9" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </BrandMark>
-          FinVision
-        </Brand>
+        <BrandLogo />
         <NavLinks>
           <a href="#features">Features</a>
           <a href="#how-it-works">How it works</a>
@@ -253,26 +249,6 @@ const Nav = styled.nav`
   justify-content: space-between;
   gap: ${({ theme }) => theme.space[4]};
   height: 72px;
-`;
-
-const Brand = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space[2]};
-  color: ${({ theme }) => theme.color.text};
-  font-weight: ${({ theme }) => theme.fontWeight.bold};
-  font-size: ${({ theme }) => theme.fontSize.md};
-  &:hover { text-decoration: none; }
-`;
-
-const BrandMark = styled.span`
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  color: #fff;
-  background: linear-gradient(135deg, ${({ theme }) => theme.color.primary}, ${({ theme }) => theme.color.success});
 `;
 
 const NavLinks = styled.div`

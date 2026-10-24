@@ -4,7 +4,7 @@ import { useAppSelector } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { makeSelectSparkline } from '@/features/markets/marketsSlice';
-import { Badge, Card } from '@/components/primitives';
+import { Badge, Card, TickerBadge } from '@/components/primitives';
 import { Sparkline } from '@/components/charts/Sparkline';
 import {
   ASSET_CLASS_LABEL,
@@ -67,11 +67,39 @@ export function HoldingsPage() {
         <SummaryCard><SummaryLabel>Asset classes</SummaryLabel><SummaryValue>{new Set(holdings.map((h) => h.assetClass)).size}</SummaryValue></SummaryCard>
       </SummaryGrid>
       <SearchBar>
-        <SearchLabel htmlFor="holding-search">Find an asset</SearchLabel>
+        <SearchLabel htmlFor="holding-search" className="sr-only">Find an asset</SearchLabel>
         <SearchInput id="holding-search" type="search" placeholder="Search holdings by name, symbol or class" value={query} onChange={(e) => setQuery(e.target.value)} />
         <ResultCount aria-live="polite">{sorted.length} of {holdings.length} positions</ResultCount>
       </SearchBar>
-      <Card padded={false}>
+      <MobileList aria-label="Holdings">
+        {sorted.length === 0 && <EmptyNote>No holdings match your search.</EmptyNote>}
+        {sorted.map((h) => {
+          const value = h.quantity * h.price;
+          const gain = (h.price - h.costBasis) * h.quantity;
+          const gainPct = h.costBasis > 0 ? (h.price - h.costBasis) / h.costBasis : 0;
+          return (
+            <MobileItem key={h.id}>
+              <NameCell>
+                <TickerBadge symbol={h.symbol} />
+                <NameStack>
+                  <NameMain>{h.name}</NameMain>
+                  <NameSub>
+                    {h.symbol} · {formatNumber(h.quantity, h.assetClass === 'cash' ? 0 : 2)} @ {formatMoney(h.price, { currency })}
+                  </NameSub>
+                </NameStack>
+              </NameCell>
+              <MobileFigures>
+                <strong>{formatMoney(value, { currency })}</strong>
+                <Pct $positive={gain >= 0}>
+                  {formatMoney(gain, { currency, signed: true, compact: true })} ({formatPercent(gainPct)})
+                </Pct>
+              </MobileFigures>
+            </MobileItem>
+          );
+        })}
+      </MobileList>
+
+      <DesktopCard padded={false}>
         <TableScroll>
           <Table role="table" aria-label="Holdings">
             <thead>
@@ -110,7 +138,7 @@ export function HoldingsPage() {
             </tbody>
           </Table>
         </TableScroll>
-      </Card>
+      </DesktopCard>
     </Page>
   );
 }
@@ -147,7 +175,7 @@ function HoldingRow({ holding, currency }: { holding: Holding; currency: string 
     <Tr>
       <Td $align="left">
         <NameCell>
-          <SymbolBadge>{holding.symbol.slice(0, 4)}</SymbolBadge>
+          <TickerBadge symbol={holding.symbol} size={32} />
           <NameStack>
             <NameMain>{holding.name}</NameMain>
             <NameSub>{holding.symbol}</NameSub>
@@ -264,6 +292,53 @@ const TableScroll = styled.div`
   overflow-x: auto;
 `;
 
+const DesktopCard = styled(Card)`
+  display: none;
+  ${media.md`display: flex;`}
+`;
+
+const MobileList = styled.ul`
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+  overflow: hidden;
+  ${media.md`display: none;`}
+`;
+
+const MobileItem = styled.li`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space[3]};
+  padding: ${({ theme }) => `${theme.space[3]} ${theme.space[4]}`};
+  & + & { border-top: 1px solid ${({ theme }) => theme.color.border}; }
+
+  ${'' /* let the name shrink instead of pushing the figures off-screen */}
+  & > div:first-child { min-width: 0; }
+`;
+
+const MobileFigures = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-variant-numeric: tabular-nums;
+  span { font-size: ${({ theme }) => theme.fontSize.xs}; }
+`;
+
+const EmptyNote = styled.li`
+  padding: ${({ theme }) => theme.space[5]};
+  color: ${({ theme }) => theme.color.textMuted};
+  text-align: center;
+`;
+
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -272,6 +347,14 @@ const Table = styled.table`
   thead tr {
     background: ${({ theme }) => theme.color.surfaceAlt};
     border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  /* Quantity and trend are the least important columns; drop them before anything gets cut off. */
+  @media (max-width: 1500px) {
+    th:nth-child(8), td:nth-child(8) { display: none; }
+  }
+  @media (max-width: 1220px) {
+    th:nth-child(3), td:nth-child(3) { display: none; }
   }
 `;
 
@@ -336,22 +419,9 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space[3]};
-  min-width: 220px;
+  min-width: 0;
 `;
 
-const SymbolBadge = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.surfaceAlt};
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  font-family: ${({ theme }) => theme.font.mono};
-  color: ${({ theme }) => theme.color.text};
-  flex-shrink: 0;
-`;
 
 const NameStack = styled.div`
   display: flex;
@@ -365,7 +435,7 @@ const NameMain = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 240px;
+  max-width: 220px;
 `;
 
 const NameSub = styled.div`
@@ -388,12 +458,13 @@ const ReturnStack = styled.div`
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 16px;
-  ${media.sm`grid-template-columns: repeat(3, minmax(0, 1fr));`}
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  & > :first-child { grid-column: 1 / -1; }
+  ${media.sm`grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; & > :first-child { grid-column: auto; }`}
 `;
 const SummaryCard = styled.div`
-  padding: 22px;
+  padding: 18px 20px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.lg};
   background: ${({ theme }) => theme.color.surface};
@@ -406,10 +477,10 @@ const SummaryLabel = styled.div`
 `;
 const SummaryValue = styled.div`
   color: ${({ theme }) => theme.color.text};
-  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-size: clamp(1.25rem, 1rem + 1.2vw, ${({ theme }) => theme.fontSize['2xl']});
   font-weight: 700;
-  letter-spacing: -.04em;
-  margin-top: 10px;
+  letter-spacing: -.035em;
+  margin-top: 8px;
   font-variant-numeric: tabular-nums;
 `;
 const SearchBar = styled.div`
@@ -424,7 +495,7 @@ const SearchLabel = styled.label`
 `;
 const SearchInput = styled.input`
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
   max-width: 460px;
   padding: 12px 16px;
   border-radius: ${({ theme }) => theme.radius.md};

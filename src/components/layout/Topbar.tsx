@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   currencyChanged,
@@ -10,16 +10,17 @@ import {
   selectThemeMode,
   themeModeChanged,
 } from '@/features/ui/uiSlice';
-import { searchChanged } from '@/features/transactions/transactionsSlice';
 import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
-import { Input } from '@/components/primitives/Input';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { media } from '@/utils/responsive';
 
 export function Topbar() {
   const dispatch = useAppDispatch();
   const location = useLocation();
   const themeMode = useAppSelector(selectThemeMode);
+  const theme = useTheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && theme.name === 'dark');
   const liveFeed = useAppSelector(selectLiveFeed);
   const currency = useAppSelector(selectCurrency);
   const lastUpdated = useAppSelector(selectLastUpdated);
@@ -33,20 +34,10 @@ export function Topbar() {
 
   return (
     <Bar role="banner">
-      <SearchWrap>
-        {location.pathname === "/transactions" ? <Input
-          label="Search transactions"
-          hideLabel
-          placeholder="Filter transactions by name or symbol…"
-          onChange={(e) => dispatch(searchChanged(e.target.value))}
-          iconStart={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
-          }
-        /> : <ActivityLink to="/transactions">Search activity →</ActivityLink>}
-      </SearchWrap>
+      <MobileBrand>
+        <BrandLogo size={28} />
+      </MobileBrand>
+      <PageName>{pageName(location.pathname)}</PageName>
 
       <Right>
         <CurrencySelect
@@ -75,16 +66,15 @@ export function Topbar() {
 
         <ThemeToggle
           type="button"
-          onClick={() => {
-            const next =
-              themeMode === 'light' ? 'dark' : themeMode === 'dark' ? 'system' : 'light';
-            dispatch(themeModeChanged(next));
-          }}
-          aria-label={`Theme: ${themeMode}. Click to change.`}
-          title={`Theme: ${themeMode}`}
+          onClick={() => dispatch(themeModeChanged(isDark ? 'light' : 'dark'))}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDark ? 'Light mode' : 'Dark mode'}
         >
-          {themeMode === 'light' ? '☀' : themeMode === 'dark' ? '☾' : '⌒'}
-          <ThemeLabel>{themeMode}</ThemeLabel>
+          {isDark ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" /></svg>
+          )}
         </ThemeToggle>
         <SignInLink to="/auth">Sign in</SignInLink>
       </Right>
@@ -99,11 +89,6 @@ const Bar = styled.header`
   background: ${({ theme }) => theme.color.surface};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   min-height: ${({ theme }) => theme.layout.headerHeight};
-  flex-wrap: wrap;
-  @media (max-width: 520px) {
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space[3]};
@@ -113,14 +98,17 @@ const Bar = styled.header`
   ${media.md`padding: 0 ${({ theme }) => theme.space[8]};`}
 `;
 
-const SearchWrap = styled.div`
-  flex: 1;
-  min-width: 0;
-  max-width: 520px;
-  @media (max-width: 520px) {
-    order: 2;
-    flex-basis: 100%;
-  }
+const MobileBrand = styled.div`
+  display: flex;
+  ${media.md`display: none;`}
+`;
+
+const PageName = styled.div`
+  display: none;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  ${media.md`display: block;`}
 `;
 
 const Right = styled.div`
@@ -162,6 +150,7 @@ const LiveStatus = styled.button`
 `;
 
 const LiveLabel = styled.span`
+  white-space: nowrap;
   display: inline-flex;
   align-items: baseline;
   gap: ${({ theme }) => theme.space[2]};
@@ -169,34 +158,29 @@ const LiveLabel = styled.span`
 `;
 
 const LiveSub = styled.span`
+  @media (max-width: 520px) { display: none; }
   color: ${({ theme }) => theme.color.textMuted};
   font-weight: ${({ theme }) => theme.fontWeight.regular};
 `;
 
 const ThemeToggle = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space[2]};
-  padding: ${({ theme }) => `6px ${theme.space[3]}`};
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
   background: ${({ theme }) => theme.color.surface};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.md};
   color: ${({ theme }) => theme.color.text};
-  font-size: ${({ theme }) => theme.fontSize.sm};
   cursor: pointer;
-  text-transform: capitalize;
 
   &:hover {
     background: ${({ theme }) => theme.color.surfaceAlt};
   }
 `;
 
-const ThemeLabel = styled.span`
-  display: none;
-  ${media.sm`display: inline;`}
-`;
-
 const SignInLink = styled(Link)`
+  white-space: nowrap;
   padding: 6px ${({ theme }) => theme.space[3]};
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.color.primary};
@@ -222,10 +206,14 @@ const CurrencySelect = styled.select`
   }
 `;
 
-const ActivityLink = styled(Link)`
-  color: ${({ theme }) => theme.color.textMuted};
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  text-decoration: none;
-  &:hover { color: ${({ theme }) => theme.color.primary}; }
-  &:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
-`;
+function pageName(path: string): string {
+  const names: Record<string, string> = {
+    '/': 'Overview',
+    '/app': 'Overview',
+    '/holdings': 'Holdings',
+    '/markets': 'Markets',
+    '/transactions': 'Transactions',
+    '/watchlist': 'Watchlist',
+  };
+  return names[path] ?? '';
+}

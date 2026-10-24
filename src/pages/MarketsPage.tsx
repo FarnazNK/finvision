@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectMarketHistory } from '@/features/markets/marketsSlice';
-import { Card } from '@/components/primitives';
+import { Card, TickerBadge } from '@/components/primitives';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
@@ -81,14 +81,18 @@ export function MarketsPage() {
     [holdings, quotes],
   );
 
+  // Only symbols that actually moved in that direction belong in each list.
   const gainers = useMemo(
-    () => [...movers].sort((a, b) => b.changePct - a.changePct).slice(0, 5),
+    () => movers.filter((m) => m.changePct > 0).sort((a, b) => b.changePct - a.changePct).slice(0, 5),
     [movers],
   );
   const losers = useMemo(
-    () => [...movers].sort((a, b) => a.changePct - b.changePct).slice(0, 5),
+    () => movers.filter((m) => m.changePct < 0).sort((a, b) => a.changePct - b.changePct).slice(0, 5),
     [movers],
   );
+  const upCount = movers.filter((m) => m.changePct > 0).length;
+  const downCount = movers.filter((m) => m.changePct < 0).length;
+  const avgMove = movers.length ? movers.reduce((sum, m) => sum + m.changePct, 0) / movers.length : 0;
 
   return (
     <Page>
@@ -96,18 +100,31 @@ export function MarketsPage() {
         <div>
           <Eyebrow>Markets</Eyebrow>
           <Title>Market pulse</Title>
-          <Subtitle>
-            Provider quotes are used when configured; simulated updates remain available for demos.
-          </Subtitle>
+          <Subtitle>How the symbols you hold are moving today.</Subtitle>
         </div>
       </PageHeader>
 
+      <Breadth aria-label="Today's market breadth">
+        <BreadthItem>
+          <BreadthLabel>Up today</BreadthLabel>
+          <BreadthValue $tone="positive">{upCount}</BreadthValue>
+        </BreadthItem>
+        <BreadthItem>
+          <BreadthLabel>Down today</BreadthLabel>
+          <BreadthValue $tone="negative">{downCount}</BreadthValue>
+        </BreadthItem>
+        <BreadthItem>
+          <BreadthLabel>Average move</BreadthLabel>
+          <BreadthValue $tone={avgMove >= 0 ? 'positive' : 'negative'}>{formatPercent(avgMove)}</BreadthValue>
+        </BreadthItem>
+      </Breadth>
+
       <Grid>
         <Card title="Top gainers" description="Largest day's percentage gains">
-          <MoverList movers={gainers} history={history} tone="positive" />
+          <MoverList movers={gainers} history={history} tone="positive" empty="Nothing is up today." />
         </Card>
         <Card title="Top losers" description="Largest day's percentage drops">
-          <MoverList movers={losers} history={history} tone="negative" />
+          <MoverList movers={losers} history={history} tone="negative" empty="Nothing is down today." />
         </Card>
       </Grid>
     </Page>
@@ -118,16 +135,18 @@ interface MoverListProps {
   movers: Mover[];
   history: Record<string, { symbol: string; price: number; changePct: number; t: number }[]>;
   tone: 'positive' | 'negative';
+  empty: string;
 }
 
-function MoverList({ movers, history, tone }: MoverListProps) {
+function MoverList({ movers, history, tone, empty }: MoverListProps) {
+  if (movers.length === 0) return <EmptyText>{empty}</EmptyText>;
   return (
     <List>
       {movers.map((m) => {
         const ticks = history[m.symbol] ?? [];
         return (
           <Row key={m.symbol}>
-            <Sym aria-hidden="true">{m.symbol.slice(0, 4)}</Sym>
+            <TickerBadge symbol={m.symbol} />
             <Stack>
               <Main>{m.name}</Main>
               <Sub>{m.symbol}</Sub>
@@ -207,18 +226,6 @@ const Row = styled.li`
   }
 `;
 
-const Sym = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.surfaceAlt};
-  font-family: ${({ theme }) => theme.font.mono};
-  font-size: ${({ theme }) => theme.fontSize.xs};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ theme }) => theme.color.text};
-  display: grid;
-  place-items: center;
-`;
 
 const Stack = styled.div`
   min-width: 0;
@@ -262,4 +269,40 @@ const Pct = styled.span<{ $positive: boolean }>`
   color: ${({ $positive, theme }) =>
     $positive ? theme.color.success : theme.color.danger};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+const Breadth = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+  overflow: hidden;
+`;
+
+const BreadthItem = styled.div`
+  padding: ${({ theme }) => `${theme.space[4]} ${theme.space[5]}`};
+  & + & { border-left: 1px solid ${({ theme }) => theme.color.border}; }
+  @media (max-width: 520px) { padding: ${({ theme }) => theme.space[3]}; }
+`;
+
+const BreadthLabel = styled.div`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`;
+
+const BreadthValue = styled.div<{ $tone: 'positive' | 'negative' }>`
+  margin-top: 4px;
+  color: ${({ $tone, theme }) => ($tone === 'positive' ? theme.color.success : theme.color.danger)};
+  font-size: ${({ theme }) => theme.fontSize.xl};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-variant-numeric: tabular-nums;
+`;
+
+const EmptyText = styled.p`
+  padding: ${({ theme }) => `${theme.space[6]} 0`};
+  color: ${({ theme }) => theme.color.textMuted};
+  text-align: center;
 `;

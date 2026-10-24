@@ -6,7 +6,7 @@ import {
   watchlistItemAdded,
   watchlistItemRemoved,
 } from '@/features/watchlist/watchlistSlice';
-import { Button, Card, Input } from '@/components/primitives';
+import { Button, Card, Input, TickerBadge } from '@/components/primitives';
 import { formatRelativeTime } from '@/utils/format';
 import { media } from '@/utils/responsive';
 
@@ -84,7 +84,7 @@ export function WatchlistPage() {
           <List>
             {items.map((item) => (
               <Row key={item.symbol}>
-                <Sym aria-hidden="true">{item.symbol.slice(0, 4)}</Sym>
+                <TickerBadge symbol={item.symbol} />
                 <Stack>
                   <Main>{item.name}</Main>
                   <Sub>
@@ -175,18 +175,6 @@ const Row = styled.li`
   }
 `;
 
-const Sym = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.surfaceAlt};
-  font-family: ${({ theme }) => theme.font.mono};
-  font-size: ${({ theme }) => theme.fontSize.xs};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ theme }) => theme.color.text};
-  display: grid;
-  place-items: center;
-`;
 
 const Stack = styled.div`
   min-width: 0;

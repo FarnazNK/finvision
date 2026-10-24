@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
@@ -14,11 +15,12 @@ import {
   selectTotalGainPct,
   selectTotalValue,
 } from '@/features/portfolio/portfolioSlice';
-import { Card, KpiTile, SegmentedControl } from '@/components/primitives';
+import { Badge, Card, KpiTile, SegmentedControl, TickerBadge } from '@/components/primitives';
+import { makeSelectRecentTransactions } from '@/features/transactions/transactionsSlice';
 import { PortfolioCurveChart } from '@/components/charts/PortfolioCurveChart';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
 import { InsightsPanel } from '@/features/insights/InsightsPanel';
-import { ASSET_CLASS_LABEL, formatMoney, formatPercent } from '@/utils/format';
+import { ASSET_CLASS_LABEL, formatDate, formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
 
 type Range = '1W' | '1M' | '3M' | '6M' | '1Y';
@@ -52,22 +54,24 @@ export function OverviewPage() {
   const topHoldingsSelector = useMemo(() => makeSelectTopHoldings(5), []);
   const topHoldings = useAppSelector(topHoldingsSelector);
   const currency = useAppSelector(selectCurrency);
+  const recentSelector = useMemo(() => makeSelectRecentTransactions(5), []);
+  const recent = useAppSelector(recentSelector);
 
   return (
     <Page>
       <PageHeader>
         <div>
           <Eyebrow>Overview</Eyebrow>
-          <Title>Your portfolio, at a glance.</Title>
-          <Subtitle>Track performance, understand exposure, and explore grounded insights from one workspace.</Subtitle>
+          <Title>Your portfolio, at a glance</Title>
+          <Subtitle>Performance, exposure and AI insights in one place.</Subtitle>
         </div>
+        <QuickNav aria-label="Quick links">
+          <QuickLink to="/holdings">Holdings</QuickLink>
+          <QuickLink to="/markets">Markets</QuickLink>
+          <QuickLink to="/watchlist">Watchlist</QuickLink>
+        </QuickNav>
       </PageHeader>
 
-      <nav aria-label="Portfolio quick navigation" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <a href="/holdings" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Explore holdings ↗</a>
-        <a href="/markets" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Market research ↗</a>
-        <a href="/watchlist" style={{ padding: '0.9rem 1.2rem', border: '1px solid currentColor', borderRadius: '12px' }}>Your watchlist ↗</a>
-      </nav>
       <SectionLabel>Portfolio snapshot</SectionLabel>
       <KpiGrid>
         <Card padded>
@@ -130,14 +134,15 @@ export function OverviewPage() {
         <Card
           title="Top holdings"
           description="Your five largest positions"
-          style={{ gridColumn: 'span 2' }}
+          actions={<CardLink to="/holdings">View all</CardLink>}
+          className="wide-dashboard-card"
         >
           <HoldingList>
             {topHoldings.map((h) => {
               const value = h.quantity * h.price;
               return (
                 <HoldingRow key={h.id}>
-                  <Symbol aria-hidden="true">{h.symbol.slice(0, 4)}</Symbol>
+                  <TickerBadge symbol={h.symbol} />
                   <RowText>
                     <RowName>{h.name}</RowName>
                     <RowSub>
@@ -153,6 +158,36 @@ export function OverviewPage() {
                 </HoldingRow>
               );
             })}
+          </HoldingList>
+        </Card>
+
+        <Card
+          title="Recent activity"
+          description="Latest transactions"
+          actions={<CardLink to="/transactions">View all</CardLink>}
+        >
+          <HoldingList>
+            {recent.map((tx) => (
+              <ActivityRow key={tx.id}>
+                <RowText>
+                  <RowName>{tx.description}</RowName>
+                  <RowSub>
+                    {formatDate(tx.date, 'medium')}
+                    {tx.status !== 'settled' && (
+                      <>
+                        {' · '}
+                        <Badge tone={tx.status === 'pending' ? 'warn' : 'danger'}>{tx.status}</Badge>
+                      </>
+                    )}
+                  </RowSub>
+                </RowText>
+                <RowValue>
+                  <RowAmount $positive={tx.amount >= 0}>
+                    {formatMoney(tx.amount, { currency, signed: true })}
+                  </RowAmount>
+                </RowValue>
+              </ActivityRow>
+            ))}
           </HoldingList>
         </Card>
       </Grid>
@@ -210,10 +245,14 @@ const FullWidth = styled.div`
 
 const KpiGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: ${({ theme }) => theme.space[4]};
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: ${({ theme }) => theme.space[3]};
 
-  ${media.sm`grid-template-columns: repeat(2, 1fr);`}
+  @media (max-width: 520px) {
+    & > section > div { padding: ${({ theme }) => theme.space[4]}; }
+  }
+
+  ${media.sm`gap: ${({ theme }) => theme.space[4]};`}
   ${media.lg`grid-template-columns: repeat(4, 1fr);`}
 `;
 
@@ -247,18 +286,6 @@ const HoldingRow = styled.li`
   }
 `;
 
-const Symbol = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.surfaceAlt};
-  color: ${({ theme }) => theme.color.text};
-  display: grid;
-  place-items: center;
-  font-size: ${({ theme }) => theme.fontSize.xs};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  font-family: ${({ theme }) => theme.font.mono};
-`;
 
 const RowText = styled.div`
   min-width: 0;
@@ -300,4 +327,53 @@ const SectionLabel = styled.h2`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   letter-spacing: 0.12em;
   text-transform: uppercase;
+`;
+
+const QuickNav = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space[2]};
+`;
+
+const QuickLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.space[4]};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.pill};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  transition: border-color ${({ theme }) => theme.motion.fast}, color ${({ theme }) => theme.motion.fast};
+
+  &:hover {
+    text-decoration: none;
+    border-color: ${({ theme }) => theme.color.primary};
+    color: ${({ theme }) => theme.color.primary};
+  }
+`;
+
+const CardLink = styled(Link)`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  white-space: nowrap;
+`;
+
+const ActivityRow = styled.li`
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: ${({ theme }) => theme.space[3]};
+  align-items: center;
+  padding: ${({ theme }) => `${theme.space[3]} 0`};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const RowAmount = styled.strong<{ $positive: boolean }>`
+  color: ${({ $positive, theme }) => ($positive ? theme.color.success : theme.color.text)};
 `;

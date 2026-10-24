@@ -57,9 +57,9 @@ const Label = styled.div`
 
 const Value = styled.div`
   font-family: ${({ theme }) => theme.font.sans};
-  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-size: clamp(1.15rem, 0.9rem + 1.4vw, ${({ theme }) => theme.fontSize['2xl']});
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   overflow-wrap: anywhere;
   color: ${({ theme }) => theme.color.text};
   font-variant-numeric: tabular-nums;

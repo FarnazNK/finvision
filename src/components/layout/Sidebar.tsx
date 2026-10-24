@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { selectSidebarCollapsed, sidebarToggled } from '@/features/ui/uiSlice';
 import { media } from '@/utils/responsive';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 interface NavItem {
   to: string;
@@ -26,8 +27,7 @@ export function Sidebar() {
   return (
     <Aside aria-label="Primary" $collapsed={collapsed}>
       <Brand>
-        <BrandMark aria-hidden="true">F</BrandMark>
-        {!collapsed && <BrandWord>FinVision</BrandWord>}
+        <BrandLogo compact={collapsed} size={30} />
       </Brand>
 
       <Nav id="primary-nav">
@@ -80,25 +80,6 @@ const Brand = styled.div`
   gap: ${({ theme }) => theme.space[2]};
   padding: 0 ${({ theme }) => theme.space[2]};
   height: 32px;
-`;
-
-const BrandMark = styled.div`
-  width: 28px;
-  height: 28px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.primary};
-  color: ${({ theme }) => theme.color.primaryText};
-  display: grid;
-  place-items: center;
-  font-weight: ${({ theme }) => theme.fontWeight.bold};
-  font-size: 14px;
-  letter-spacing: -0.02em;
-`;
-
-const BrandWord = styled.div`
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  font-size: ${({ theme }) => theme.fontSize.md};
-  letter-spacing: -0.01em;
 `;
 
 const Nav = styled.nav`

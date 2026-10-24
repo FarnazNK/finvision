@@ -46,7 +46,7 @@ export const selectFilteredTransactions = createSelector(
   [selectTransactions, selectTxFilter, selectTxSearch],
   (items, filter, search) => {
     const q = search.trim().toLowerCase();
-    return items.filter((tx) => {
+    return newestFirst(items).filter((tx) => {
       if (filter !== 'all' && tx.type !== filter) return false;
       if (!q) return true;
       return (
@@ -57,3 +57,11 @@ export const selectFilteredTransactions = createSelector(
     });
   },
 );
+
+/** Newest activity first, regardless of the order it was recorded in. */
+function newestFirst(items: Transaction[]): Transaction[] {
+  return [...items].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+}
+
+export const makeSelectRecentTransactions = (n: number) =>
+  createSelector([selectTransactions], (items) => newestFirst(items).slice(0, n));

@@ -61,6 +61,7 @@ const Root = styled.section`
 
 const Header = styled.header`
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.space[4]};
@@ -74,6 +75,7 @@ const Header = styled.header`
 
 const HeaderText = styled.div`
   min-width: 0;
+  flex: 1 1 160px;
 `;
 
 const Title = styled.h2`
