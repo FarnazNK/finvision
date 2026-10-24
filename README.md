@@ -20,17 +20,17 @@
 | **Frontend** | React 18, TypeScript, Redux Toolkit, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
 | **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback |
-| **Quality** | 53 frontend tests (Jest + React Testing Library), 18 backend tests (pytest), CodeQL and dependency audits in CI |
+| **Quality** | 66 frontend tests (Jest + React Testing Library), 28 backend tests (pytest), migration checks, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main` |
 
 ## What I built
 
 ### 🤖 AI assistant that doesn't make up numbers
-LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. Each answer **cites the tools it used**, so it can be checked. Without an API key the service falls back to deterministic answers, so the demo and CI never depend on an external model.
-→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py)
+LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. Each answer **cites the tools it used**, so it can be checked. For signed-in users the browser sends **only the question**: the server loads and prices the user's saved holdings itself, so the model can't be fed made-up figures, and the dashboard shows that same snapshot. Without an API key the service falls back to deterministic answers, so the demo and CI never depend on an external model.
+→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/app/portfolio_service.py`](ai-service/app/portfolio_service.py)
 
 ### 🔐 Backend API with authentication
-FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints that only return the signed-in user's data, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
+FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints scoped to the signed-in user, quantities and costs stored as **exact decimals** (`NUMERIC`, never floats) with **Alembic migrations**, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
 → [`ai-service/app/main.py`](ai-service/app/main.py), [API docs](https://finvision-api.vercel.app/docs)
 
 ### 📊 Responsive dashboard
@@ -95,6 +95,7 @@ npm test               # Jest + React Testing Library
 ```bash
 cd ai-service
 pip install -r requirements-dev.txt
+alembic upgrade head              # creates or migrates the database
 uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ```
@@ -105,11 +106,11 @@ Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
 
-- **Demo data:** the public dashboard uses seeded holdings and simulated price ticks. Real quotes depend on a Finnhub key.
-- **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
+- **Demo vs. account:** signed out, the dashboard shows a sample portfolio with simulated prices. Signed in, it shows your saved holdings, priced from Finnhub when a key is configured and otherwise valued at cost (the header says which).
+- **Transactions and price history:** not stored per account yet, so a signed-in user's activity list is empty and the value chart starts today.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 
-**Next up:** server-side portfolio snapshots for AI, pgvector-based retrieval, and an evaluation set that checks AI answer quality in CI.
+**Next up:** stored transactions and daily value history, pgvector-based retrieval, and an evaluation set that checks AI answer quality in CI.
 
 ## Repository guide
 
