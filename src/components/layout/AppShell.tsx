@@ -20,7 +20,7 @@ export function AppShell({ children }: Props) {
           {children}
         </Main>
         <MobileNav aria-label="Primary">
-          <MobileNavLink to="/" end>Overview</MobileNavLink>
+          <MobileNavLink to="/app" end>Overview</MobileNavLink>
           <MobileNavLink to="/holdings">Holdings</MobileNavLink>
           <MobileNavLink to="/markets">Markets</MobileNavLink>
           <MobileNavLink to="/transactions">Activity</MobileNavLink>

@@ -13,7 +13,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Overview', icon: iconHome() },
+  { to: '/app', label: 'Overview', icon: iconHome() },
   { to: '/holdings', label: 'Holdings', icon: iconBriefcase() },
   { to: '/markets', label: 'Markets', icon: iconChart() },
   { to: '/transactions', label: 'Transactions', icon: iconReceipt() },
@@ -34,7 +34,7 @@ export function Sidebar() {
         <ul>
           {NAV.map((item) => (
             <li key={item.to}>
-              <NavItemLink to={item.to} end={item.to === '/'}>
+              <NavItemLink to={item.to} end={item.to === '/app'}>
                 <span aria-hidden="true">{item.icon}</span>
                 {!collapsed && <span>{item.label}</span>}
               </NavItemLink>

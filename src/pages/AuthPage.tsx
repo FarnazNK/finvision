@@ -20,7 +20,7 @@ export function AuthPage() {
     setLoading(true);
     try {
       await authenticate(mode, email, password);
-      navigate('/');
+      navigate('/app');
     } catch (reason) {
       setError(reason instanceof globalThis.Error ? reason.message : 'Authentication failed');
     } finally {
@@ -57,7 +57,7 @@ export function AuthPage() {
       <FormSide>
         <TopRow>
           <MobileLogo><BrandLogo size={30} /></MobileLogo>
-          <BackLink to="/welcome">← Back to home</BackLink>
+          <BackLink to="/">← Back to home</BackLink>
         </TopRow>
         <FormBox>
           <Heading>{isLogin ? 'Welcome back' : 'Create your account'}</Heading>

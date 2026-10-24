@@ -208,7 +208,6 @@ const CurrencySelect = styled.select`
 
 function pageName(path: string): string {
   const names: Record<string, string> = {
-    '/': 'Overview',
     '/app': 'Overview',
     '/holdings': 'Holdings',
     '/markets': 'Markets',

@@ -9,7 +9,7 @@ export function NotFoundPage() {
       <Code>404</Code>
       <Title>Page not found</Title>
       <Hint>The page you were looking for has moved or doesn't exist.</Hint>
-      <Button variant="primary" onClick={() => navigate('/')}>
+      <Button variant="primary" onClick={() => navigate('/app')}>
         Back to overview
       </Button>
     </Wrap>

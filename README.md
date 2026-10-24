@@ -1,14 +1,14 @@
 # FinVision
 
-> **FinVision at a glance:** A React/TypeScript portfolio workspace with Redux Toolkit state, Recharts visualizations, responsive navigation, holdings/transactions/watchlist views, and a Python/FastAPI backend for authenticated portfolios, market data, and AI-assisted analysis.
+> **FinVision at a glance:** A React/TypeScript portfolio workspace with an animated 3D (three.js) landing page, Redux Toolkit state, Recharts visualizations, responsive navigation, holdings/transactions/watchlist views, and a Python/FastAPI backend for authenticated portfolios, market data, and AI-assisted analysis.
 >
-> **Try it:** [Live dashboard](https://farnaznk.github.io/finvision/) · [API docs](https://finvision-api.vercel.app/docs) · [Frontend source](src/) · [Backend source](ai-service/)
+> **Try it:** [Website](https://farnaznk.github.io/finvision/) · [Live dashboard](https://farnaznk.github.io/finvision/app) · [API docs](https://finvision-api.vercel.app/docs) · [Frontend source](src/) · [Backend source](ai-service/)
 >
 > **Engineering highlights:** Typed React components and reusable UI primitives; interactive performance/allocation charts; deterministic portfolio calculations exposed as AI tools; JWT and user-scoped data APIs; Jest/React Testing Library and pytest.
 >
 > **Demo boundaries:** The public dashboard may show seeded holdings and simulated price ticks. External quotes and model responses depend on configuration. This is not investment advice.
 >
-> **Where to look:** `src/pages/OverviewPage.tsx` (dashboard), `src/components/layout/AppShell.tsx` (responsive navigation), `src/components/charts/` (data visualization), `ai-service/` (API and AI).
+> **Where to look:** `src/pages/LandingPage.tsx` and `src/components/three/PortfolioScene.tsx` (landing page and 3D hero), `src/pages/OverviewPage.tsx` (dashboard), `src/components/layout/AppShell.tsx` (responsive navigation), `src/components/charts/` (data visualization), `ai-service/` (API and AI).
 
 
 ## Prometheus & Grafana — free local monitoring
@@ -64,7 +64,7 @@ Tests: `python -m pytest aws_agentcore/test_agentcore_readonly.py -q` (with the 
 
 **Frontend**
 
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white) ![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-764ABC?logo=redux&logoColor=white) ![React Router](https://img.shields.io/badge/React_Router-CA4245?logo=reactrouter&logoColor=white) ![styled-components](https://img.shields.io/badge/styled--components-DB7093?logo=styledcomponents&logoColor=white) ![Recharts](https://img.shields.io/badge/Recharts-8884D8)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white) ![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-764ABC?logo=redux&logoColor=white) ![React Router](https://img.shields.io/badge/React_Router-CA4245?logo=reactrouter&logoColor=white) ![styled-components](https://img.shields.io/badge/styled--components-DB7093?logo=styledcomponents&logoColor=white) ![Recharts](https://img.shields.io/badge/Recharts-8884D8) ![three.js](https://img.shields.io/badge/three.js-000000?logo=threedotjs&logoColor=white)
 
 **Backend & database**
 
@@ -84,7 +84,8 @@ FinVision is a full-stack financial analytics project exploring **reliable backe
 
 | Explore | Link |
 | --- | --- |
-| Live dashboard | [FinVision](https://farnaznk.github.io/finvision/) |
+| Website | [farnaznk.github.io/finvision](https://farnaznk.github.io/finvision/) |
+| Live dashboard | [FinVision dashboard](https://farnaznk.github.io/finvision/app) |
 | FastAPI backend implementation | [Backend source](./ai-service/) |
 | Hosted API documentation | [OpenAPI / Swagger UI](https://finvision-api.vercel.app/docs) |
 
@@ -179,7 +180,7 @@ flowchart TB
 
 ### Frontend and data flow
 
-The frontend is a Vite-built single-page application with React Router, Redux Toolkit, styled-components, and Recharts. Redux-backed demo holdings and simulated ticks drive the dashboard; they should **not** be confused with exchange-verified live prices. The backend's user-scoped holdings API is separate from those browser-generated demo values.
+The frontend is a Vite-built single-page application with React Router, Redux Toolkit, styled-components, and Recharts. The home page (`/`) is a marketing page with an animated three.js portfolio scene; the dashboard lives at `/app`. three.js is code-split and only loaded on the home page, the scene pauses when off-screen, renders a still frame for users who prefer reduced motion, and falls back to a static SVG when WebGL is unavailable. The UI defaults to a light theme, with a dark mode switch in the top bar. Redux-backed demo holdings and simulated ticks drive the dashboard; they should **not** be confused with exchange-verified live prices. The backend's user-scoped holdings API is separate from those browser-generated demo values.
 
 ### Authentication and persistence
 
@@ -200,7 +201,7 @@ Docker and nginx provide containerized application packaging; GitHub Actions run
 
 | Layer | Stack |
 | --- | --- |
-| Frontend | React 18, TypeScript, Vite, Redux Toolkit, styled-components, Recharts |
+| Frontend | React 18, TypeScript, Vite, Redux Toolkit, styled-components, Recharts, three.js |
 | Backend | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL |
 | AI | Anthropic integration (optional), deterministic analytics, document retrieval |
 | Testing | Jest, React Testing Library, pytest |

@@ -19,7 +19,7 @@ export function BrandMark({ size = 30 }: { size?: number }) {
   );
 }
 
-export function BrandLogo({ compact = false, to = '/welcome', size = 30 }: BrandLogoProps) {
+export function BrandLogo({ compact = false, to = '/', size = 30 }: BrandLogoProps) {
   return (
     <Root to={to} aria-label="FinVision home">
       <BrandMark size={size} />

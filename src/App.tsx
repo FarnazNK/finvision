@@ -14,13 +14,15 @@ export function App() {
   // Boots the simulated market feed; toggled by the live-feed UI control.
   useMarketFeed();
   const location = useLocation();
+  // The marketing page is the front door; the dashboard lives at /app.
   const isPublicRoute =
+    location.pathname === '/' ||
     location.pathname === '/welcome' ||
     location.pathname === '/auth';
 
   const routes = (
       <Routes>
-        <Route path="/" element={<OverviewPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/welcome" element={<LandingPage />} />
         <Route path="/app" element={<OverviewPage />} />
         <Route path="/holdings" element={<HoldingsPage />} />
