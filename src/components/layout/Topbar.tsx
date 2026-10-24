@@ -10,7 +10,12 @@ import {
   selectThemeMode,
   themeModeChanged,
 } from '@/features/ui/uiSlice';
-import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
+import {
+  selectIsAccountPortfolio,
+  selectLastUpdated,
+  selectPriceSource,
+} from '@/features/portfolio/portfolioSlice';
+import { useSignOut } from '@/features/portfolio/accountSession';
 import { formatRelativeTime } from '@/utils/format';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { media } from '@/utils/responsive';
@@ -24,6 +29,9 @@ export function Topbar() {
   const liveFeed = useAppSelector(selectLiveFeed);
   const currency = useAppSelector(selectCurrency);
   const lastUpdated = useAppSelector(selectLastUpdated);
+  const isAccount = useAppSelector(selectIsAccountPortfolio);
+  const priceSource = useAppSelector(selectPriceSource);
+  const signOut = useSignOut();
 
   // Re-render every 15s so the relative-time label stays fresh.
   const [, force] = useState(0);
@@ -49,20 +57,30 @@ export function Topbar() {
           <option value="CAD">CAD</option>
           <option value="EUR">EUR</option>
         </CurrencySelect>
-        <LiveStatus
-          type="button"
-          onClick={() => dispatch(liveFeedToggled())}
-          aria-pressed={liveFeed}
-          aria-label={liveFeed ? 'Pause simulated price updates' : 'Resume simulated price updates'}
-        >
-          <Dot $live={liveFeed} aria-hidden="true" />
-          <LiveLabel>
-            {liveFeed ? 'Demo prices' : 'Demo paused'}
-            {lastUpdated && (
-              <LiveSub aria-hidden="true">{formatRelativeTime(lastUpdated)}</LiveSub>
-            )}
-          </LiveLabel>
-        </LiveStatus>
+        {isAccount ? (
+          <AccountStatus role="status">
+            <Dot $live={priceSource === 'market'} aria-hidden="true" />
+            <LiveLabel>
+              Your portfolio
+              <LiveSub>{priceLabel(priceSource)}</LiveSub>
+            </LiveLabel>
+          </AccountStatus>
+        ) : (
+          <LiveStatus
+            type="button"
+            onClick={() => dispatch(liveFeedToggled())}
+            aria-pressed={liveFeed}
+            aria-label={liveFeed ? 'Pause simulated price updates' : 'Resume simulated price updates'}
+          >
+            <Dot $live={liveFeed} aria-hidden="true" />
+            <LiveLabel>
+              {liveFeed ? 'Demo prices' : 'Demo paused'}
+              {lastUpdated && (
+                <LiveSub aria-hidden="true">{formatRelativeTime(lastUpdated)}</LiveSub>
+              )}
+            </LiveLabel>
+          </LiveStatus>
+        )}
 
         <ThemeToggle
           type="button"
@@ -76,7 +94,11 @@ export function Topbar() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" /></svg>
           )}
         </ThemeToggle>
-        <SignInLink to="/auth">Sign in</SignInLink>
+        {isAccount ? (
+          <SignOutButton type="button" onClick={signOut}>Sign out</SignOutButton>
+        ) : (
+          <SignInLink to="/auth">Sign in</SignInLink>
+        )}
       </Right>
     </Bar>
   );
@@ -149,6 +171,34 @@ const LiveStatus = styled.button`
   cursor: pointer;
 `;
 
+const AccountStatus = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[2]};
+  padding: ${({ theme }) => `${theme.space[1]} ${theme.space[3]}`};
+  background: ${({ theme }) => theme.color.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.pill};
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+`;
+
+const SignOutButton = styled.button`
+  white-space: nowrap;
+  padding: 6px ${({ theme }) => theme.space[3]};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.surfaceAlt};
+  }
+`;
+
 const LiveLabel = styled.span`
   white-space: nowrap;
   display: inline-flex;
@@ -215,4 +265,17 @@ function pageName(path: string): string {
     '/watchlist': 'Watchlist',
   };
   return names[path] ?? '';
+}
+
+function priceLabel(source: string | null): string {
+  switch (source) {
+    case 'market':
+      return 'Market prices';
+    case 'mixed':
+      return 'Some valued at cost';
+    case 'cost_basis':
+      return 'Valued at cost';
+    default:
+      return 'No holdings yet';
+  }
 }

@@ -30,6 +30,8 @@ const baseHoldings: Holding[] = [
 function withHoldings(): ReturnType<typeof makeStore> {
   return makeStore({
     portfolio: {
+      source: 'demo',
+      priceSource: null,
       holdings: baseHoldings,
       curve: [],
       lastUpdated: null,
@@ -65,6 +67,8 @@ describe('portfolio selectors', () => {
   test('selectTotalGainPct is 0 when cost basis is 0', () => {
     const store = makeStore({
       portfolio: {
+        source: 'demo',
+        priceSource: null,
         holdings: [],
         curve: [],
         lastUpdated: null,
@@ -96,6 +100,8 @@ describe('portfolio selectors', () => {
   test('selectAllocationByAssetClass is empty when total is zero', () => {
     const store = makeStore({
       portfolio: {
+        source: 'demo',
+        priceSource: null,
         holdings: [],
         curve: [],
         lastUpdated: null,

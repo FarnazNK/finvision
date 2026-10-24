@@ -167,6 +167,9 @@ export function OverviewPage() {
           actions={<CardLink to="/transactions">View all</CardLink>}
         >
           <HoldingList>
+            {recent.length === 0 && (
+              <RowSub as="p">No transactions recorded for this account yet.</RowSub>
+            )}
             {recent.map((tx) => (
               <ActivityRow key={tx.id}>
                 <RowText>

@@ -38,6 +38,8 @@ export function createMarketFeed(
 
   const tickOnce = () => {
     const state = getState();
+    // A signed-in user's holdings are priced by the server; never simulate them.
+    if (state.portfolio.source === 'account') return;
     const holdings = state.portfolio.holdings;
     if (holdings.length === 0) return;
 

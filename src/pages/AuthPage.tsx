@@ -4,9 +4,12 @@ import styled from 'styled-components';
 import { Button, Input } from '@/components/primitives';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { authenticate } from '@/services/authClient';
+import { useAppDispatch } from '@/app/hooks';
+import { portfolioReset } from '@/features/portfolio/portfolioSlice';
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [params] = useSearchParams();
   const mode = params.get('mode') === 'register' ? 'register' : 'login';
   const [email, setEmail] = useState('');
@@ -20,6 +23,8 @@ export function AuthPage() {
     setLoading(true);
     try {
       await authenticate(mode, email, password);
+      // Start from the demo state so the app shell loads this user's holdings.
+      dispatch(portfolioReset());
       navigate('/app');
     } catch (reason) {
       setError(reason instanceof globalThis.Error ? reason.message : 'Authentication failed');

@@ -7,12 +7,24 @@ export interface AuthResponse {
 
 const TOKEN_KEY = 'finvision-access-token';
 
+function storage(): Storage | null {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function getAccessToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
+  return storage()?.getItem(TOKEN_KEY) ?? null;
+}
+
+export function isSignedIn(): boolean {
+  return getAccessToken() !== null;
 }
 
 export function clearAccessToken(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
+  storage()?.removeItem(TOKEN_KEY);
 }
 
 export async function authenticate(
@@ -30,5 +42,5 @@ export async function authenticate(
     throw new Error(body?.detail ?? `Authentication failed: ${response.status}`);
   }
   const data = (await response.json()) as AuthResponse;
-  sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+  storage()?.setItem(TOKEN_KEY, data.accessToken);
 }

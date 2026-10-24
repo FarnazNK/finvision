@@ -1,15 +1,16 @@
 /**
  * Client for the FinVision AI service.
  *
- * The whole portfolio snapshot is sent with each question so answers are
- * grounded in the user's real holdings. The service URL is configured through
- * VITE_AI_SERVICE_URL, with safe defaults for local development and production.
+ * Signed in: only the question is sent. The server loads and prices the user's
+ * saved holdings itself, so the browser can't change the figures the model
+ * reasons over.
+ *
+ * Demo (signed out): the public sample portfolio shown on screen is sent to a
+ * stateless demo endpoint that touches no user data.
  */
 import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
-
-const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
 export interface Citation {
   kind: 'holding' | 'transaction' | 'metric';
@@ -22,28 +23,33 @@ export interface InsightsResponse {
   model: string;
 }
 
+export interface DemoPortfolio {
+  holdings: Holding[];
+  transactions: Transaction[];
+  baseCurrency: string;
+}
+
 export async function askInsight(
   question: string,
-  holdings: Holding[],
-  transactions: Transaction[],
-  baseCurrency = 'USD',
+  demoPortfolio: DemoPortfolio,
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
   const accessToken = getAccessToken();
-  const credential = API_KEY || accessToken;
+  const request: RequestInit = accessToken
+    ? {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ question }),
+      }
+    : {
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, portfolio: demoPortfolio }),
+      };
 
-  const res = await fetch(`${API_BASE_URL}/api/insights`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
-    },
-    body: JSON.stringify({
-      question,
-      portfolio: { holdings, transactions, baseCurrency },
-    }),
-    signal,
-  });
+  const path = accessToken ? '/api/insights' : '/api/demo/insights';
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', signal, ...request });
 
   if (!res.ok) {
     throw new Error(`Insights request failed: ${res.status}`);

@@ -5,6 +5,7 @@ import {
   filterChanged,
   searchChanged,
   selectFilteredTransactions,
+  selectTransactions,
   selectTxFilter,
   selectTxSearch,
   type TxFilter,
@@ -31,6 +32,7 @@ export function TransactionsPage() {
   const filter = useAppSelector(selectTxFilter);
   const search = useAppSelector(selectTxSearch);
   const items = useAppSelector(selectFilteredTransactions);
+  const hasAny = useAppSelector(selectTransactions).length > 0;
 
   return (
     <Page>
@@ -77,8 +79,12 @@ export function TransactionsPage() {
       <Card padded={false}>
         {items.length === 0 ? (
           <Empty role="status">
-            <EmptyTitle>No transactions match</EmptyTitle>
-            <EmptyHint>Try clearing your filter or search term.</EmptyHint>
+            <EmptyTitle>{hasAny ? 'No transactions match' : 'No transactions yet'}</EmptyTitle>
+            <EmptyHint>
+              {hasAny
+                ? 'Try clearing your filter or search term.'
+                : 'Transaction history is not tracked for saved accounts yet.'}
+            </EmptyHint>
           </Empty>
         ) : (
           <TableScroll>
