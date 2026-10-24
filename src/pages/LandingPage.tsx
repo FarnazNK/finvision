@@ -1,124 +1,607 @@
+import { lazy, Suspense, useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
-import { Button, Card } from '@/components/primitives';
+import styled, { css, keyframes, useTheme } from 'styled-components';
+
+// three.js is ~150 kB gzipped, so the scene loads after the page text is on screen.
+const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
 
 export function LandingPage() {
+  const theme = useTheme();
+  const sceneColors = useMemo(
+    () => ({
+      primary: theme.color.primary,
+      success: theme.color.success,
+      info: theme.color.info,
+      grid: theme.color.borderStrong,
+      text: theme.color.text,
+    }),
+    [theme],
+  );
+
   return (
     <Page>
-      <Hero>
-        <Eyebrow>FinVision portfolio workspace</Eyebrow>
-        <Title>Understand your portfolio with clarity.</Title>
-        <Subtitle>
-          Monitor holdings, market movement, transactions, allocation, and research
-          in one consistent workspace. Sign in to connect your own portfolio data.
-        </Subtitle>
-        <Actions>
-          <Link to="/auth?mode=register">
-            <Button size="lg">Create a free account</Button>
-          </Link>
-          <Link to="/markets">
-            <Button size="lg" variant="secondary">Explore markets</Button>
-          </Link>
-        </Actions>
+      <SkipLink href="#main">Skip to content</SkipLink>
+
+      <Nav aria-label="Main">
+        <Brand to="/welcome" aria-label="FinVision home">
+          <BrandMark aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 17l5-5 4 4 8-9" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </BrandMark>
+          FinVision
+        </Brand>
+        <NavLinks>
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <Link to="/markets">Markets</Link>
+        </NavLinks>
+        <NavActions>
+          <TextLink to="/auth">Sign in</TextLink>
+          <ButtonLink to="/auth?mode=register" $size="sm">Get started</ButtonLink>
+        </NavActions>
+      </Nav>
+
+      <main id="main">
+        <Hero>
+          <HeroText>
+            <Pill>
+              <Dot aria-hidden="true" /> AI research with cited sources
+            </Pill>
+            <Title>
+              See your whole portfolio <Gradient>in one clear view.</Gradient>
+            </Title>
+            <Subtitle>
+              Track holdings, allocation and performance, follow the markets, and ask
+              AI questions that are answered from your own data, with sources you can check.
+            </Subtitle>
+            <Actions>
+              <ButtonLink to="/auth?mode=register" $size="lg">
+                Create a free account
+                <Arrow aria-hidden="true">→</Arrow>
+              </ButtonLink>
+              <ButtonLink to="/app" $size="lg" $variant="secondary">
+                Try the live demo
+              </ButtonLink>
+            </Actions>
+            <TrustList>
+              <li><Check /> Free to start</li>
+              <li><Check /> No brokerage login needed</li>
+              <li><Check /> Your data stays private</li>
+            </TrustList>
+          </HeroText>
+
+          <SceneWrap>
+            <Glow aria-hidden="true" />
+            <Suspense fallback={<SceneSkeleton aria-hidden="true" />}>
+              <PortfolioScene colors={sceneColors} />
+            </Suspense>
+            <FloatCard $pos="top" aria-hidden="true">
+              <FloatLabel>Demo portfolio</FloatLabel>
+              <FloatValue>$248,310</FloatValue>
+              <FloatDelta>▲ 12.4% this year</FloatDelta>
+            </FloatCard>
+            <FloatCard $pos="bottom" aria-hidden="true">
+              <FloatLabel>Largest holding</FloatLabel>
+              <AllocRow>
+                <AllocBar><span style={{ width: '38%' }} /></AllocBar>
+                <strong>38%</strong>
+              </AllocRow>
+              <FloatHint>Concentration check</FloatHint>
+            </FloatCard>
+          </SceneWrap>
+        </Hero>
+
+        <Stats aria-label="At a glance">
+          <Stat><StatValue>5</StatValue><StatLabel>portfolio analytics tools</StatLabel></Stat>
+          <Stat><StatValue>Cited</StatValue><StatLabel>AI answers show their sources</StatLabel></Stat>
+          <Stat><StatValue>24/7</StatValue><StatLabel>access from any device</StatLabel></Stat>
+          <Stat><StatValue>$0</StatValue><StatLabel>to get started</StatLabel></Stat>
+        </Stats>
+
+        <Section id="features" aria-labelledby="features-heading">
+          <SectionHead>
+            <Eyebrow>Features</Eyebrow>
+            <SectionTitle id="features-heading">Everything you need to understand your investments</SectionTitle>
+            <SectionIntro>No more spreadsheets or jumping between five market websites.</SectionIntro>
+          </SectionHead>
+          <FeatureGrid>
+            <Feature
+              icon={<path d="M4 19V9m6 10V5m6 14v-7m4 7H2" />}
+              title="Portfolio overview"
+              text="Total value, cost basis, daily and total returns, all calculated the same way every time."
+            />
+            <Feature
+              icon={<><circle cx="12" cy="12" r="8" /><path d="M12 4v8l6 4" /></>}
+              title="Allocation & risk"
+              text="See how your money is split by asset and holding, and spot when one position gets too big."
+            />
+            <Feature
+              icon={<path d="M3 17l5-5 4 4 8-9M15 7h5v5" />}
+              title="Market monitoring"
+              text="Quotes, price history and symbol search, with a watchlist for what you're following."
+            />
+            <Feature
+              icon={<><path d="M4 5h16v11H8l-4 4z" /><path d="M8 9h8M8 12h5" /></>}
+              title="AI that shows its work"
+              text="Ask about your portfolio or a company. Every answer lists the tools and sources it used."
+            />
+            <Feature
+              icon={<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9h8M8 13h8M8 17h5" /></>}
+              title="Transactions"
+              text="A searchable history of buys, sells and dividends that feeds straight into your returns."
+            />
+            <Feature
+              icon={<><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></>}
+              title="Private by design"
+              text="Secure sign-in, your data scoped to your account, and no selling of personal information."
+            />
+          </FeatureGrid>
+        </Section>
+
+        <Section id="how-it-works" aria-labelledby="how-heading">
+          <SectionHead>
+            <Eyebrow>How it works</Eyebrow>
+            <SectionTitle id="how-heading">From sign-up to insight in three steps</SectionTitle>
+          </SectionHead>
+          <Steps>
+            <Step>
+              <StepNum>1</StepNum>
+              <StepTitle>Create your account</StepTitle>
+              <StepText>Sign up with your email. It takes under a minute and costs nothing.</StepText>
+            </Step>
+            <Step>
+              <StepNum>2</StepNum>
+              <StepTitle>Add your holdings</StepTitle>
+              <StepText>Enter your positions and transactions. FinVision does the math for you.</StepText>
+            </Step>
+            <Step>
+              <StepNum>3</StepNum>
+              <StepTitle>Ask and explore</StepTitle>
+              <StepText>Review your dashboard, follow markets, and ask AI for context with sources.</StepText>
+            </Step>
+          </Steps>
+        </Section>
+
+        <Cta aria-labelledby="cta-heading">
+          <div>
+            <CtaTitle id="cta-heading">Start tracking your portfolio today</CtaTitle>
+            <CtaText>Free to start. Explore the demo first if you'd like to look around.</CtaText>
+          </div>
+          <Actions>
+            <ButtonLink to="/auth?mode=register" $size="lg" $variant="light">Create a free account</ButtonLink>
+            <ButtonLink to="/app" $size="lg" $variant="outlineLight">Open demo</ButtonLink>
+          </Actions>
+        </Cta>
+      </main>
+
+      <Footer>
+        <span>© {new Date().getFullYear()} FinVision</span>
         <Disclaimer>
-          Informational and educational software only. Market data may be delayed.
-          FinVision does not provide investment advice.
+          FinVision is informational software and does not provide investment advice.
+          Market data may be delayed. Demo figures are illustrative.
         </Disclaimer>
-      </Hero>
-
-      <section aria-labelledby="workflow-heading" style={{ padding: '2rem', borderRadius: '18px', border: '1px solid currentColor' }}>
-        <Eyebrow>Product walkthrough</Eyebrow>
-        <h2 id="workflow-heading" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', margin: '0.75rem 0' }}>Explore the workflow, not just the feature list.</h2>
-        <p style={{ maxWidth: '65ch', lineHeight: 1.7 }}>Follow a realistic journey from portfolio overview to market context and evidence-backed research. Each step links to an existing route.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
-          <Card title="01 · Review your portfolio" description="See allocation, cost basis, returns and positions at a glance." />
-          <Card title="02 · Investigate movements" description="Explore market data and symbol-level context in the markets workspace." />
-          <Card title="03 · Verify AI context" description="Review source-grounded research with evidence, not unsupported recommendations." />
-        </div>
-        <nav aria-label="Explore FinVision features" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
-          <Link to="/app"><Button>Open dashboard</Button></Link>
-          <Link to="/markets"><Button variant="secondary">Explore markets</Button></Link>
-          <Link to="/auth"><Button variant="secondary">Sign in for research</Button></Link>
-        </nav>
-        <p style={{ fontSize: '0.8rem', opacity: 0.75, marginTop: '1rem' }}>Demo data and authenticated data are distinct. AI output is informational; integrations depend on configuration.</p>
-      </section>
-
-      <AccessPanel>
-        <div>
-          <Eyebrow>Protected workspace</Eyebrow>
-          <AccessTitle>Ready to work with your own portfolio?</AccessTitle>
-          <AccessText>
-            Sign in to use the authenticated portfolio workflow. Demo data is clearly
-            labeled and is never presented as a personal account.
-          </AccessText>
-        </div>
-        <Link to="/auth">
-          <Button>Sign in</Button>
-        </Link>
-      </AccessPanel>
-
-      <FeatureGrid>
-        <Card title="Portfolio intelligence" description="Track holdings, allocation, cost basis, gains, and activity with auditable calculations." />
-        <Card title="Market monitoring" description="Use provider-backed quotes, history, and symbol search through a server-side API boundary." />
-        <Card title="Grounded AI research" description="Ask questions about indexed documents and receive source URLs, excerpts, and retrieval scores." />
-      </FeatureGrid>
-
-      <ProfileSection>
-        <Eyebrow>Your portfolio profile</Eyebrow>
-        <ProfileTitle>Everything a person needs to understand their investments.</ProfileTitle>
-        <ProfileIntro>
-          A personal workspace brings the important details together without requiring
-          spreadsheets or switching between multiple market websites.
-        </ProfileIntro>
-        <ProfileGrid>
-          <ProfileCard>
-            <ProfileCardTitle>See your position</ProfileCardTitle>
-            <ProfileList>
-              <li>Total portfolio value and cost basis</li>
-              <li>Daily and total gains with percentage returns</li>
-              <li>Allocation by asset class and holding</li>
-              <li>Concentration and diversification signals</li>
-            </ProfileList>
-          </ProfileCard>
-          <ProfileCard>
-            <ProfileCardTitle>Track what changes</ProfileCardTitle>
-            <ProfileList>
-              <li>Holdings, transactions, and watchlists</li>
-              <li>Price history and portfolio performance curves</li>
-              <li>Search across symbols and account activity</li>
-              <li>Currency, theme, and live-feed preferences</li>
-            </ProfileList>
-          </ProfileCard>
-          <ProfileCard>
-            <ProfileCardTitle>Ask AI for context</ProfileCardTitle>
-            <ProfileList>
-              <li>Summarize a company, filing, or market event</li>
-              <li>Explain movements using your portfolio snapshot</li>
-              <li>Compare exposure, allocation, and historical trends</li>
-              <li>Show document excerpts and source citations</li>
-            </ProfileList>
-          </ProfileCard>
-        </ProfileGrid>
-        <ProfileNote>
-          AI responses are informational summaries grounded in available data and
-          sources. They are not personalized investment recommendations.
-        </ProfileNote>
-      </ProfileSection>
+      </Footer>
     </Page>
   );
 }
 
-const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space[10]};
-  max-width: 1080px;
-  margin: 0 auto;
+function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <FeatureCard>
+      <FeatureIcon aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          {icon}
+        </svg>
+      </FeatureIcon>
+      <FeatureTitle>{title}</FeatureTitle>
+      <FeatureText>{text}</FeatureText>
+    </FeatureCard>
+  );
+}
+
+function Check() {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+      <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.15" />
+      <path d="M6 10.5l2.5 2.5L14 7.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ---------- motion ---------- */
+
+const rise = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
 `;
 
+const float = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+`;
+
+const shimmer = keyframes`
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+`;
+
+const enter = (delay: number) => css`
+  animation: ${rise} 600ms ${delay}ms cubic-bezier(0.2, 0, 0, 1) both;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+`;
+
+/* ---------- layout ---------- */
+
+const Page = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 ${({ theme }) => theme.space[5]};
+
+  @media (max-width: 520px) {
+    padding: 0 ${({ theme }) => theme.space[4]};
+  }
+`;
+
+const SkipLink = styled.a`
+  position: absolute;
+  left: -9999px;
+  &:focus { left: 16px; top: 16px; z-index: 10; padding: 8px 12px; background: ${({ theme }) => theme.color.surface}; }
+`;
+
+const Nav = styled.nav`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space[4]};
+  height: 72px;
+`;
+
+const Brand = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[2]};
+  color: ${({ theme }) => theme.color.text};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-size: ${({ theme }) => theme.fontSize.md};
+  &:hover { text-decoration: none; }
+`;
+
+const BrandMark = styled.span`
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(135deg, ${({ theme }) => theme.color.primary}, ${({ theme }) => theme.color.success});
+`;
+
+const NavLinks = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.space[6]};
+  a {
+    color: ${({ theme }) => theme.color.textMuted};
+    font-size: ${({ theme }) => theme.fontSize.sm};
+    font-weight: ${({ theme }) => theme.fontWeight.medium};
+  }
+  a:hover { color: ${({ theme }) => theme.color.text}; text-decoration: none; }
+
+  @media (max-width: 760px) { display: none; }
+`;
+
+const NavActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[4]};
+`;
+
+const TextLink = styled(Link)`
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+type BtnVariant = 'primary' | 'secondary' | 'light' | 'outlineLight';
+
+const ButtonLink = styled(Link)<{ $size?: 'sm' | 'lg'; $variant?: BtnVariant }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.space[2]};
+  height: ${({ $size }) => ($size === 'sm' ? '36px' : '50px')};
+  padding: 0 ${({ $size }) => ($size === 'sm' ? '14px' : '22px')};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid transparent;
+  font-size: ${({ $size, theme }) => ($size === 'sm' ? theme.fontSize.sm : theme.fontSize.base)};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  white-space: nowrap;
+  transition: transform ${({ theme }) => theme.motion.fast}, background ${({ theme }) => theme.motion.fast},
+    box-shadow ${({ theme }) => theme.motion.fast};
+
+  &:hover { text-decoration: none; transform: translateY(-1px); }
+  &:active { transform: none; }
+
+  ${({ $variant = 'primary', theme }) => {
+    switch ($variant) {
+      case 'secondary':
+        return css`
+          background: ${theme.color.surface};
+          color: ${theme.color.text};
+          border-color: ${theme.color.border};
+          &:hover { border-color: ${theme.color.borderStrong}; }
+        `;
+      case 'light':
+        return css`
+          background: #fff;
+          color: #0b1220;
+          &:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
+        `;
+      case 'outlineLight':
+        return css`
+          background: transparent;
+          color: #fff;
+          border-color: rgba(255, 255, 255, 0.5);
+          &:hover { border-color: #fff; }
+        `;
+      default:
+        return css`
+          background: ${theme.color.primary};
+          color: ${theme.color.primaryText};
+          box-shadow: 0 6px 20px ${theme.color.primary}40;
+          &:hover { background: ${theme.color.primaryHover}; box-shadow: 0 10px 28px ${theme.color.primary}55; }
+        `;
+    }
+  }}
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover { transform: none; }
+  }
+`;
+
+const Arrow = styled.span`
+  transition: transform ${({ theme }) => theme.motion.fast};
+  ${ButtonLink}:hover & { transform: translateX(3px); }
+`;
+
+/* ---------- hero ---------- */
+
 const Hero = styled.section`
-  padding: ${({ theme }) => `${theme.space[12]} ${theme.space[4]}`};
-  max-width: 760px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: ${({ theme }) => theme.space[8]};
+  padding: ${({ theme }) => `${theme.space[12]} 0 ${theme.space[16]}`};
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding-top: ${({ theme }) => theme.space[6]};
+    gap: ${({ theme }) => theme.space[4]};
+  }
+`;
+
+const HeroText = styled.div`
+  & > * { ${enter(0)} }
+  & > *:nth-child(2) { animation-delay: 80ms; }
+  & > *:nth-child(3) { animation-delay: 160ms; }
+  & > *:nth-child(4) { animation-delay: 240ms; }
+  & > *:nth-child(5) { animation-delay: 320ms; }
+`;
+
+const Pill = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[2]};
+  padding: 6px 12px;
+  border-radius: ${({ theme }) => theme.radius.pill};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+`;
+
+const Dot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.success};
+  box-shadow: 0 0 0 4px ${({ theme }) => theme.color.success}33;
+`;
+
+const Title = styled.h1`
+  margin: ${({ theme }) => `${theme.space[5]} 0 ${theme.space[4]}`};
+  font-size: clamp(2.4rem, 5.6vw, 4.25rem);
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  line-height: 1.03;
+  letter-spacing: -0.045em;
+`;
+
+const Gradient = styled.span`
+  background: linear-gradient(100deg, ${({ theme }) => theme.color.primary} 10%, ${({ theme }) => theme.color.success} 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+`;
+
+const Subtitle = styled.p`
+  max-width: 540px;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.md};
+  line-height: 1.65;
+`;
+
+const Actions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space[3]};
+  margin-top: ${({ theme }) => theme.space[8]};
+
+  @media (max-width: 420px) {
+    a { width: 100%; }
+  }
+`;
+
+const TrustList = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => `${theme.space[2]} ${theme.space[5]}`};
+  margin: ${({ theme }) => `${theme.space[6]} 0 0`};
+  padding: 0;
+  list-style: none;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+
+  li { display: inline-flex; align-items: center; gap: 6px; }
+  svg { color: ${({ theme }) => theme.color.success}; }
+`;
+
+const SceneWrap = styled.div`
+  position: relative;
+  height: clamp(340px, 46vw, 520px);
+  ${enter(200)}
+`;
+
+const Glow = styled.div`
+  position: absolute;
+  inset: 10% 8%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, ${({ theme }) => theme.color.primary}38, transparent);
+  filter: blur(30px);
+  pointer-events: none;
+`;
+
+const SceneSkeleton = styled.div`
+  width: 100%;
+  height: 100%;
+  border-radius: ${({ theme }) => theme.radius.xl};
+  background: linear-gradient(90deg, transparent, ${({ theme }) => theme.color.surfaceAlt}, transparent);
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.6s linear infinite;
+  opacity: 0.6;
+`;
+
+const FloatCard = styled.div<{ $pos: 'top' | 'bottom' }>`
+  position: absolute;
+  min-width: 170px;
+  padding: ${({ theme }) => `${theme.space[3]} ${theme.space[4]}`};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => (theme.name === 'dark' ? 'rgba(11, 18, 32, 0.72)' : 'rgba(255, 255, 255, 0.8)')};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: ${({ theme }) => theme.shadow.lg};
+  pointer-events: none;
+  animation: ${float} 6s ease-in-out infinite;
+
+  ${({ $pos }) =>
+    $pos === 'top'
+      ? css`top: 6%; left: 0;`
+      : css`bottom: 8%; right: 0; animation-delay: -3s;`}
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+  @media (max-width: 520px) {
+    min-width: 0;
+    padding: ${({ theme }) => `${theme.space[2]} ${theme.space[3]}`};
+  }
+`;
+
+const FloatLabel = styled.div`
+  color: ${({ theme }) => theme.color.textSubtle};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`;
+
+const FloatValue = styled.div`
+  margin-top: 2px;
+  font-size: ${({ theme }) => theme.fontSize.xl};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+`;
+
+const FloatDelta = styled.div`
+  color: ${({ theme }) => theme.color.success};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const FloatHint = styled.div`
+  margin-top: 4px;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+`;
+
+const AllocRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[3]};
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+`;
+
+const AllocBar = styled.div`
+  width: 110px;
+  height: 8px;
+  border-radius: 99px;
+  background: ${({ theme }) => theme.color.surfaceAlt};
+  overflow: hidden;
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: ${({ theme }) => theme.color.warn};
+  }
+`;
+
+/* ---------- stats ---------- */
+
+const Stats = styled.section`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  background: ${({ theme }) => theme.color.surface};
+  overflow: hidden;
+
+  @media (max-width: 760px) { grid-template-columns: repeat(2, 1fr); }
+`;
+
+const Stat = styled.div`
+  padding: ${({ theme }) => `${theme.space[6]} ${theme.space[5]}`};
+  & + & { border-left: 1px solid ${({ theme }) => theme.color.border}; }
+
+  @media (max-width: 760px) {
+    &:nth-child(3) { border-left: none; }
+    &:nth-child(n + 3) { border-top: 1px solid ${({ theme }) => theme.color.border}; }
+  }
+`;
+
+const StatValue = styled.div`
+  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  letter-spacing: -0.03em;
+`;
+
+const StatLabel = styled.div`
+  margin-top: 2px;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+`;
+
+/* ---------- sections ---------- */
+
+const Section = styled.section`
+  padding: ${({ theme }) => `${theme.space[20]} 0 0`};
+  scroll-margin-top: 24px;
+
+  @media (max-width: 520px) { padding-top: ${({ theme }) => theme.space[16]}; }
+`;
+
+const SectionHead = styled.div`
+  max-width: 640px;
+  margin-bottom: ${({ theme }) => theme.space[10]};
 `;
 
 const Eyebrow = styled.div`
@@ -129,117 +612,154 @@ const Eyebrow = styled.div`
   text-transform: uppercase;
 `;
 
-const Title = styled.h1`
-  margin: ${({ theme }) => `${theme.space[3]} 0 ${theme.space[4]}`};
-  font-size: clamp(2.5rem, 7vw, 5rem);
-  line-height: 1;
-  letter-spacing: -0.05em;
+const SectionTitle = styled.h2`
+  margin: ${({ theme }) => `${theme.space[3]} 0 0`};
+  font-size: clamp(1.75rem, 3.6vw, 2.6rem);
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  letter-spacing: -0.035em;
 `;
 
-const Subtitle = styled.p`
-  max-width: 650px;
+const SectionIntro = styled.p`
+  margin-top: ${({ theme }) => theme.space[3]};
   color: ${({ theme }) => theme.color.textMuted};
-  font-size: ${({ theme }) => theme.fontSize.lg};
+  font-size: ${({ theme }) => theme.fontSize.md};
   line-height: 1.6;
-`;
-
-const Actions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.space[3]};
-  margin-top: ${({ theme }) => theme.space[6]};
-`;
-
-const Disclaimer = styled.p`
-  margin-top: ${({ theme }) => theme.space[5]};
-  color: ${({ theme }) => theme.color.textSubtle};
-  font-size: ${({ theme }) => theme.fontSize.xs};
 `;
 
 const FeatureGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: ${({ theme }) => theme.space[4]};
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
 `;
 
-const ProfileSection = styled.section`
-  padding: ${({ theme }) => `${theme.space[8]} ${theme.space[4]}`};
-  border-top: 1px solid ${({ theme }) => theme.color.border};
-`;
-
-const ProfileTitle = styled.h2`
-  max-width: 700px;
-  margin: ${({ theme }) => `${theme.space[3]} 0 ${theme.space[2]}`};
-  font-size: clamp(1.75rem, 4vw, 2.75rem);
-  letter-spacing: -0.03em;
-`;
-
-const ProfileIntro = styled.p`
-  max-width: 700px;
-  margin: 0;
-  color: ${({ theme }) => theme.color.textMuted};
-  line-height: 1.7;
-`;
-
-const ProfileGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: ${({ theme }) => theme.space[4]};
-  margin-top: ${({ theme }) => theme.space[6]};
-`;
-
-const ProfileCard = styled.article`
-  padding: ${({ theme }) => theme.space[5]};
+const FeatureCard = styled.article`
+  padding: ${({ theme }) => theme.space[6]};
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
+  border-radius: ${({ theme }) => theme.radius.xl};
   background: ${({ theme }) => theme.color.surface};
+  transition: transform ${({ theme }) => theme.motion.base}, border-color ${({ theme }) => theme.motion.base},
+    box-shadow ${({ theme }) => theme.motion.base};
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: ${({ theme }) => theme.color.borderStrong};
+    box-shadow: ${({ theme }) => theme.shadow.md};
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover { transform: none; }
+  }
 `;
 
-const ProfileCardTitle = styled.h3`
-  margin: 0 0 ${({ theme }) => theme.space[4]};
+const FeatureIcon = styled.div`
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: ${({ theme }) => theme.color.primary};
+  background: ${({ theme }) => theme.color.primary}1a;
+`;
+
+const FeatureTitle = styled.h3`
+  margin: ${({ theme }) => `${theme.space[4]} 0 ${theme.space[2]}`};
+  font-size: ${({ theme }) => theme.fontSize.md};
+`;
+
+const FeatureText = styled.p`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  line-height: 1.6;
+`;
+
+const Steps = styled.ol`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: ${({ theme }) => theme.space[6]};
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+
+  @media (max-width: 760px) { grid-template-columns: 1fr; }
+`;
+
+const Step = styled.li`
+  position: relative;
+  padding-top: ${({ theme }) => theme.space[5]};
+  border-top: 2px solid ${({ theme }) => theme.color.border};
+`;
+
+const StepNum = styled.div`
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: ${({ theme }) => theme.color.primaryText};
+  background: ${({ theme }) => theme.color.primary};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+`;
+
+const StepTitle = styled.h3`
+  margin: ${({ theme }) => `${theme.space[4]} 0 ${theme.space[2]}`};
   font-size: ${({ theme }) => theme.fontSize.lg};
 `;
 
-const ProfileList = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space[3]};
-  margin: 0;
-  padding-left: ${({ theme }) => theme.space[5]};
+const StepText = styled.p`
   color: ${({ theme }) => theme.color.textMuted};
-  line-height: 1.5;
+  line-height: 1.6;
 `;
 
-const ProfileNote = styled.p`
-  margin: ${({ theme }) => `${theme.space[5]} 0 0`};
+const Cta = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space[6]};
+  margin-top: ${({ theme }) => theme.space[20]};
+  padding: ${({ theme }) => `${theme.space[12]} ${theme.space[10]}`};
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(600px 300px at 90% 0%, ${({ theme }) => theme.color.success}66, transparent),
+    linear-gradient(135deg, #1a3cb0, #244fdb 60%, #3366ff);
+
+  ${Actions} { margin-top: 0; }
+
+  @media (max-width: 520px) {
+    padding: ${({ theme }) => `${theme.space[8]} ${theme.space[5]}`};
+  }
+`;
+
+const CtaTitle = styled.h2`
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  letter-spacing: -0.03em;
+`;
+
+const CtaText = styled.p`
+  margin-top: ${({ theme }) => theme.space[2]};
+  opacity: 0.85;
+`;
+
+const Footer = styled.footer`
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space[3]};
+  margin-top: ${({ theme }) => theme.space[12]};
+  padding: ${({ theme }) => `${theme.space[6]} 0 ${theme.space[8]}`};
+  border-top: 1px solid ${({ theme }) => theme.color.border};
   color: ${({ theme }) => theme.color.textSubtle};
   font-size: ${({ theme }) => theme.fontSize.sm};
 `;
 
-const AccessPanel = styled.section`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.space[5]};
-  padding: ${({ theme }) => theme.space[5]};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  background: ${({ theme }) => theme.color.surface};
-
-  @media (max-width: 620px) {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-`;
-
-const AccessTitle = styled.h2`
-  margin: ${({ theme }) => `${theme.space[2]} 0`};
-  font-size: ${({ theme }) => theme.fontSize.xl};
-`;
-
-const AccessText = styled.p`
-  max-width: 650px;
-  margin: 0;
-  color: ${({ theme }) => theme.color.textMuted};
+const Disclaimer = styled.p`
+  max-width: 620px;
+  font-size: ${({ theme }) => theme.fontSize.xs};
   line-height: 1.6;
 `;
