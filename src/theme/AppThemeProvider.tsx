@@ -6,7 +6,8 @@ import type { ThemeMode } from '@/types/domain';
 import { darkTheme, lightTheme } from './tokens';
 import { GlobalStyle } from './GlobalStyle';
 
-const STORAGE_KEY = 'portfolio:theme';
+// v2: light became the default; the old key auto-saved 'system' for everyone.
+const STORAGE_KEY = 'portfolio:theme:v2';
 
 /**
  * Wraps the app with the active styled-components theme.

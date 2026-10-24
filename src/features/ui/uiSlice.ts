@@ -11,7 +11,7 @@ export interface UIState {
 }
 
 const initialState: UIState = {
-  themeMode: 'system',
+  themeMode: 'light',
   sidebarCollapsed: false,
   liveFeed: true,
   currency: 'USD',
