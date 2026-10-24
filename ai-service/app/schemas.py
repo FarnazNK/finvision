@@ -5,9 +5,16 @@ stable contracts for the document-grounded Research Assistant.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from decimal import Decimal
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainSerializer
+
+# Stored and validated as exact decimals; sent to clients as JSON numbers so
+# charting code can use them directly. Display rounding happens client-side.
+JsonDecimal = Annotated[
+    Decimal, PlainSerializer(float, return_type=float, when_used="json")
+]
 
 AssetClass = Literal["equity", "fixed_income", "cash", "alternative", "crypto"]
 TxnType = Literal["buy", "sell", "dividend", "deposit", "withdrawal", "fee"]
@@ -38,14 +45,35 @@ class Transaction(BaseModel):
 
 
 class PortfolioSnapshot(BaseModel):
-    """The context the client sends so answers are grounded in this account."""
+    """The portfolio the analytics tools run over.
 
-    holdings: list[Holding] = Field(default_factory=list)
-    transactions: list[Transaction] = Field(default_factory=list)
-    baseCurrency: str = "USD"
+    For signed-in users the server builds this from their saved holdings. Only
+    the anonymous demo endpoint accepts one from the client.
+    """
+
+    holdings: list[Holding] = Field(default_factory=list, max_length=200)
+    transactions: list[Transaction] = Field(default_factory=list, max_length=500)
+    baseCurrency: str = Field(default="USD", min_length=3, max_length=3)
+
+
+PriceSource = Literal["market", "cost_basis", "mixed", "empty"]
+
+
+class PortfolioSnapshotResponse(PortfolioSnapshot):
+    """Server-built snapshot, plus where its prices came from."""
+
+    priceSource: PriceSource
 
 
 class InsightsRequest(BaseModel):
+    """Signed-in question. The portfolio is loaded server-side, never sent."""
+
+    question: str = Field(..., min_length=1, max_length=1000)
+
+
+class DemoInsightsRequest(BaseModel):
+    """Anonymous demo question over the public sample portfolio in the browser."""
+
     question: str = Field(..., min_length=1, max_length=1000)
     portfolio: PortfolioSnapshot
 
@@ -161,8 +189,8 @@ class HoldingCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=20)
     name: str = Field(..., min_length=1, max_length=200)
     assetClass: AssetClass = "equity"
-    quantity: float = Field(..., gt=0)
-    costBasis: float = Field(..., ge=0)
+    quantity: JsonDecimal = Field(..., gt=0, max_digits=20, decimal_places=8)
+    costBasis: JsonDecimal = Field(..., ge=0, max_digits=20, decimal_places=6)
     currency: str = Field(default="USD", min_length=3, max_length=3)
 
 
