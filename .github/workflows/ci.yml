@@ -64,6 +64,14 @@ jobs:
       - name: Run backend tests
         run: pytest -v
 
+      - name: Migrations upgrade, downgrade and re-upgrade cleanly
+        env:
+          DATABASE_URL: sqlite:///${{ runner.temp }}/migrations.db
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
       - name: AgentCore security regression tests
         run: pytest ../aws_agentcore/test_agentcore_readonly.py -q
 

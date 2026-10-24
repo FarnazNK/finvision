@@ -1,10 +1,10 @@
 /**
  * Portfolio Insights — natural-language Q&A over the user's holdings.
  *
- * Reads the live portfolio/transaction state straight from the Redux store and
- * posts it to the AI service, so answers are grounded in the exact account the
- * user is looking at. Includes a few suggested prompts to make the feature
- * discoverable.
+ * Signed in, only the question is sent: the server analyzes the user's saved
+ * holdings, the same snapshot the dashboard shows. In the public demo, the
+ * sample portfolio on screen is sent to a stateless demo endpoint. Includes a
+ * few suggested prompts to make the feature discoverable.
  */
 import { useRef, useState } from 'react';
 import styled from 'styled-components';
@@ -12,7 +12,7 @@ import styled from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import { Card } from '@/components/primitives/Card';
-import { selectHoldings } from '@/features/portfolio/portfolioSlice';
+import { selectHoldings, selectIsAccountPortfolio } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
 import { askInsight, type InsightsResponse } from '@/services/insightsClient';
 
@@ -27,6 +27,7 @@ export function InsightsPanel() {
   const holdings = useAppSelector(selectHoldings);
   const transactions = useAppSelector(selectTransactions);
   const currency = useAppSelector(selectCurrency);
+  const isAccount = useAppSelector(selectIsAccountPortfolio);
 
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState<InsightsResponse | null>(null);
@@ -47,9 +48,7 @@ export function InsightsPanel() {
     try {
       const res = await askInsight(
         trimmed,
-        holdings,
-        transactions,
-        currency,
+        { holdings, transactions, baseCurrency: currency },
         controller.signal,
       );
       setResult(res);
@@ -65,7 +64,11 @@ export function InsightsPanel() {
   return (
     <Card
       title="Portfolio Insights"
-      description="Ask about the portfolio shown here. Answers use its holdings and transactions; demo prices are simulated."
+      description={
+        isAccount
+          ? 'Ask about your saved portfolio. Answers come from figures the server calculates from your holdings.'
+          : 'Ask about the demo portfolio shown here. Answers use its holdings and transactions; demo prices are simulated.'
+      }
     >
       <Row>
         <Field

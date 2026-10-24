@@ -38,7 +38,14 @@ export const { transactionAdded, filterChanged, searchChanged } =
   transactionsSlice.actions;
 export default transactionsSlice.reducer;
 
-export const selectTransactions = (s: RootState) => s.transactions.items;
+const NO_TRANSACTIONS: Transaction[] = [];
+
+/**
+ * The demo's sample activity. Accounts don't store transactions yet, so a
+ * signed-in user sees none rather than demo activity beside their own holdings.
+ */
+export const selectTransactions = (s: RootState) =>
+  s.portfolio.source === 'account' ? NO_TRANSACTIONS : s.transactions.items;
 export const selectTxFilter = (s: RootState) => s.transactions.filter;
 export const selectTxSearch = (s: RootState) => s.transactions.search;
 

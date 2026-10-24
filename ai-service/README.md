@@ -28,8 +28,10 @@ pytest                                 # tests
 | Method | Path            | Description                              |
 |--------|-----------------|------------------------------------------|
 | GET    | `/health`       | Liveness probe                           |
-| GET    | `/metrics`       | Lightweight request counters for monitoring |
-| POST   | `/api/insights` | `{question, portfolio}` → grounded answer|
+| GET    | `/metrics`       | Prometheus metrics |
+| GET    | `/metrics/summary` | Authenticated JSON request counters |
+| POST   | `/api/insights` | Signed in: `{question}` → answer grounded in the user's saved holdings (snapshot built server-side) |
+| POST   | `/api/demo/insights` | Public demo: `{question, portfolio}` → answer over the sample portfolio; stateless, size-limited |
 | GET    | `/api/markets/quote?symbol=AAPL` | Current quote from Finnhub |
 | GET    | `/api/markets/history?symbol=AAPL&start=...&end=...` | Historical candles |
 | GET    | `/api/markets/search?q=apple` | Symbol search |
@@ -38,6 +40,8 @@ pytest                                 # tests
 | GET    | `/api/auth/me` | Return the authenticated user |
 | GET    | `/api/portfolio/holdings` | List the authenticated user's holdings |
 | POST   | `/api/portfolio/holdings` | Add a holding to the authenticated user's portfolio |
+| DELETE | `/api/portfolio/holdings/{id}` | Remove one of the authenticated user's holdings |
+| GET    | `/api/portfolio/snapshot` | The user's holdings priced on the server (the same snapshot the AI analyzes) |
 | POST   | `/api/research/ingest` | Index a document into the retrieval store |
 | POST   | `/api/research` | Retrieve relevant passages with citations |
 
@@ -50,6 +54,9 @@ local development remains explicit rather than silently showing fake provider da
 
 Set `DATABASE_URL` to a PostgreSQL connection string in deployed environments.
 The local default is SQLite so the API can be tested without external services.
+The schema is managed by Alembic: run `alembic upgrade head` before starting the
+API against PostgreSQL (the Docker image does this on start). Holding quantities
+and costs are `NUMERIC` columns, so amounts are stored exactly as entered.
 Users authenticate with a short-lived JWT issued by `/api/auth/login`; portfolio
 queries derive ownership from that token and never accept a browser-supplied
 `user_id`. Set `FINVISION_JWT_SECRET` to a long random value in production.

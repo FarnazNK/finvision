@@ -27,10 +27,25 @@ type PersistedState = Partial<{
 function loadPersistedState(): PersistedState | undefined {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as PersistedState) : undefined;
+    if (!saved) return undefined;
+    const state = JSON.parse(saved) as PersistedState;
+    // Only the public demo portfolio is ever restored from the browser. Saved
+    // state from older versions (no `source`) falls back to a fresh demo.
+    if (state.portfolio?.source !== 'demo') delete state.portfolio;
+    return state;
   } catch {
     return undefined;
   }
+}
+
+/** Never write a signed-in user's holdings to localStorage. */
+export function toPersistable(state: PersistedState): PersistedState {
+  if (state.portfolio?.source === 'account') {
+    const rest = { ...state };
+    delete rest.portfolio;
+    return rest;
+  }
+  return state;
 }
 
 /**
@@ -62,7 +77,7 @@ export const store = configureStore({
 store.subscribe(() => {
   const state = store.getState();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersistable(state)));
   } catch {
     // Storage can be disabled or full; the in-memory store remains usable.
   }

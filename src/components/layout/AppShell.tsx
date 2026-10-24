@@ -4,12 +4,14 @@ import styled from 'styled-components';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { media } from '@/utils/responsive';
+import { useAccountSession } from '@/features/portfolio/accountSession';
 
 interface Props {
   children: ReactNode;
 }
 
 export function AppShell({ children }: Props) {
+  useAccountSession();
   return (
     <Root>
       <SkipLink href="#main-content">Skip to main content</SkipLink>

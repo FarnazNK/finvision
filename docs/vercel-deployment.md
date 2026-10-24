@@ -15,8 +15,23 @@ paid upgrades or paid model/data providers to run the demo.
 6. Leave `ANTHROPIC_API_KEY` and `FINNHUB_API_KEY` unset for the offline demo.
 7. Deploy and copy the actual production URL returned by Vercel.
 
-The application already creates its tables when imported. Reuse the existing
-database; do not replace it with ephemeral SQLite. Database credentials belong
+Vercel has no release step, so apply migrations from your machine with the same
+`DATABASE_URL` before deploying a schema change:
+
+```bash
+cd ai-service
+DATABASE_URL='postgresql+psycopg://...' alembic upgrade head
+```
+
+A database created before migrations existed (by the old `create_all` call)
+already matches the first revision. Mark it once, then upgrade:
+
+```bash
+DATABASE_URL='postgresql+psycopg://...' alembic stamp 0001_baseline
+DATABASE_URL='postgresql+psycopg://...' alembic upgrade head
+```
+
+Reuse the existing database; do not replace it with ephemeral SQLite. Database credentials belong
 in Vercel environment variables, never in GitHub source or the browser bundle.
 
 ## Connect the frontend

@@ -22,6 +22,7 @@ from .llm import generate_insight
 from .market_data import FinnhubClient, MarketDataError
 from .observability import RequestMetricsMiddleware, request_metrics
 from .persistence import HoldingRecord, SessionLocal, UserRecord
+from .portfolio_service import build_user_snapshot
 from .rag import Document, InMemoryRetriever
 from .security import (
     create_access_token,
@@ -30,7 +31,9 @@ from .security import (
     verify_password,
 )
 from .schemas import (
+    DemoInsightsRequest,
     InsightsRequest,
+    PortfolioSnapshotResponse,
     InsightsResponse,
     ResearchCitation,
     ResearchIngestRequest,
@@ -64,7 +67,7 @@ allowed_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_methods=["POST", "GET"],
+    allow_methods=["POST", "GET", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -138,8 +141,9 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/metrics")
+@app.get("/metrics/summary")
 def metrics(_: None = Depends(authorize)) -> dict[str, dict[str, int]]:
+    """Authenticated JSON request counts. Prometheus scrapes /metrics below."""
     return {"requests_total": request_metrics()}
 
 
@@ -227,6 +231,37 @@ def create_holding(
         )
 
 
+@app.delete("/api/portfolio/holdings/{holding_id}", status_code=204)
+def delete_holding(
+    holding_id: int,
+    user: UserRecord = Depends(current_user),
+) -> Response:
+    with SessionLocal() as session:
+        record = session.scalar(
+            select(HoldingRecord).where(
+                HoldingRecord.id == holding_id, HoldingRecord.user_id == user.id
+            )
+        )
+        # Another user's holding looks the same as a missing one: no ID probing.
+        if record is None:
+            raise HTTPException(status_code=404, detail="Holding not found")
+        session.delete(record)
+        session.commit()
+    return Response(status_code=204)
+
+
+@app.get("/api/portfolio/snapshot", response_model=PortfolioSnapshotResponse)
+def portfolio_snapshot(
+    user: UserRecord = Depends(current_user),
+    _: None = Depends(enforce_rate_limit),
+) -> PortfolioSnapshotResponse:
+    """The signed-in user's holdings, priced on the server.
+
+    The dashboard renders this and the AI assistant analyzes the same snapshot.
+    """
+    return build_user_snapshot(user.id, market_client)
+
+
 def _market_error(exc: MarketDataError) -> HTTPException:
     return HTTPException(status_code=503, detail=str(exc))
 
@@ -307,9 +342,30 @@ def market_search(
 @app.post("/api/insights", response_model=InsightsResponse)
 def insights(
     req: InsightsRequest,
-    _: None = Depends(authorize),
-    __: None = Depends(enforce_rate_limit),
+    user: UserRecord = Depends(current_user),
+    _: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
+    """Answer a question about the signed-in user's saved portfolio.
+
+    The snapshot is built server-side from the database. Any portfolio a client
+    adds to the request body is ignored, so the model only ever sees figures
+    the server computed for this user.
+    """
+    snapshot = build_user_snapshot(user.id, market_client)
+    return generate_insight(req.question, snapshot)
+
+
+@app.post("/api/demo/insights", response_model=InsightsResponse)
+def demo_insights(
+    req: DemoInsightsRequest,
+    _: None = Depends(enforce_rate_limit),
+) -> InsightsResponse:
+    """Anonymous demo: analyze the public sample portfolio shown in the browser.
+
+    This endpoint is stateless and touches no user data, so accepting the
+    snapshot from the client is safe here. Size limits on the schema bound the
+    work per request.
+    """
     return generate_insight(req.question, req.portfolio)
 
 @app.post(

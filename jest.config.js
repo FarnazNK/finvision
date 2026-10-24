@@ -3,6 +3,9 @@ export default {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapper: {
+    // apiConfig reads import.meta.env, which ts-jest's CommonJS build can't parse.
+    '^@/services/apiConfig$': '<rootDir>/src/test/apiConfigMock.ts',
+    '^\\./apiConfig$': '<rootDir>/src/test/apiConfigMock.ts',
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss)$': 'identity-obj-proxy',
   },

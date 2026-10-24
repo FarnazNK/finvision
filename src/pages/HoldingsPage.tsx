@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { useAppSelector } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
-import { selectHoldings } from '@/features/portfolio/portfolioSlice';
+import { selectHoldings, selectIsAccountPortfolio } from '@/features/portfolio/portfolioSlice';
+import { ManageHoldings } from '@/features/portfolio/ManageHoldings';
 import { makeSelectSparkline } from '@/features/markets/marketsSlice';
 import { Badge, Card, TickerBadge } from '@/components/primitives';
 import { Sparkline } from '@/components/charts/Sparkline';
@@ -23,6 +24,7 @@ type SortDir = 'asc' | 'desc';
 export function HoldingsPage() {
   const holdings = useAppSelector(selectHoldings);
   const currency = useAppSelector(selectCurrency);
+  const isAccount = useAppSelector(selectIsAccountPortfolio);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: 'value',
@@ -60,6 +62,8 @@ export function HoldingsPage() {
           <Subtitle>{formatMoney(totalValue, { currency })} total market value</Subtitle>
         </div>
       </PageHeader>
+
+      {isAccount && <ManageHoldings />}
 
       <SummaryGrid>
         <SummaryCard><SummaryLabel>Portfolio value</SummaryLabel><SummaryValue>{formatMoney(totalValue, { currency })}</SummaryValue></SummaryCard>
