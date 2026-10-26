@@ -1,7 +1,6 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { createSelector } from '@reduxjs/toolkit';
 import type { MarketTick } from '@/types/domain';
-import type { RootState } from '@/app/store';
+import type { Mutate, RootState } from '@/app/store';
+import { createSelector } from '@/app/createSelector';
 
 export interface MarketsState {
   /** Per-symbol rolling tick history, capped per symbol. */
@@ -12,38 +11,41 @@ export interface MarketsState {
 
 const HISTORY_CAP = 60;
 
-const initialState: MarketsState = {
-  history: {},
-  lastTickAt: null,
-};
+export function initialMarketsState(): MarketsState {
+  return { history: {}, lastTickAt: null };
+}
 
-const marketsSlice = createSlice({
-  name: 'markets',
-  initialState,
-  reducers: {
-    tickReceived(state, action: PayloadAction<MarketTick[]>) {
-      for (const tick of action.payload) {
-        const existing = state.history[tick.symbol] ?? [];
-        existing.push(tick);
-        if (existing.length > HISTORY_CAP) existing.shift();
-        state.history[tick.symbol] = existing;
-      }
-      state.lastTickAt = Date.now();
-    },
-    historyCleared(state) {
-      state.history = {};
-      state.lastTickAt = null;
-    },
-  },
-});
+export interface MarketsActions {
+  tickReceived: (ticks: MarketTick[]) => void;
+  historyCleared: () => void;
+}
 
-export const { tickReceived, historyCleared } = marketsSlice.actions;
-export default marketsSlice.reducer;
+export function createMarketsActions(mutate: Mutate): MarketsActions {
+  return {
+    tickReceived: (ticks) =>
+      mutate(({ markets }) => {
+        for (const tick of ticks) {
+          const existing = markets.history[tick.symbol] ?? [];
+          existing.push(tick);
+          if (existing.length > HISTORY_CAP) existing.shift();
+          markets.history[tick.symbol] = existing;
+        }
+        markets.lastTickAt = Date.now();
+      }),
+    historyCleared: () =>
+      mutate(({ markets }) => {
+        markets.history = {};
+        markets.lastTickAt = null;
+      }),
+  };
+}
 
 // ---------- Selectors ----------
 
 export const selectMarketHistory = (s: RootState) => s.markets.history;
 export const selectLastTickAt = (s: RootState) => s.markets.lastTickAt;
 
+const NO_TICKS: MarketTick[] = [];
+
 export const makeSelectSparkline = (symbol: string) =>
-  createSelector([selectMarketHistory], (h) => h[symbol] ?? []);
+  createSelector([selectMarketHistory], (h) => h[symbol] ?? NO_TICKS);

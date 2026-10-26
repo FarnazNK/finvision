@@ -9,7 +9,7 @@ const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
 const STACK = [
   {
     label: 'Frontend',
-    items: ['React', 'TypeScript', 'Redux Toolkit', 'Zustand', 'Zod', 'three.js', 'Recharts'],
+    items: ['React', 'TypeScript', 'Zustand', 'Zod', 'immer', 'three.js', 'Recharts'],
   },
   {
     label: 'Backend & AI',

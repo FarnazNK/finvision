@@ -1,7 +1,7 @@
 /**
  * Portfolio Insights — natural-language Q&A over the user's holdings.
  *
- * Reads the live portfolio/transaction state straight from the Redux store and
+ * Reads the live portfolio/transaction state straight from the app store and
  * posts it to the AI service, so answers are grounded in the exact account the
  * user is looking at. The panel's own session state (question, request status,
  * recent questions) lives in a Zustand store; see insightsStore.ts.
@@ -9,7 +9,7 @@
 import { useRef, type ChangeEvent, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 
-import { useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
@@ -25,9 +25,9 @@ const SUGGESTIONS = [
 ];
 
 export function InsightsPanel() {
-  const holdings = useAppSelector(selectHoldings);
-  const transactions = useAppSelector(selectTransactions);
-  const currency = useAppSelector(selectCurrency);
+  const holdings = useAppStore(selectHoldings);
+  const transactions = useAppStore(selectTransactions);
+  const currency = useAppStore(selectCurrency);
 
   const question = useInsightsStore((s) => s.question);
   const status = useInsightsStore((s) => s.status);

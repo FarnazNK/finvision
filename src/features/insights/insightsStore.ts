@@ -1,12 +1,12 @@
 /**
  * Session state for the Portfolio Insights panel, held in Zustand.
  *
- * Redux owns the durable app state (portfolio, transactions, watchlist, UI
- * preferences), which is persisted to localStorage. Insights state is
- * different: the current question, the in-flight request and a short history
- * of recent questions only matter for this browser session and should never be
- * written to storage alongside financial data. A small Zustand store keeps it
- * local to the feature without adding reducers to the root store.
+ * The main app store (src/app/store.ts) owns the durable state (portfolio,
+ * transactions, watchlist, UI preferences) and persists it to localStorage.
+ * Insights state is different: the current question, the in-flight request
+ * and a short history of recent questions only matter for this browser
+ * session and should never be written to storage alongside financial data,
+ * so they live in this separate, unpersisted Zustand store.
  */
 import { create } from 'zustand';
 import type { InsightsResponse } from '@/services/schemas';

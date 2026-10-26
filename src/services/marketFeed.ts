@@ -1,10 +1,5 @@
-import type { AppDispatch, RootState } from '@/app/store';
-import { tickReceived } from '@/features/markets/marketsSlice';
-import {
-  curvePointAppended,
-  holdingsRepriced,
-  selectTotalValue,
-} from '@/features/portfolio/portfolioSlice';
+import type { RootState } from '@/app/store';
+import { selectTotalValue } from '@/features/portfolio/portfolioSlice';
 import type { MarketTick } from '@/types/domain';
 
 /**
@@ -12,7 +7,7 @@ import type { MarketTick } from '@/types/domain';
  *
  * In production this would be a real WS subscription — `feed.subscribe`,
  * exponential reconnect, sequence-gap detection, etc. The shape is the same:
- * we receive ticks and fan them out to whichever slices care.
+ * we receive ticks and fan them out to whichever store slices care.
  */
 export interface MarketFeed {
   start: () => void;
@@ -28,7 +23,6 @@ interface FeedOptions {
 }
 
 export function createMarketFeed(
-  dispatch: AppDispatch,
   getState: () => RootState,
   opts: FeedOptions = {},
 ): MarketFeed {
@@ -60,9 +54,9 @@ export function createMarketFeed(
       });
 
     if (ticks.length === 0) return;
-    dispatch(tickReceived(ticks));
-    dispatch(holdingsRepriced(ticks));
-    dispatch(curvePointAppended({ t: Date.now(), value: selectTotalValue(getState()) }));
+    state.tickReceived(ticks);
+    state.holdingsRepriced(ticks);
+    state.curvePointAppended({ t: Date.now(), value: selectTotalValue(getState()) });
   };
 
   return {

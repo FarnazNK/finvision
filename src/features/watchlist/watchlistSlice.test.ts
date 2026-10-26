@@ -1,9 +1,7 @@
 import { makeStore } from '@/app/store';
 import {
   selectWatchlist,
-  watchlistItemAdded,
-  watchlistItemRemoved,
-} from '@/features/watchlist/watchlistSlice';
+  } from '@/features/watchlist/watchlistSlice';
 
 function blankStore() {
   return makeStore({
@@ -11,10 +9,10 @@ function blankStore() {
   });
 }
 
-describe('watchlist reducer', () => {
+describe('watchlist action', () => {
   test('watchlistItemAdded inserts a new item with addedAt populated', () => {
     const store = blankStore();
-    store.dispatch(watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' }));
+    store.getState().watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' });
     const items = selectWatchlist(store.getState());
     expect(items).toHaveLength(1);
     expect(items[0].symbol).toBe('NVDA');
@@ -25,8 +23,8 @@ describe('watchlist reducer', () => {
 
   test('watchlistItemAdded ignores duplicate symbols', () => {
     const store = blankStore();
-    store.dispatch(watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' }));
-    store.dispatch(watchlistItemAdded({ symbol: 'NVDA', name: 'Should not replace' }));
+    store.getState().watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' });
+    store.getState().watchlistItemAdded({ symbol: 'NVDA', name: 'Should not replace' });
     const items = selectWatchlist(store.getState());
     expect(items).toHaveLength(1);
     expect(items[0].name).toBe('NVIDIA');
@@ -34,9 +32,9 @@ describe('watchlist reducer', () => {
 
   test('watchlistItemRemoved drops the matching symbol', () => {
     const store = blankStore();
-    store.dispatch(watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' }));
-    store.dispatch(watchlistItemAdded({ symbol: 'TSLA', name: 'Tesla' }));
-    store.dispatch(watchlistItemRemoved('NVDA'));
+    store.getState().watchlistItemAdded({ symbol: 'NVDA', name: 'NVIDIA' });
+    store.getState().watchlistItemAdded({ symbol: 'TSLA', name: 'Tesla' });
+    store.getState().watchlistItemRemoved('NVDA');
     const items = selectWatchlist(store.getState());
     expect(items.map((i) => i.symbol)).toEqual(['TSLA']);
   });

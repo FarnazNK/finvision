@@ -1,80 +1,136 @@
-import { combineReducers, configureStore, type Middleware } from '@reduxjs/toolkit';
-import portfolioReducer from '@/features/portfolio/portfolioSlice';
-import marketsReducer from '@/features/markets/marketsSlice';
-import transactionsReducer from '@/features/transactions/transactionsSlice';
-import watchlistReducer from '@/features/watchlist/watchlistSlice';
-import uiReducer from '@/features/ui/uiSlice';
-import type { PortfolioState } from '@/features/portfolio/portfolioSlice';
-import type { MarketsState } from '@/features/markets/marketsSlice';
-import type { TransactionsState } from '@/features/transactions/transactionsSlice';
-import type { WatchlistState } from '@/features/watchlist/watchlistSlice';
-import type { UIState } from '@/features/ui/uiSlice';
+/**
+ * App state, held in a single Zustand store composed from feature slices.
+ *
+ * Each feature (portfolio, markets, transactions, watchlist, ui) owns its data
+ * shape, initial state, actions and selectors in its own file; this module
+ * stitches them together. Actions update state through immer's `produce`, so
+ * the update logic reads as plain mutations while state stays immutable.
+ *
+ * The store is a vanilla Zustand store so non-React code (the market feed,
+ * tests) can read and update it directly; components subscribe through
+ * `useAppStore` in ./hooks.
+ */
+import { createStore, type StoreApi } from 'zustand/vanilla';
+import { produce } from 'immer';
+import {
+  createPortfolioActions,
+  initialPortfolioState,
+  type PortfolioActions,
+  type PortfolioState,
+} from '@/features/portfolio/portfolioSlice';
+import {
+  createMarketsActions,
+  initialMarketsState,
+  type MarketsActions,
+  type MarketsState,
+} from '@/features/markets/marketsSlice';
+import {
+  createTransactionsActions,
+  initialTransactionsState,
+  type TransactionsActions,
+  type TransactionsState,
+} from '@/features/transactions/transactionsSlice';
+import {
+  createWatchlistActions,
+  initialWatchlistState,
+  type WatchlistActions,
+  type WatchlistState,
+} from '@/features/watchlist/watchlistSlice';
+import {
+  createUIActions,
+  initialUIState,
+  type UIActions,
+  type UIState,
+} from '@/features/ui/uiSlice';
 
-declare const __FINVISION_DEV__: boolean | undefined;
-const isDev =
-  typeof __FINVISION_DEV__ !== 'undefined'
-    ? __FINVISION_DEV__
-    : typeof process !== 'undefined' && process.env.NODE_ENV !== 'production';
-const STORAGE_KEY = 'finvision-state-v1';
-type PersistedState = Partial<{
+export interface AppData {
   portfolio: PortfolioState;
   markets: MarketsState;
   transactions: TransactionsState;
   watchlist: WatchlistState;
   ui: UIState;
-}>;
+}
 
-function loadPersistedState(): PersistedState | undefined {
+export type AppActions = PortfolioActions &
+  MarketsActions &
+  TransactionsActions &
+  WatchlistActions &
+  UIActions;
+
+export type RootState = AppData & AppActions;
+export type AppStore = StoreApi<RootState>;
+
+/** Applies an immer recipe to the store's data. */
+export type Mutate = (recipe: (draft: AppData) => void) => void;
+
+const DATA_KEYS = ['portfolio', 'markets', 'transactions', 'watchlist', 'ui'] as const;
+const STORAGE_KEY = 'finvision-state-v1';
+
+export function initialData(preloaded: Partial<AppData> = {}): AppData {
+  return {
+    portfolio: preloaded.portfolio ?? initialPortfolioState(),
+    markets: preloaded.markets ?? initialMarketsState(),
+    transactions: preloaded.transactions ?? initialTransactionsState(),
+    watchlist: preloaded.watchlist ?? initialWatchlistState(),
+    ui: preloaded.ui ?? initialUIState(),
+  };
+}
+
+/** Only the data, never the action functions, is ever saved. */
+export function pickData(state: AppData): AppData {
+  return {
+    portfolio: state.portfolio,
+    markets: state.markets,
+    transactions: state.transactions,
+    watchlist: state.watchlist,
+    ui: state.ui,
+  };
+}
+
+/** Build a store; tests call this for an isolated instance. */
+export function makeStore(preloaded?: Partial<AppData>): AppStore {
+  return createStore<RootState>()((set) => {
+    const mutate: Mutate = (recipe) =>
+      set((state) =>
+        produce(state, (draft) => {
+          recipe(draft as AppData);
+        }),
+      );
+    return {
+      ...initialData(preloaded),
+      ...createPortfolioActions(mutate),
+      ...createMarketsActions(mutate),
+      ...createTransactionsActions(mutate),
+      ...createWatchlistActions(mutate),
+      ...createUIActions(mutate),
+    };
+  });
+}
+
+function loadPersistedData(): Partial<AppData> | undefined {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as PersistedState) : undefined;
+    if (!saved) return undefined;
+    const parsed = JSON.parse(saved) as Record<string, unknown>;
+    const data: Partial<AppData> = {};
+    for (const key of DATA_KEYS) {
+      if (parsed[key] && typeof parsed[key] === 'object') {
+        (data as Record<string, unknown>)[key] = parsed[key];
+      }
+    }
+    return data;
   } catch {
     return undefined;
   }
 }
 
-/**
- * Lightweight perf-aware logger — prints actions in dev, opt-out via env.
- * Real apps reach for redux-logger; this avoids the dependency.
- */
-const devLogger: Middleware = () => (next) => (action) => {
-  if (isDev) {
-    // eslint-disable-next-line no-console
-    console.debug('[redux]', (action as { type?: string }).type);
-  }
-  return next(action);
-};
+/** The app's store, restored from and saved to localStorage. */
+export const store = makeStore(loadPersistedData());
 
-const rootReducer = combineReducers({
-  portfolio: portfolioReducer,
-  markets: marketsReducer,
-  transactions: transactionsReducer,
-  watchlist: watchlistReducer,
-  ui: uiReducer,
-});
-
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: (getDefault) => getDefault().concat(devLogger),
-  devTools: isDev,
-  preloadedState: loadPersistedState(),
-});
-store.subscribe(() => {
-  const state = store.getState();
+store.subscribe((state) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pickData(state)));
   } catch {
     // Storage can be disabled or full; the in-memory store remains usable.
   }
 });
-
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-/** For tests — returns a fresh store with the same shape. */
-export function makeStore(preloaded?: Partial<RootState>) {
-  return configureStore({
-    reducer: rootReducer,
-    preloadedState: preloaded as RootState | undefined,
-  });
-}

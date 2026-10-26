@@ -1,7 +1,5 @@
 import { makeStore } from '@/app/store';
 import {
-  holdingsRepriced,
-  portfolioReset,
   selectAllocationByAssetClass,
   selectDayChange,
   selectHoldingsCount,
@@ -112,13 +110,13 @@ describe('portfolio selectors', () => {
   });
 });
 
-describe('holdingsRepriced reducer', () => {
+describe('holdingsRepriced action', () => {
   test('updates price for matched ticks and recomputes dayChangePct', () => {
     const store = withHoldings();
     const ticks: MarketTick[] = [
       { symbol: 'AAA', price: 132, changePct: 0, t: Date.now() },
     ];
-    store.dispatch(holdingsRepriced(ticks));
+    store.getState().holdingsRepriced(ticks);
     const aaa = store.getState().portfolio.holdings.find((h) => h.symbol === 'AAA')!;
     expect(aaa.price).toBe(132);
     // prevDayBase was 120/1.02 ≈ 117.647; new pct ≈ (132-117.647)/117.647
@@ -128,23 +126,23 @@ describe('holdingsRepriced reducer', () => {
   test('ignores ticks for unknown symbols', () => {
     const store = withHoldings();
     const before = store.getState().portfolio.holdings;
-    store.dispatch(holdingsRepriced([{ symbol: 'ZZZ', price: 999, changePct: 0, t: Date.now() }]));
+    store.getState().holdingsRepriced([{ symbol: 'ZZZ', price: 999, changePct: 0, t: Date.now() }]);
     expect(store.getState().portfolio.holdings).toEqual(before);
   });
 
   test('sets lastUpdated to a recent ISO timestamp', () => {
     const store = withHoldings();
-    store.dispatch(holdingsRepriced([{ symbol: 'AAA', price: 121, changePct: 0, t: Date.now() }]));
+    store.getState().holdingsRepriced([{ symbol: 'AAA', price: 121, changePct: 0, t: Date.now() }]);
     const updated = store.getState().portfolio.lastUpdated;
     expect(updated).not.toBeNull();
     expect(new Date(updated!).getTime()).toBeLessThanOrEqual(Date.now());
   });
 });
 
-describe('portfolioReset reducer', () => {
+describe('portfolioReset action', () => {
   test('restores seed data and clears errors', () => {
     const store = withHoldings();
-    store.dispatch(portfolioReset());
+    store.getState().portfolioReset();
     const state = store.getState().portfolio;
     expect(state.holdings.length).toBeGreaterThan(0);
     expect(state.error).toBeNull();

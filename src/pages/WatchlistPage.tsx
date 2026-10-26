@@ -1,18 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import styled from 'styled-components';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import {
   selectWatchlist,
-  watchlistItemAdded,
-  watchlistItemRemoved,
-} from '@/features/watchlist/watchlistSlice';
+  } from '@/features/watchlist/watchlistSlice';
 import { Button, Card, Input, TickerBadge } from '@/components/primitives';
 import { formatRelativeTime } from '@/utils/format';
 import { media } from '@/utils/responsive';
 
 export function WatchlistPage() {
-  const dispatch = useAppDispatch();
-  const items = useAppSelector(selectWatchlist);
+  const watchlistItemAdded = useAppStore((s) => s.watchlistItemAdded);
+  const watchlistItemRemoved = useAppStore((s) => s.watchlistItemRemoved);
+  const items = useAppStore(selectWatchlist);
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export function WatchlistPage() {
       setError(`${sym} is already on your watchlist.`);
       return;
     }
-    dispatch(watchlistItemAdded({ symbol: sym, name: nm }));
+    watchlistItemAdded({ symbol: sym, name: nm });
     setSymbol('');
     setName('');
     setError(null);
@@ -94,7 +93,7 @@ export function WatchlistPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => dispatch(watchlistItemRemoved(item.symbol))}
+                  onClick={() => watchlistItemRemoved(item.symbol)}
                   aria-label={`Remove ${item.symbol} from watchlist`}
                 >
                   Remove

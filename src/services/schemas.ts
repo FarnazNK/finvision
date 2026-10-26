@@ -2,7 +2,7 @@
  * Runtime contracts for data crossing the network boundary.
  *
  * TypeScript types disappear at runtime, so a backend change or a bad proxy
- * response would otherwise flow straight into Redux and the UI. Every API
+ * response would otherwise flow straight into the store and the UI. Every API
  * response is parsed through one of these Zod schemas first; the exported
  * types are inferred from the schemas so the two can never drift apart.
  */
