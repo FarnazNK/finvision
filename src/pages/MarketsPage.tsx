@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectMarketHistory } from '@/features/markets/marketsSlice';
 import { Card, TickerBadge } from '@/components/primitives';
@@ -17,8 +17,8 @@ interface Mover {
 }
 
 export function MarketsPage() {
-  const holdings = useAppSelector(selectHoldings);
-  const history = useAppSelector(selectMarketHistory);
+  const holdings = useAppStore(selectHoldings);
+  const history = useAppStore(selectMarketHistory);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
 
   // Simulated price ticks replace the holdings array frequently. Depend on the

@@ -1,29 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled, { keyframes, useTheme } from 'styled-components';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import {
-  currencyChanged,
-  liveFeedToggled,
   selectCurrency,
   selectLiveFeed,
   selectThemeMode,
-  themeModeChanged,
-} from '@/features/ui/uiSlice';
+  } from '@/features/ui/uiSlice';
 import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { media } from '@/utils/responsive';
 
 export function Topbar() {
-  const dispatch = useAppDispatch();
+  const currencyChanged = useAppStore((s) => s.currencyChanged);
+  const liveFeedToggled = useAppStore((s) => s.liveFeedToggled);
+  const themeModeChanged = useAppStore((s) => s.themeModeChanged);
   const location = useLocation();
-  const themeMode = useAppSelector(selectThemeMode);
+  const themeMode = useAppStore(selectThemeMode);
   const theme = useTheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && theme.name === 'dark');
-  const liveFeed = useAppSelector(selectLiveFeed);
-  const currency = useAppSelector(selectCurrency);
-  const lastUpdated = useAppSelector(selectLastUpdated);
+  const liveFeed = useAppStore(selectLiveFeed);
+  const currency = useAppStore(selectCurrency);
+  const lastUpdated = useAppStore(selectLastUpdated);
 
   // Re-render every 15s so the relative-time label stays fresh.
   const [, force] = useState(0);
@@ -43,7 +42,7 @@ export function Topbar() {
         <CurrencySelect
           aria-label="Display currency"
           value={currency}
-          onChange={(e) => dispatch(currencyChanged(e.target.value))}
+          onChange={(e) => currencyChanged(e.target.value)}
         >
           <option value="USD">USD</option>
           <option value="CAD">CAD</option>
@@ -51,7 +50,7 @@ export function Topbar() {
         </CurrencySelect>
         <LiveStatus
           type="button"
-          onClick={() => dispatch(liveFeedToggled())}
+          onClick={() => liveFeedToggled()}
           aria-pressed={liveFeed}
           aria-label={liveFeed ? 'Pause simulated price updates' : 'Resume simulated price updates'}
         >
@@ -66,7 +65,7 @@ export function Topbar() {
 
         <ThemeToggle
           type="button"
-          onClick={() => dispatch(themeModeChanged(isDark ? 'light' : 'dark'))}
+          onClick={() => themeModeChanged(isDark ? 'light' : 'dark')}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}
         >

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import styled, { css } from 'styled-components';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { selectSidebarCollapsed, sidebarToggled } from '@/features/ui/uiSlice';
+import { useAppStore } from '@/app/hooks';
+import { selectSidebarCollapsed, } from '@/features/ui/uiSlice';
 import { media } from '@/utils/responsive';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 
@@ -21,8 +21,8 @@ const NAV: NavItem[] = [
 ];
 
 export function Sidebar() {
-  const collapsed = useAppSelector(selectSidebarCollapsed);
-  const dispatch = useAppDispatch();
+  const collapsed = useAppStore(selectSidebarCollapsed);
+  const sidebarToggled = useAppStore((s) => s.sidebarToggled);
 
   return (
     <Aside aria-label="Primary" $collapsed={collapsed}>
@@ -45,7 +45,7 @@ export function Sidebar() {
 
       <CollapseBtn
         type="button"
-        onClick={() => dispatch(sidebarToggled())}
+        onClick={() => sidebarToggled()}
         aria-expanded={!collapsed}
         aria-controls="primary-nav"
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

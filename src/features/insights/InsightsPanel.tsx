@@ -1,20 +1,21 @@
 /**
  * Portfolio Insights — natural-language Q&A over the user's holdings.
  *
- * Reads the live portfolio/transaction state straight from the Redux store and
+ * Reads the live portfolio/transaction state straight from the app store and
  * posts it to the AI service, so answers are grounded in the exact account the
- * user is looking at. Includes a few suggested prompts to make the feature
- * discoverable.
+ * user is looking at. The panel's own session state (question, request status,
+ * recent questions) lives in a Zustand store; see insightsStore.ts.
  */
-import { useRef, useState } from 'react';
+import { useRef, type ChangeEvent, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 
-import { useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
-import { askInsight, type InsightsResponse } from '@/services/insightsClient';
+import { askInsight } from '@/services/insightsClient';
+import { useInsightsStore } from './insightsStore';
 
 const SUGGESTIONS = [
   'How is my portfolio doing overall?',
@@ -24,15 +25,22 @@ const SUGGESTIONS = [
 ];
 
 export function InsightsPanel() {
-  const holdings = useAppSelector(selectHoldings);
-  const transactions = useAppSelector(selectTransactions);
-  const currency = useAppSelector(selectCurrency);
+  const holdings = useAppStore(selectHoldings);
+  const transactions = useAppStore(selectTransactions);
+  const currency = useAppStore(selectCurrency);
 
-  const [question, setQuestion] = useState('');
-  const [result, setResult] = useState<InsightsResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const question = useInsightsStore((s) => s.question);
+  const status = useInsightsStore((s) => s.status);
+  const result = useInsightsStore((s) => s.result);
+  const error = useInsightsStore((s) => s.error);
+  const history = useInsightsStore((s) => s.history);
+  const setQuestion = useInsightsStore((s) => s.setQuestion);
+  const requestStarted = useInsightsStore((s) => s.requestStarted);
+  const requestSucceeded = useInsightsStore((s) => s.requestSucceeded);
+  const requestFailed = useInsightsStore((s) => s.requestFailed);
+  const requestCancelled = useInsightsStore((s) => s.requestCancelled);
   const abortRef = useRef<AbortController | null>(null);
+  const loading = status === 'loading';
 
   async function run(q: string) {
     const trimmed = q.trim();
@@ -41,9 +49,7 @@ export function InsightsPanel() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
+    requestStarted(trimmed);
     try {
       const res = await askInsight(
         trimmed,
@@ -52,15 +58,17 @@ export function InsightsPanel() {
         currency,
         controller.signal,
       );
-      setResult(res);
+      requestSucceeded(res);
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') {
-        setError('Insights are temporarily unavailable. Please try again in a moment.');
+      if ((e as Error).name === 'AbortError') {
+        requestCancelled();
+      } else {
+        requestFailed('Insights are temporarily unavailable. Please try again in a moment.');
       }
-    } finally {
-      setLoading(false);
     }
   }
+
+  const recent = history.filter((q) => !SUGGESTIONS.includes(q));
 
   return (
     <Card
@@ -70,8 +78,8 @@ export function InsightsPanel() {
       <Row>
         <Field
           value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && run(question)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setQuestion(e.target.value)}
+          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && run(question)}
           placeholder="e.g. Am I too concentrated in tech?"
           aria-label="Ask about your portfolio"
         />
@@ -82,11 +90,22 @@ export function InsightsPanel() {
 
       <Chips>
         {SUGGESTIONS.map((s) => (
-          <Chip key={s} disabled={loading} onClick={() => { setQuestion(s); run(s); }}>
+          <Chip key={s} disabled={loading} onClick={() => run(s)}>
             {s}
           </Chip>
         ))}
       </Chips>
+
+      {recent.length > 0 && (
+        <Recent aria-label="Recent questions">
+          <RecentLabel>Recent</RecentLabel>
+          {recent.map((q) => (
+            <Chip key={q} disabled={loading} onClick={() => run(q)}>
+              {q}
+            </Chip>
+          ))}
+        </Recent>
+      )}
 
       {error && <ErrorText role="alert">{error}</ErrorText>}
 
@@ -136,6 +155,21 @@ const Chips = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+`;
+
+const Recent = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+`;
+
+const RecentLabel = styled.span`
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.color.textMuted};
 `;
 
 const Chip = styled.button`

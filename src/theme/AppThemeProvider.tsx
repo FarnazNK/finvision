@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ThemeProvider } from 'styled-components';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { selectThemeMode, themeHydrated } from '@/features/ui/uiSlice';
+import { useAppStore } from '@/app/hooks';
+import { selectThemeMode, } from '@/features/ui/uiSlice';
 import type { ThemeMode } from '@/types/domain';
 import { darkTheme, lightTheme } from './tokens';
 import { GlobalStyle } from './GlobalStyle';
@@ -18,19 +18,19 @@ const STORAGE_KEY = 'portfolio:theme:v2';
  *   reacts the moment the OS flips light/dark.
  */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const mode = useAppSelector(selectThemeMode);
-  const dispatch = useAppDispatch();
+  const mode = useAppStore(selectThemeMode);
+  const themeHydrated = useAppStore((s) => s.themeHydrated);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
-        dispatch(themeHydrated(stored as ThemeMode));
+        themeHydrated(stored as ThemeMode);
       }
     } catch {
       /* localStorage may be unavailable (private mode, SSR) */
     }
-  }, [dispatch]);
+  }, [themeHydrated]);
 
   useEffect(() => {
     try {

@@ -29,7 +29,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
-          redux: ['@reduxjs/toolkit', 'react-redux'],
+          state: ['zustand', 'immer', 'zod'],
           charts: ['recharts'],
           three: ['three'],
         },

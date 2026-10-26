@@ -1,10 +1,7 @@
 import { makeStore } from '@/app/store';
 import {
-  filterChanged,
-  searchChanged,
   selectFilteredTransactions,
-  transactionAdded,
-} from '@/features/transactions/transactionsSlice';
+  } from '@/features/transactions/transactionsSlice';
 import type { Transaction } from '@/types/domain';
 
 const sample: Transaction[] = [
@@ -27,7 +24,7 @@ describe('transactions selectors', () => {
 
   test('filters by transaction type', () => {
     const store = withTx();
-    store.dispatch(filterChanged('dividend'));
+    store.getState().filterChanged('dividend');
     const result = selectFilteredTransactions(store.getState());
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('b');
@@ -35,37 +32,37 @@ describe('transactions selectors', () => {
 
   test('search matches symbol case-insensitively', () => {
     const store = withTx();
-    store.dispatch(searchChanged('aapl'));
+    store.getState().searchChanged('aapl');
     const result = selectFilteredTransactions(store.getState());
     expect(result.map((t) => t.id)).toEqual(['a']);
   });
 
   test('search matches description text', () => {
     const store = withTx();
-    store.dispatch(searchChanged('advisory'));
+    store.getState().searchChanged('advisory');
     const result = selectFilteredTransactions(store.getState());
     expect(result.map((t) => t.id)).toEqual(['c']);
   });
 
   test('filter and search compose with AND semantics', () => {
     const store = withTx();
-    store.dispatch(filterChanged('buy'));
-    store.dispatch(searchChanged('aapl'));
+    store.getState().filterChanged('buy');
+    store.getState().searchChanged('aapl');
     expect(selectFilteredTransactions(store.getState()).map((t) => t.id)).toEqual(['a']);
 
-    store.dispatch(searchChanged('bnd')); // no buy matches "bnd"
+    store.getState().searchChanged('bnd'); // no buy matches "bnd"
     expect(selectFilteredTransactions(store.getState())).toEqual([]);
   });
 });
 
-describe('transactionAdded reducer', () => {
+describe('transactionAdded action', () => {
   test('prepends the new transaction', () => {
     const store = withTx();
     const newTx: Transaction = {
       id: 'd', date: '2026-04-04T00:00:00Z', type: 'deposit',
       description: 'ACH deposit', amount: 500, currency: 'USD', status: 'pending',
     };
-    store.dispatch(transactionAdded(newTx));
+    store.getState().transactionAdded(newTx);
     expect(store.getState().transactions.items[0]).toEqual(newTx);
     expect(store.getState().transactions.items).toHaveLength(4);
   });

@@ -8,19 +8,11 @@
 import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
+import { insightsResponseSchema, parseResponse, type InsightsResponse } from './schemas';
+
+export type { Citation, InsightsResponse } from './schemas';
 
 const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
-
-export interface Citation {
-  kind: 'holding' | 'transaction' | 'metric';
-  ref: string;
-}
-
-export interface InsightsResponse {
-  answer: string;
-  citations: Citation[];
-  model: string;
-}
 
 export async function askInsight(
   question: string,
@@ -48,5 +40,5 @@ export async function askInsight(
   if (!res.ok) {
     throw new Error(`Insights request failed: ${res.status}`);
   }
-  return (await res.json()) as InsightsResponse;
+  return parseResponse(insightsResponseSchema, await res.json(), '/api/insights');
 }

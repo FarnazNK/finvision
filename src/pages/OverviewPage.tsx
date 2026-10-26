@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import {
   makeSelectTopHoldings,
@@ -42,20 +42,20 @@ const RANGE_OPTIONS = [
 
 export function OverviewPage() {
   const [range, setRange] = useState<Range>('1M');
-  const totalValue = useAppSelector(selectTotalValue);
-  const costBasis = useAppSelector(selectTotalCostBasis);
-  const totalGain = useAppSelector(selectTotalGain);
-  const totalGainPct = useAppSelector(selectTotalGainPct);
-  const dayChange = useAppSelector(selectDayChange);
-  const dayChangePct = useAppSelector(selectDayChangePct);
-  const curve = useAppSelector(selectCurve);
-  const allocation = useAppSelector(selectAllocationByAssetClass);
-  const holdingsCount = useAppSelector(selectHoldingsCount);
+  const totalValue = useAppStore(selectTotalValue);
+  const costBasis = useAppStore(selectTotalCostBasis);
+  const totalGain = useAppStore(selectTotalGain);
+  const totalGainPct = useAppStore(selectTotalGainPct);
+  const dayChange = useAppStore(selectDayChange);
+  const dayChangePct = useAppStore(selectDayChangePct);
+  const curve = useAppStore(selectCurve);
+  const allocation = useAppStore(selectAllocationByAssetClass);
+  const holdingsCount = useAppStore(selectHoldingsCount);
   const topHoldingsSelector = useMemo(() => makeSelectTopHoldings(5), []);
-  const topHoldings = useAppSelector(topHoldingsSelector);
-  const currency = useAppSelector(selectCurrency);
+  const topHoldings = useAppStore(topHoldingsSelector);
+  const currency = useAppStore(selectCurrency);
   const recentSelector = useMemo(() => makeSelectRecentTransactions(5), []);
-  const recent = useAppSelector(recentSelector);
+  const recent = useAppStore(recentSelector);
 
   return (
     <Page>

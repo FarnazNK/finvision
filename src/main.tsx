@@ -1,8 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { store } from '@/app/store';
 import { AppThemeProvider } from '@/theme/AppThemeProvider';
 import { App } from './App';
 
@@ -11,12 +9,10 @@ if (!rootEl) throw new Error('Root element #root not found');
 
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <AppThemeProvider>
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <App />
-        </BrowserRouter>
-      </AppThemeProvider>
-    </Provider>
+    <AppThemeProvider>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <App />
+      </BrowserRouter>
+    </AppThemeProvider>
   </React.StrictMode>,
 );

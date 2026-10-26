@@ -1,6 +1,5 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { ThemeMode } from '@/types/domain';
-import type { RootState } from '@/app/store';
+import type { Mutate, RootState } from '@/app/store';
 
 export interface UIState {
   themeMode: ThemeMode;
@@ -10,47 +9,52 @@ export interface UIState {
   currency: string;
 }
 
-const initialState: UIState = {
-  themeMode: 'light',
-  sidebarCollapsed: false,
-  liveFeed: true,
-  currency: 'USD',
-};
+export function initialUIState(): UIState {
+  return {
+    themeMode: 'light',
+    sidebarCollapsed: false,
+    liveFeed: true,
+    currency: 'USD',
+  };
+}
 
-const uiSlice = createSlice({
-  name: 'ui',
-  initialState,
-  reducers: {
-    themeModeChanged(state, action: PayloadAction<ThemeMode>) {
-      state.themeMode = action.payload;
-    },
-    themeHydrated(state, action: PayloadAction<ThemeMode>) {
-      state.themeMode = action.payload;
-    },
-    sidebarToggled(state) {
-      state.sidebarCollapsed = !state.sidebarCollapsed;
-    },
-    liveFeedToggled(state) {
-      state.liveFeed = !state.liveFeed;
-    },
-    liveFeedSet(state, action: PayloadAction<boolean>) {
-      state.liveFeed = action.payload;
-    },
-    currencyChanged(state, action: PayloadAction<string>) {
-      state.currency = action.payload;
-    },
-  },
-});
+export interface UIActions {
+  themeModeChanged: (mode: ThemeMode) => void;
+  themeHydrated: (mode: ThemeMode) => void;
+  sidebarToggled: () => void;
+  liveFeedToggled: () => void;
+  liveFeedSet: (on: boolean) => void;
+  currencyChanged: (currency: string) => void;
+}
 
-export const {
-  themeModeChanged,
-  themeHydrated,
-  sidebarToggled,
-  liveFeedToggled,
-  liveFeedSet,
-  currencyChanged,
-} = uiSlice.actions;
-export default uiSlice.reducer;
+export function createUIActions(mutate: Mutate): UIActions {
+  return {
+    themeModeChanged: (mode) =>
+      mutate(({ ui }) => {
+        ui.themeMode = mode;
+      }),
+    themeHydrated: (mode) =>
+      mutate(({ ui }) => {
+        ui.themeMode = mode;
+      }),
+    sidebarToggled: () =>
+      mutate(({ ui }) => {
+        ui.sidebarCollapsed = !ui.sidebarCollapsed;
+      }),
+    liveFeedToggled: () =>
+      mutate(({ ui }) => {
+        ui.liveFeed = !ui.liveFeed;
+      }),
+    liveFeedSet: (on) =>
+      mutate(({ ui }) => {
+        ui.liveFeed = on;
+      }),
+    currencyChanged: (currency) =>
+      mutate(({ ui }) => {
+        ui.currency = currency;
+      }),
+  };
+}
 
 export const selectThemeMode = (s: RootState) => s.ui.themeMode;
 export const selectSidebarCollapsed = (s: RootState) => s.ui.sidebarCollapsed;

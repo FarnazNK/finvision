@@ -1,8 +1,7 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { createSelector } from '@reduxjs/toolkit';
 import type { Holding, MarketTick, PortfolioPoint } from '@/types/domain';
 import { seedHoldings, seedPortfolioCurve } from '@/services/seed';
-import type { RootState } from '@/app/store';
+import type { Mutate, RootState } from '@/app/store';
+import { createSelector } from '@/app/createSelector';
 
 export interface PortfolioState {
   holdings: Holding[];
@@ -13,47 +12,52 @@ export interface PortfolioState {
   error: string | null;
 }
 
-const initialState: PortfolioState = {
-  holdings: seedHoldings,
-  curve: seedPortfolioCurve(),
-  lastUpdated: new Date().toISOString(),
-  loading: false,
-  error: null,
-};
+export function initialPortfolioState(): PortfolioState {
+  return {
+    holdings: seedHoldings,
+    curve: seedPortfolioCurve(),
+    lastUpdated: new Date().toISOString(),
+    loading: false,
+    error: null,
+  };
+}
 
-const portfolioSlice = createSlice({
-  name: 'portfolio',
-  initialState,
-  reducers: {
-    holdingsRepriced(state, action: PayloadAction<MarketTick[]>) {
-      const bySymbol = new Map(action.payload.map((t) => [t.symbol, t]));
-      for (const h of state.holdings) {
-        const tick = bySymbol.get(h.symbol);
-        if (!tick) continue;
-        const dayFactor = 1 + h.dayChangePct;
-        const prevDayBase = dayFactor > 0 ? h.price / dayFactor : h.price;
-        h.price = tick.price;
-        h.dayChangePct = (tick.price - prevDayBase) / prevDayBase;
-      }
-      state.lastUpdated = new Date().toISOString();
-    },
-    curvePointAppended(state, action: PayloadAction<PortfolioPoint>) {
-      state.curve.push(action.payload);
-      // Keep only ~2 years of points to bound memory.
-      if (state.curve.length > 800) state.curve.shift();
-    },
-    portfolioReset(state) {
-      state.holdings = seedHoldings;
-      state.curve = seedPortfolioCurve();
-      state.lastUpdated = new Date().toISOString();
-      state.error = null;
-    },
-  },
-});
+export interface PortfolioActions {
+  holdingsRepriced: (ticks: MarketTick[]) => void;
+  curvePointAppended: (point: PortfolioPoint) => void;
+  portfolioReset: () => void;
+}
 
-export const { holdingsRepriced, curvePointAppended, portfolioReset } =
-  portfolioSlice.actions;
-export default portfolioSlice.reducer;
+export function createPortfolioActions(mutate: Mutate): PortfolioActions {
+  return {
+    holdingsRepriced: (ticks) =>
+      mutate(({ portfolio }) => {
+        const bySymbol = new Map(ticks.map((t) => [t.symbol, t]));
+        for (const h of portfolio.holdings) {
+          const tick = bySymbol.get(h.symbol);
+          if (!tick) continue;
+          const dayFactor = 1 + h.dayChangePct;
+          const prevDayBase = dayFactor > 0 ? h.price / dayFactor : h.price;
+          h.price = tick.price;
+          h.dayChangePct = (tick.price - prevDayBase) / prevDayBase;
+        }
+        portfolio.lastUpdated = new Date().toISOString();
+      }),
+    curvePointAppended: (point) =>
+      mutate(({ portfolio }) => {
+        portfolio.curve.push(point);
+        // Keep only ~2 years of points to bound memory.
+        if (portfolio.curve.length > 800) portfolio.curve.shift();
+      }),
+    portfolioReset: () =>
+      mutate(({ portfolio }) => {
+        portfolio.holdings = seedHoldings;
+        portfolio.curve = seedPortfolioCurve();
+        portfolio.lastUpdated = new Date().toISOString();
+        portfolio.error = null;
+      }),
+  };
+}
 
 // ---------- Selectors ----------
 // Memoized selectors keep derived computations off the render path.

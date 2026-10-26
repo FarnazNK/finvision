@@ -1,8 +1,7 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { createSelector } from '@reduxjs/toolkit';
 import type { Transaction } from '@/types/domain';
 import { seedTransactions } from '@/services/seed';
-import type { RootState } from '@/app/store';
+import type { Mutate, RootState } from '@/app/store';
+import { createSelector } from '@/app/createSelector';
 
 export type TxFilter = 'all' | Transaction['type'];
 
@@ -12,31 +11,32 @@ export interface TransactionsState {
   search: string;
 }
 
-const initialState: TransactionsState = {
-  items: seedTransactions,
-  filter: 'all',
-  search: '',
-};
+export function initialTransactionsState(): TransactionsState {
+  return { items: seedTransactions, filter: 'all', search: '' };
+}
 
-const transactionsSlice = createSlice({
-  name: 'transactions',
-  initialState,
-  reducers: {
-    transactionAdded(state, action: PayloadAction<Transaction>) {
-      state.items.unshift(action.payload);
-    },
-    filterChanged(state, action: PayloadAction<TxFilter>) {
-      state.filter = action.payload;
-    },
-    searchChanged(state, action: PayloadAction<string>) {
-      state.search = action.payload;
-    },
-  },
-});
+export interface TransactionsActions {
+  transactionAdded: (tx: Transaction) => void;
+  filterChanged: (filter: TxFilter) => void;
+  searchChanged: (search: string) => void;
+}
 
-export const { transactionAdded, filterChanged, searchChanged } =
-  transactionsSlice.actions;
-export default transactionsSlice.reducer;
+export function createTransactionsActions(mutate: Mutate): TransactionsActions {
+  return {
+    transactionAdded: (tx) =>
+      mutate(({ transactions }) => {
+        transactions.items.unshift(tx);
+      }),
+    filterChanged: (filter) =>
+      mutate(({ transactions }) => {
+        transactions.filter = filter;
+      }),
+    searchChanged: (search) =>
+      mutate(({ transactions }) => {
+        transactions.search = search;
+      }),
+  };
+}
 
 export const selectTransactions = (s: RootState) => s.transactions.items;
 export const selectTxFilter = (s: RootState) => s.transactions.filter;

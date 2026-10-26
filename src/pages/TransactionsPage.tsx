@@ -1,9 +1,7 @@
 import styled from 'styled-components';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import {
-  filterChanged,
-  searchChanged,
   selectFilteredTransactions,
   selectTxFilter,
   selectTxSearch,
@@ -26,11 +24,12 @@ const FILTER_OPTIONS = [
 ] as const;
 
 export function TransactionsPage() {
-  const dispatch = useAppDispatch();
-  const currency = useAppSelector(selectCurrency);
-  const filter = useAppSelector(selectTxFilter);
-  const search = useAppSelector(selectTxSearch);
-  const items = useAppSelector(selectFilteredTransactions);
+  const searchChanged = useAppStore((s) => s.searchChanged);
+  const filterChanged = useAppStore((s) => s.filterChanged);
+  const currency = useAppStore(selectCurrency);
+  const filter = useAppStore(selectTxFilter);
+  const search = useAppStore(selectTxSearch);
+  const items = useAppStore(selectFilteredTransactions);
 
   return (
     <Page>
@@ -54,7 +53,7 @@ export function TransactionsPage() {
             hideLabel
             placeholder="Search by symbol, type, or description"
             value={search}
-            onChange={(e) => dispatch(searchChanged(e.target.value))}
+            onChange={(e) => searchChanged(e.target.value)}
             iconStart={
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7" />
@@ -68,7 +67,7 @@ export function TransactionsPage() {
             label="Filter by type"
             size="sm"
             value={filter}
-            onChange={(v) => dispatch(filterChanged(v as TxFilter))}
+            onChange={(v) => filterChanged(v as TxFilter)}
             options={FILTER_OPTIONS}
           />
         </FilterScroll>

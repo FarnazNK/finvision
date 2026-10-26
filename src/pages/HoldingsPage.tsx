@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
-import { useAppSelector } from '@/app/hooks';
+import { useAppStore } from '@/app/hooks';
 import { selectCurrency } from '@/features/ui/uiSlice';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { makeSelectSparkline } from '@/features/markets/marketsSlice';
@@ -13,16 +13,14 @@ import {
   formatPercent,
 } from '@/utils/format';
 import type { Holding } from '@/types/domain';
-import type { RootState } from '@/app/store';
-import { useSelector } from 'react-redux';
 import { media } from '@/utils/responsive';
 
 type SortKey = 'name' | 'assetClass' | 'quantity' | 'price' | 'value' | 'gain' | 'dayChangePct';
 type SortDir = 'asc' | 'desc';
 
 export function HoldingsPage() {
-  const holdings = useAppSelector(selectHoldings);
-  const currency = useAppSelector(selectCurrency);
+  const holdings = useAppStore(selectHoldings);
+  const currency = useAppStore(selectCurrency);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: 'value',
@@ -163,9 +161,9 @@ function readSortValue(h: Holding, k: SortKey): number | string {
 }
 
 function HoldingRow({ holding, currency }: { holding: Holding; currency: string }) {
-  // Per-row memoised selector — Recommended RTK pattern for parameterised selectors.
+  // Per-row memoised selector, so each row only re-renders when its own ticks change.
   const sparkSelector = useMemo(() => makeSelectSparkline(holding.symbol), [holding.symbol]);
-  const ticks = useSelector((s: RootState) => sparkSelector(s));
+  const ticks = useAppStore(sparkSelector);
 
   const value = holding.quantity * holding.price;
   const gain = (holding.price - holding.costBasis) * holding.quantity;

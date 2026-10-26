@@ -6,6 +6,21 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 // three.js is ~150 kB gzipped, so the scene loads after the page text is on screen.
 const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
 
+const STACK = [
+  {
+    label: 'Frontend',
+    items: ['React', 'TypeScript', 'Zustand', 'Zod', 'immer', 'three.js', 'Recharts'],
+  },
+  {
+    label: 'Backend & AI',
+    items: ['Python', 'FastAPI', 'Pydantic', 'SQLAlchemy', 'PostgreSQL', 'JWT auth', 'Anthropic tool use'],
+  },
+  {
+    label: 'Delivery',
+    items: ['Docker', 'Kubernetes', 'GitHub Actions', 'Jest', 'pytest', 'CodeQL', 'Prometheus/Grafana'],
+  },
+];
+
 export function LandingPage() {
   const theme = useTheme();
   const sceneColors = useMemo(
@@ -155,6 +170,31 @@ export function LandingPage() {
               <StepText>Review your dashboard, follow markets, and ask AI for context with sources.</StepText>
             </Step>
           </Steps>
+        </Section>
+
+        <Section id="stack" aria-labelledby="stack-heading">
+          <SectionHead>
+            <Eyebrow>Under the hood</Eyebrow>
+            <SectionTitle id="stack-heading">How FinVision is built</SectionTitle>
+            <SectionIntro>
+              A typed React frontend and a Python API, tested on every change and shipped as containers.
+            </SectionIntro>
+          </SectionHead>
+          <StackGrid>
+            {STACK.map((group) => (
+              <StackCard key={group.label}>
+                <StackLabel>{group.label}</StackLabel>
+                <TechList>
+                  {group.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </TechList>
+              </StackCard>
+            ))}
+          </StackGrid>
+          <SourceLink href="https://github.com/FarnazNK/finvision" target="_blank" rel="noreferrer">
+            View the source on GitHub →
+          </SourceLink>
         </Section>
 
         <Cta aria-labelledby="cta-heading">
@@ -688,6 +728,55 @@ const StepTitle = styled.h3`
 const StepText = styled.p`
   color: ${({ theme }) => theme.color.textMuted};
   line-height: 1.6;
+`;
+
+const StackGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${({ theme }) => theme.space[4]};
+
+  @media (min-width: 760px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+`;
+
+const StackCard = styled.div`
+  padding: ${({ theme }) => theme.space[6]};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  background: ${({ theme }) => theme.color.surface};
+`;
+
+const StackLabel = styled.h3`
+  margin: 0 0 ${({ theme }) => theme.space[4]};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.color.textMuted};
+`;
+
+const TechList = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space[2]};
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 4px 10px;
+    border: 1px solid ${({ theme }) => theme.color.border};
+    border-radius: 999px;
+    color: ${({ theme }) => theme.color.text};
+    font-size: ${({ theme }) => theme.fontSize.sm};
+  }
+`;
+
+const SourceLink = styled.a`
+  display: inline-block;
+  margin-top: ${({ theme }) => theme.space[6]};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
 `;
 
 const Cta = styled.section`
