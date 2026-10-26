@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Wealth-management dashboard — React + TypeScript + Redux Toolkit + styled-components, tested with Jest.",
+  "description": "Wealth-management dashboard — React + TypeScript + Redux Toolkit + Zustand + Zod + styled-components, tested with Jest.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -23,7 +23,9 @@
     "react-router-dom": "^6.22.2",
     "recharts": "^2.12.2",
     "styled-components": "^6.1.8",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "zod": "^3.25.76",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",

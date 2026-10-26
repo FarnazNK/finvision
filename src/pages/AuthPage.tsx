@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Button, Input } from '@/components/primitives';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { authenticate } from '@/services/authClient';
+import { credentialsSchema, firstIssue, MIN_PASSWORD_LENGTH } from '@/services/schemas';
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -17,9 +18,14 @@ export function AuthPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const parsed = credentialsSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setError(firstIssue(parsed.error));
+      return;
+    }
     setLoading(true);
     try {
-      await authenticate(mode, email, password);
+      await authenticate(mode, parsed.data.email, parsed.data.password);
       navigate('/app');
     } catch (reason) {
       setError(reason instanceof globalThis.Error ? reason.message : 'Authentication failed');
@@ -77,10 +83,10 @@ export function AuthPage() {
               label="Password"
               type="password"
               autoComplete={isLogin ? 'current-password' : 'new-password'}
-              hint="Use at least 12 characters."
+              hint={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              minLength={12}
+              minLength={MIN_PASSWORD_LENGTH}
               required
             />
             {error && <AuthError role="alert">{error}</AuthError>}

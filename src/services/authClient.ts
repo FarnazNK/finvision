@@ -1,9 +1,13 @@
 import { API_BASE_URL } from './apiConfig';
+import {
+  apiErrorSchema,
+  authResponseSchema,
+  credentialsSchema,
+  parseResponse,
+  type AuthResponse,
+} from './schemas';
 
-export interface AuthResponse {
-  accessToken: string;
-  tokenType: string;
-}
+export type { AuthResponse };
 
 const TOKEN_KEY = 'finvision-access-token';
 
@@ -20,15 +24,21 @@ export async function authenticate(
   email: string,
   password: string,
 ): Promise<void> {
+  // Same rules the form enforces, re-checked here so no caller can skip them.
+  const credentials = credentialsSchema.parse({ email, password });
+
   const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(credentials),
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(body?.detail ?? `Authentication failed: ${response.status}`);
+    const body: unknown = await response.json().catch(() => null);
+    const parsed = apiErrorSchema.safeParse(body);
+    throw new Error(
+      parsed.success ? parsed.data.detail : `Authentication failed: ${response.status}`,
+    );
   }
-  const data = (await response.json()) as AuthResponse;
+  const data = parseResponse(authResponseSchema, await response.json(), `/api/auth/${path}`);
   sessionStorage.setItem(TOKEN_KEY, data.accessToken);
 }

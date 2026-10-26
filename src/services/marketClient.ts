@@ -1,17 +1,8 @@
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
+import { marketQuoteSchema, parseResponse, type MarketQuote } from './schemas';
 
-export interface MarketQuote {
-  symbol: string;
-  current: number;
-  change: number;
-  changePercent: number;
-  high: number;
-  low: number;
-  open: number;
-  previousClose: number;
-  timestamp: number;
-}
+export type { MarketQuote } from './schemas';
 
 export async function fetchQuote(
   symbol: string,
@@ -27,7 +18,7 @@ export async function fetchQuote(
   if (!response.ok) {
     throw new Error(`Market quote request failed: ${response.status}`);
   }
-  return (await response.json()) as MarketQuote;
+  return parseResponse(marketQuoteSchema, await response.json(), '/api/markets/quote');
 }
 
 function getAuthHeaders(): Record<string, string> {

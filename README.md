@@ -17,11 +17,11 @@
 | | |
 | --- | --- |
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
-| **Frontend** | React 18, TypeScript, Redux Toolkit, styled-components, Recharts, three.js |
+| **Frontend** | React 18, TypeScript, Redux Toolkit, Zustand, Zod, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
 | **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback |
-| **Quality** | 53 frontend tests (Jest + React Testing Library), 18 backend tests (pytest), CodeQL and dependency audits in CI |
-| **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main` |
+| **Quality** | 68 frontend tests (Jest + React Testing Library), 18 backend tests (pytest), CodeQL and dependency audits in CI |
+| **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
 
@@ -35,7 +35,8 @@ FastAPI service with typed Pydantic contracts: register/login with hashed passwo
 
 ### 📊 Responsive dashboard
 Portfolio value chart with time ranges, allocation donut, sortable holdings, filterable transactions, market movers and a watchlist. It works on desktop and phones (card layouts and bottom navigation on mobile), offers light and dark themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
-→ [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/)
+**State and contracts:** Redux Toolkit holds the durable app state (portfolio, transactions, watchlist, preferences) and persists it locally. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a small **Zustand** store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
+→ [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/), [`src/services/schemas.ts`](src/services/schemas.ts), [`src/features/insights/insightsStore.ts`](src/features/insights/insightsStore.ts)
 
 ### ✨ 3D landing page
 An animated **three.js** portfolio scene: rising bars, a growth line and orbiting points. It's code-split so other pages never load three.js, pauses when off-screen, shows a still frame for users who prefer reduced motion, and falls back to an SVG if WebGL isn't available.
@@ -58,7 +59,7 @@ On every push GitHub Actions runs type checking, ESLint, Jest, pytest, **CodeQL*
 ```mermaid
 flowchart LR
     subgraph FE["Frontend · GitHub Pages"]
-        UI["React + TypeScript<br/>Redux Toolkit · Recharts · three.js"]
+        UI["React + TypeScript<br/>Redux Toolkit · Zustand · Zod · Recharts · three.js"]
     end
 
     subgraph BE["FastAPI · Vercel"]
@@ -127,7 +128,7 @@ None of these need a paid account. All run locally.
 
 | Path | What's there |
 | --- | --- |
-| [`src/`](src/) | React frontend: pages, components, Redux slices, charts, 3D scene |
+| [`src/`](src/) | React frontend: pages, components, Redux slices, Zustand store, Zod contracts, charts, 3D scene |
 | [`ai-service/`](ai-service/) | FastAPI backend: API, auth, analytics tools, LLM layer, tests |
 | [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
 | [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
