@@ -8,7 +8,8 @@ import { GlobalStyle } from './GlobalStyle';
 
 // v3: the glass redesign made dark the default. Bumping the key lets existing
 // visitors see it once; their next explicit choice is remembered as before.
-const STORAGE_KEY = 'portfolio:theme:v3';
+export const STORAGE_KEY = 'portfolio:theme:v3';
+const DEFAULT_MODE: ThemeMode = 'dark';
 
 /**
  * Wraps the app with the active styled-components theme.
@@ -27,6 +28,11 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         themeHydrated(stored as ThemeMode);
+      } else {
+        // No v3 choice yet: the app store may have restored a stale
+        // `ui.themeMode` from before the redesign, so apply the new default
+        // explicitly. After this, the v3 key records the visitor's own choice.
+        themeHydrated(DEFAULT_MODE);
       }
     } catch {
       /* localStorage may be unavailable (private mode, SSR) */
