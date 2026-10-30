@@ -72,19 +72,25 @@ const sizeStyles = {
 
 const variantStyles = {
   primary: css`
-    background: ${({ theme }) => theme.color.primary};
-    color: ${({ theme }) => theme.color.primaryText};
+    background: linear-gradient(135deg, ${({ theme }) => theme.color.primary}, ${({ theme }) => theme.color.accent});
+    color: #fff;
     border-color: transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 10px 24px -10px color-mix(in srgb, ${({ theme }) => theme.color.primary} 80%, transparent);
     &:hover:not(:disabled) {
-      background: ${({ theme }) => theme.color.primaryHover};
+      filter: brightness(1.08);
     }
   `,
   secondary: css`
     background: ${({ theme }) => theme.color.surface};
+    -webkit-backdrop-filter: ${({ theme }) => theme.glass.blur};
+    backdrop-filter: ${({ theme }) => theme.glass.blur};
     color: ${({ theme }) => theme.color.text};
     border-color: ${({ theme }) => theme.color.border};
+    box-shadow: ${({ theme }) => theme.glass.highlight};
     &:hover:not(:disabled) {
       background: ${({ theme }) => theme.color.surfaceAlt};
+      border-color: ${({ theme }) => theme.color.borderStrong};
     }
   `,
   ghost: css`
@@ -123,6 +129,7 @@ const StyledButton = styled.button<{
     background ${({ theme }) => theme.motion.fast},
     border-color ${({ theme }) => theme.motion.fast},
     color ${({ theme }) => theme.motion.fast},
+    filter ${({ theme }) => theme.motion.fast},
     transform ${({ theme }) => theme.motion.fast};
   white-space: nowrap;
   user-select: none;

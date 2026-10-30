@@ -4,6 +4,7 @@ import { useAppStore } from '@/app/hooks';
 import { selectSidebarCollapsed, } from '@/features/ui/uiSlice';
 import { media } from '@/utils/responsive';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { glass } from '@/theme/glass';
 
 interface NavItem {
   to: string;
@@ -57,14 +58,15 @@ export function Sidebar() {
 }
 
 const Aside = styled.aside<{ $collapsed: boolean }>`
+  ${glass}
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 12px;
+  height: calc(100vh - 24px);
+  margin: 12px 0 12px 12px;
+  border-radius: ${({ theme }) => theme.radius.xl};
   width: ${({ theme, $collapsed }) =>
     $collapsed ? '72px' : theme.layout.sidebarWidth};
   flex-shrink: 0;
-  background: linear-gradient(165deg, ${({ theme }) => theme.color.surface}, ${({ theme }) => theme.color.bg});
-  border-right: 1px solid ${({ theme }) => theme.color.border};
   display: none;
   flex-direction: column;
   padding: ${({ theme }) => `${theme.space[5]} ${theme.space[3]}`};
@@ -120,10 +122,25 @@ const linkBase = css`
 
 const NavItemLink = styled(NavLink)`
   ${linkBase}
+  position: relative;
+  padding-top: 10px;
+  padding-bottom: 10px;
+
   &.active {
-    box-shadow: inset 3px 0 0 ${({ theme }) => theme.color.primary};
-    background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 12%, transparent);
+    color: ${({ theme }) => theme.color.text};
+    background: linear-gradient(
+      100deg,
+      color-mix(in srgb, ${({ theme }) => theme.color.primary} 26%, transparent),
+      color-mix(in srgb, ${({ theme }) => theme.color.accent} 10%, transparent)
+    );
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, ${({ theme }) => theme.color.primary} 35%, transparent),
+      0 8px 24px -10px color-mix(in srgb, ${({ theme }) => theme.color.primary} 70%, transparent);
+  }
+
+  &.active svg {
     color: ${({ theme }) => theme.color.primary};
+    filter: drop-shadow(0 0 6px color-mix(in srgb, ${({ theme }) => theme.color.primary} 70%, transparent));
   }
 `;
 
@@ -132,9 +149,9 @@ const CollapseBtn = styled.button`
   width: 28px;
   height: 28px;
   border: 1px solid ${({ theme }) => theme.color.border};
-  background: ${({ theme }) => theme.color.surface};
+  background: ${({ theme }) => theme.color.surfaceAlt};
   color: ${({ theme }) => theme.color.textMuted};
-  border-radius: ${({ theme }) => theme.radius.sm};
+  border-radius: ${({ theme }) => theme.radius.md};
   display: grid;
   place-items: center;
   cursor: pointer;

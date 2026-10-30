@@ -46,9 +46,22 @@ export function PortfolioCurveChart({ points, range, height = 320 }: Props) {
       <AreaChart data={data} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="finvisionPortfolioCurveFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={theme.color.primary} stopOpacity={0.32} />
-            <stop offset="100%" stopColor={theme.color.primary} stopOpacity={0} />
+            <stop offset="0%" stopColor={theme.color.primary} stopOpacity={0.38} />
+            <stop offset="55%" stopColor={theme.color.accent} stopOpacity={0.08} />
+            <stop offset="100%" stopColor={theme.color.accent} stopOpacity={0} />
           </linearGradient>
+          <linearGradient id="finvisionPortfolioCurveStroke" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={theme.color.info} />
+            <stop offset="50%" stopColor={theme.color.primary} />
+            <stop offset="100%" stopColor={theme.color.accent} />
+          </linearGradient>
+          <filter id="finvisionPortfolioCurveGlow" x="-5%" y="-30%" width="110%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
         <CartesianGrid stroke={theme.color.chartGrid} strokeDasharray="3 6" vertical={false} />
         <XAxis
@@ -72,10 +85,11 @@ export function PortfolioCurveChart({ points, range, height = 320 }: Props) {
         <Tooltip
           cursor={{ stroke: theme.color.textMuted, strokeWidth: 1, strokeDasharray: '2 4' }}
           contentStyle={{
-            background: theme.color.surface,
-            border: `1px solid ${theme.color.border}`,
+            background: `color-mix(in srgb, ${theme.color.surfaceSolid} 82%, transparent)`,
+            backdropFilter: theme.glass.blur,
+            border: `1px solid ${theme.color.borderStrong}`,
             borderRadius: theme.radius.md,
-            boxShadow: theme.shadow.md,
+            boxShadow: theme.glass.shadow,
             fontSize: theme.fontSize.sm,
             color: theme.color.text,
           }}
@@ -85,9 +99,10 @@ export function PortfolioCurveChart({ points, range, height = 320 }: Props) {
         <Area
           type="monotone"
           dataKey="value"
-          stroke={theme.color.primary}
-          strokeWidth={3}
-          activeDot={{ r: 5, stroke: theme.color.surface, strokeWidth: 2 }}
+          stroke="url(#finvisionPortfolioCurveStroke)"
+          strokeWidth={2.5}
+          filter="url(#finvisionPortfolioCurveGlow)"
+          activeDot={{ r: 5, fill: theme.color.primary, stroke: theme.color.surfaceSolid, strokeWidth: 2 }}
           fill="url(#finvisionPortfolioCurveFill)"
           isAnimationActive={false}
         />

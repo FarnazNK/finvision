@@ -67,17 +67,21 @@ export function SegmentedControl<T extends string>({
 
 const Group = styled.div<{ $size: 'sm' | 'md' }>`
   display: inline-flex;
-  background: ${({ theme }) => theme.color.surfaceAlt};
+  background: ${({ theme }) => theme.color.surfaceMuted};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.md};
-  padding: 2px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  padding: 3px;
   gap: 2px;
 `;
 
 const Segment = styled.button<{ $selected: boolean; $size: 'sm' | 'md' }>`
   appearance: none;
   border: none;
-  background: ${({ $selected, theme }) => ($selected ? theme.color.surface : 'transparent')};
+  background: ${({ $selected, theme }) =>
+    $selected
+      ? `linear-gradient(135deg, color-mix(in srgb, ${theme.color.primary} 30%, transparent), color-mix(in srgb, ${theme.color.accent} 18%, transparent))`
+      : 'transparent'};
   color: ${({ $selected, theme }) => ($selected ? theme.color.text : theme.color.textMuted)};
   padding: ${({ $size, theme }) =>
     $size === 'sm' ? `4px ${theme.space[3]}` : `6px ${theme.space[4]}`};
@@ -90,7 +94,11 @@ const Segment = styled.button<{ $selected: boolean; $size: 'sm' | 'md' }>`
   transition:
     background ${({ theme }) => theme.motion.fast},
     color ${({ theme }) => theme.motion.fast};
-  box-shadow: ${({ $selected, theme }) => ($selected ? theme.shadow.xs : 'none')};
+  box-shadow: ${({ $selected, theme }) =>
+    $selected
+      ? `inset 0 0 0 1px color-mix(in srgb, ${theme.color.primary} 40%, transparent), ${theme.glass.highlight}`
+      : 'none'};
+  font-variant-numeric: tabular-nums;
 
   &:hover:not([aria-checked='true']) {
     color: ${({ theme }) => theme.color.text};

@@ -6,10 +6,14 @@ import {
   } from '@/features/ui/uiSlice';
 
 describe('ui slice', () => {
+  test('defaults to the dark glass theme', () => {
+    expect(selectThemeMode(makeStore().getState())).toBe('dark');
+  });
+
   test('themeModeChanged updates the mode', () => {
     const store = makeStore();
-    store.getState().themeModeChanged('dark');
-    expect(selectThemeMode(store.getState())).toBe('dark');
+    store.getState().themeModeChanged('light');
+    expect(selectThemeMode(store.getState())).toBe('light');
   });
 
   test('sidebarToggled flips the collapsed flag', () => {

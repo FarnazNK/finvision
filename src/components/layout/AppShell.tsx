@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { media } from '@/utils/responsive';
+import { glass } from '@/theme/glass';
 
 interface Props {
   children: ReactNode;
@@ -73,14 +74,14 @@ const MobileNav = styled.nav`
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: ${({ theme }) => theme.space[1]};
+  ${glass}
   position: sticky;
-  bottom: 0;
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: ${({ theme }) => theme.z.sticky};
-  padding: ${({ theme }) => `${theme.space[2]} ${theme.space[2]} calc(${theme.space[2]} + env(safe-area-inset-bottom))`};
-  background: ${({ theme }) => theme.color.surface};
-  border-top: 1px solid ${({ theme }) => theme.color.border};
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(18px);
+  margin: 0 10px;
+  padding: ${({ theme }) => theme.space[1]};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  background: color-mix(in srgb, ${({ theme }) => theme.color.surfaceSolid} 70%, transparent);
 
   @media (max-width: 360px) { gap: 0; padding-left: 0; padding-right: 0; }
   ${media.md`display: none;`}
@@ -102,8 +103,9 @@ const MobileNavLink = styled(NavLink)`
   transition: background ${({ theme }) => theme.motion.base}, color ${({ theme }) => theme.motion.base};
 
   &.active {
-    background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 12%, transparent);
-    color: ${({ theme }) => theme.color.primary};
+    background: color-mix(in srgb, ${({ theme }) => theme.color.primary} 22%, transparent);
+    color: ${({ theme }) => theme.color.text};
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, ${({ theme }) => theme.color.primary} 35%, transparent);
   }
 `;
 

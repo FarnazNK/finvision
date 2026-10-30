@@ -11,6 +11,7 @@ import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { media } from '@/utils/responsive';
+import { CommandPalette, Kbd, useCommandPaletteHotkey } from '@/components/command/CommandPalette';
 
 export function Topbar() {
   const currencyChanged = useAppStore((s) => s.currencyChanged);
@@ -23,6 +24,8 @@ export function Topbar() {
   const liveFeed = useAppStore(selectLiveFeed);
   const currency = useAppStore(selectCurrency);
   const lastUpdated = useAppStore(selectLastUpdated);
+  const [paletteOpen, setPaletteOpen] = useCommandPaletteHotkey();
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
   // Re-render every 15s so the relative-time label stays fresh.
   const [, force] = useState(0);
@@ -37,6 +40,21 @@ export function Topbar() {
         <BrandLogo size={28} />
       </MobileBrand>
       <PageName>{pageName(location.pathname)}</PageName>
+
+      <SearchTrigger
+        type="button"
+        onClick={() => setPaletteOpen(true)}
+        aria-haspopup="dialog"
+        aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <SearchText>Search or jump to…</SearchText>
+        <SearchKeys aria-hidden="true">
+          <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+          <Kbd>K</Kbd>
+        </SearchKeys>
+      </SearchTrigger>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       <Right>
         <CurrencySelect
@@ -85,7 +103,9 @@ const Bar = styled.header`
   position: sticky;
   top: 0;
   z-index: ${({ theme }) => theme.z.sticky};
-  background: ${({ theme }) => theme.color.surface};
+  background: color-mix(in srgb, ${({ theme }) => theme.color.bg} 55%, transparent);
+  -webkit-backdrop-filter: ${({ theme }) => theme.glass.blur};
+  backdrop-filter: ${({ theme }) => theme.glass.blur};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   min-height: ${({ theme }) => theme.layout.headerHeight};
   display: flex;
@@ -108,6 +128,41 @@ const PageName = styled.div`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   ${media.md`display: block;`}
+`;
+
+const SearchTrigger = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space[2]};
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.space[2]} 0 ${({ theme }) => theme.space[3]};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.surface};
+  box-shadow: ${({ theme }) => theme.glass.highlight};
+  color: ${({ theme }) => theme.color.textSubtle};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  transition: border-color ${({ theme }) => theme.motion.fast}, color ${({ theme }) => theme.motion.fast};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderStrong};
+    color: ${({ theme }) => theme.color.textMuted};
+  }
+
+  ${media.md`min-width: 280px; margin-left: ${({ theme }) => theme.space[4]};`}
+`;
+
+const SearchText = styled.span`
+  display: none;
+  flex: 1;
+  text-align: left;
+  ${media.md`display: inline;`}
+`;
+
+const SearchKeys = styled.span`
+  display: none;
+  gap: 3px;
+  ${media.md`display: inline-flex;`}
 `;
 
 const Right = styled.div`
@@ -140,8 +195,10 @@ const LiveStatus = styled.button`
   align-items: center;
   gap: ${({ theme }) => theme.space[2]};
   padding: ${({ theme }) => `${theme.space[1]} ${theme.space[3]}`};
-  background: ${({ theme }) => theme.color.surfaceAlt};
+  height: 32px;
+  background: ${({ theme }) => theme.color.surface};
   border: 1px solid ${({ theme }) => theme.color.border};
+  box-shadow: ${({ theme }) => theme.glass.highlight};
   border-radius: ${({ theme }) => theme.radius.pill};
   color: ${({ theme }) => theme.color.text};
   font-size: ${({ theme }) => theme.fontSize.xs};
@@ -149,6 +206,8 @@ const LiveStatus = styled.button`
 `;
 
 const LiveLabel = styled.span`
+  /* On phones the pulsing dot alone carries the state; the button keeps its aria-label. */
+  @media (max-width: 520px) { display: none; }
   white-space: nowrap;
   display: inline-flex;
   align-items: baseline;
@@ -169,6 +228,7 @@ const ThemeToggle = styled.button`
   height: 34px;
   background: ${({ theme }) => theme.color.surface};
   border: 1px solid ${({ theme }) => theme.color.border};
+  box-shadow: ${({ theme }) => theme.glass.highlight};
   border-radius: ${({ theme }) => theme.radius.md};
   color: ${({ theme }) => theme.color.text};
   cursor: pointer;
@@ -182,14 +242,17 @@ const SignInLink = styled(Link)`
   white-space: nowrap;
   padding: 6px ${({ theme }) => theme.space[3]};
   border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ theme }) => theme.color.primary};
-  color: ${({ theme }) => theme.color.primaryText};
+  background: linear-gradient(135deg, ${({ theme }) => theme.color.primary}, ${({ theme }) => theme.color.accent});
+  color: #fff;
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 8px 20px -8px color-mix(in srgb, ${({ theme }) => theme.color.primary} 80%, transparent);
 
   &:hover {
-    opacity: 0.9;
+    text-decoration: none;
+    filter: brightness(1.08);
   }
 `;
 

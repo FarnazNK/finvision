@@ -12,12 +12,17 @@ export const GlobalStyle = createGlobalStyle`
     font-family: ${({ theme }) => theme.font.sans};
     font-size: ${({ theme }) => theme.fontSize.base};
     line-height: ${({ theme }) => theme.lineHeight.normal};
+    color-scheme: ${({ theme }) => theme.name};
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
+  /* Only <html> paints the base colour; an opaque <body> would cover the
+     aurora layers, which sit at negative z-index in the root context. */
   body {
+    background: transparent;
     overflow-x: hidden;
     transition:
       background ${({ theme }) => theme.motion.base},
@@ -78,17 +83,55 @@ export const GlobalStyle = createGlobalStyle`
     background: ${({ theme }) => theme.color.borderStrong};
   }
 
-  /* Premium financial workspace atmosphere */
+  /*
+   * Aurora backdrop. Glass only reads as glass when there is colour behind it,
+   * so three soft blobs drift slowly under the whole app. Fixed + GPU-composited
+   * (transform only), and frozen for reduced-motion users.
+   */
   body::before {
+    content: '';
+    position: fixed;
+    inset: -20vmax;
+    pointer-events: none;
+    z-index: -2;
+    background:
+      radial-gradient(38vmax 32vmax at 18% 12%, ${({ theme }) => theme.glass.aurora[0]}, transparent 70%),
+      radial-gradient(34vmax 30vmax at 88% 22%, ${({ theme }) => theme.glass.aurora[1]}, transparent 70%),
+      radial-gradient(40vmax 30vmax at 60% 96%, ${({ theme }) => theme.glass.aurora[2]}, transparent 70%);
+    filter: blur(20px);
+    animation: aurora-drift 28s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  /* Hairline grid + vignette: gives the glass something to refract. */
+  body::after {
     content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: -1;
-    background:
-      radial-gradient(ellipse 60% 45% at 90% -10%, color-mix(in srgb, ${({ theme }) => theme.color.primary} 9%, transparent), transparent 75%),
-      radial-gradient(ellipse 40% 35% at -15% 80%, color-mix(in srgb, ${({ theme }) => theme.color.info} 5%, transparent), transparent 80%);
+    background-image:
+      linear-gradient(${({ theme }) => theme.color.chartGrid} 1px, transparent 1px),
+      linear-gradient(90deg, ${({ theme }) => theme.color.chartGrid} 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 85%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 85%);
+    opacity: 0.55;
   }
+
+  @keyframes aurora-drift {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+    50%  { transform: translate3d(3vmax, -2vmax, 0) rotate(8deg) scale(1.06); }
+    100% { transform: translate3d(-3vmax, 2vmax, 0) rotate(-6deg) scale(1.02); }
+  }
+
+  /* Native dropdown lists can't be translucent; keep them readable. */
+  option {
+    background: ${({ theme }) => theme.color.surfaceSolid};
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  .tabular { font-variant-numeric: tabular-nums; }
 
   button, a, input, select {
     -webkit-tap-highlight-color: transparent;

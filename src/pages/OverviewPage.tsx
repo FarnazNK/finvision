@@ -19,6 +19,7 @@ import { Badge, Card, KpiTile, SegmentedControl, TickerBadge } from '@/component
 import { makeSelectRecentTransactions } from '@/features/transactions/transactionsSlice';
 import { PortfolioCurveChart } from '@/components/charts/PortfolioCurveChart';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
+import { MiniTrend } from '@/components/charts/MiniTrend';
 import { InsightsPanel } from '@/features/insights/InsightsPanel';
 import { ASSET_CLASS_LABEL, formatDate, formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
@@ -57,12 +58,21 @@ export function OverviewPage() {
   const recentSelector = useMemo(() => makeSelectRecentTransactions(5), []);
   const recent = useAppStore(recentSelector);
 
+  // Last 30 days of the equity curve drive the KPI trend lines.
+  const trend30 = useMemo(() => curve.slice(-30).map((p) => p.value), [curve]);
+  const returnTrend = useMemo(() => trend30.map((v) => v - costBasis), [trend30, costBasis]);
+  const trend7 = useMemo(() => trend30.slice(-7), [trend30]);
+
   return (
     <Page>
       <PageHeader>
         <div>
-          <Eyebrow>Overview</Eyebrow>
-          <Title>Your portfolio, at a glance</Title>
+          <Eyebrow>
+            <LiveDot aria-hidden="true" /> Overview · {formatDate(Date.now(), 'medium')}
+          </Eyebrow>
+          <Title>
+            Your portfolio, <Gradient>at a glance</Gradient>
+          </Title>
           <Subtitle>Performance, exposure and AI insights in one place.</Subtitle>
         </div>
         <QuickNav aria-label="Quick links">
@@ -80,6 +90,9 @@ export function OverviewPage() {
             value={formatMoney(totalValue, { currency })}
             changePct={dayChangePct}
             secondary={`${formatMoney(dayChange, { currency, signed: true })} today`}
+            icon={<IconWallet />}
+            accent="primary"
+            chart={<MiniTrend values={trend30} tone="primary" label="Portfolio value, last 30 days" />}
           />
         </Card>
         <Card padded>
@@ -88,6 +101,9 @@ export function OverviewPage() {
             value={formatMoney(totalGain, { currency, signed: true })}
             changePct={totalGainPct}
             secondary={`Cost basis ${formatMoney(costBasis, { currency, compact: true })}`}
+            icon={<IconTrend />}
+            accent="success"
+            chart={<MiniTrend values={returnTrend} label="Total return, last 30 days" />}
           />
         </Card>
         <Card padded>
@@ -96,6 +112,9 @@ export function OverviewPage() {
             value={formatMoney(dayChange, { currency, signed: true })}
             changePct={dayChangePct}
             secondary="Across all positions"
+            icon={<IconPulse />}
+            accent="info"
+            chart={<MiniTrend values={trend7} label="Portfolio value, last 7 days" />}
           />
         </Card>
         <Card padded>
@@ -104,6 +123,9 @@ export function OverviewPage() {
             value={String(holdingsCount)}
             secondary={`${allocation.length} asset classes`}
             tone="neutral"
+            icon={<IconLayers />}
+            accent="accent"
+            chart={<AllocationStrip allocation={allocation} />}
           />
         </Card>
       </KpiGrid>
@@ -199,6 +221,39 @@ export function OverviewPage() {
   );
 }
 
+/** Stacked bar of asset-class weights; the legend lives in the Allocation card. */
+function AllocationStrip({ allocation }: { allocation: { assetClass: string; weight: number }[] }) {
+  return (
+    <Strip
+      role="img"
+      aria-label={allocation
+        .map((a) => `${ASSET_CLASS_LABEL[a.assetClass] ?? a.assetClass} ${formatPercent(a.weight, { signed: false })}`)
+        .join(', ')}
+    >
+      {allocation.map((a, i) => (
+        <StripSeg key={a.assetClass} $i={i} style={{ flexGrow: a.weight }} />
+      ))}
+    </Strip>
+  );
+}
+
+const svgProps = {
+  width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+  strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+};
+const IconWallet = () => (
+  <svg {...svgProps}><path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v2a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6" /></svg>
+);
+const IconTrend = () => (
+  <svg {...svgProps}><path d="M3 17l6-6 4 4 8-8" /><path d="M14 7h7v7" /></svg>
+);
+const IconPulse = () => (
+  <svg {...svgProps}><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
+);
+const IconLayers = () => (
+  <svg {...svgProps}><path d="m12 3 9 5-9 5-9-5 9-5z" /><path d="m3 13 9 5 9-5" /></svg>
+);
+
 function rangeLabel(r: Range): string {
   return { '1W': 'week', '1M': 'month', '3M': '3 months', '6M': '6 months', '1Y': 'year' }[r];
 }
@@ -225,10 +280,50 @@ const Eyebrow = styled.div`
   color: ${({ theme }) => theme.color.textMuted};
 `;
 
+const Gradient = styled.span`
+  background: linear-gradient(100deg, ${({ theme }) => theme.color.info}, ${({ theme }) => theme.color.primary} 45%, ${({ theme }) => theme.color.accent});
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+`;
+
+const LiveDot = styled.span`
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.success};
+  box-shadow: 0 0 0 3px color-mix(in srgb, ${({ theme }) => theme.color.success} 25%, transparent),
+    0 0 12px ${({ theme }) => theme.color.success};
+`;
+
+const Strip = styled.div`
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin: 0 ${({ theme }) => theme.space[6]} ${({ theme }) => theme.space[6]};
+
+  @media (max-width: 520px) {
+    margin: 0 ${({ theme }) => theme.space[4]} ${({ theme }) => theme.space[4]};
+  }
+`;
+
+const STRIP_TOKENS = ['primary', 'accent', 'info', 'success', 'warn'] as const;
+const StripSeg = styled.span<{ $i: number }>`
+  flex-basis: 0;
+  min-width: 4px;
+  border-radius: 99px;
+  background: ${({ theme, $i }) => theme.color[STRIP_TOKENS[$i % STRIP_TOKENS.length]]};
+  box-shadow: 0 0 10px -2px ${({ theme, $i }) => theme.color[STRIP_TOKENS[$i % STRIP_TOKENS.length]]};
+`;
+
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSize['2xl']};
-  margin-top: ${({ theme }) => theme.space[1]};
-  letter-spacing: -0.02em;
+  margin-top: ${({ theme }) => theme.space[2]};
+  letter-spacing: -0.035em;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
 
   ${media.md`font-size: ${({ theme }) => theme.fontSize['3xl']};`}
 `;
@@ -343,6 +438,9 @@ const QuickLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.pill};
   background: ${({ theme }) => theme.color.surface};
+  -webkit-backdrop-filter: ${({ theme }) => theme.glass.blur};
+  backdrop-filter: ${({ theme }) => theme.glass.blur};
+  box-shadow: ${({ theme }) => theme.glass.highlight};
   color: ${({ theme }) => theme.color.text};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};

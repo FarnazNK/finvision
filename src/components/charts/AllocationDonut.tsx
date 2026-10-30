@@ -21,10 +21,10 @@ export function AllocationDonut({ data, totalValue, height = 240 }: Props) {
   const palette = useMemo(
     () => [
       theme.color.primary,
+      theme.color.accent,
       theme.color.info,
       theme.color.success,
       theme.color.warn,
-      theme.color.danger,
     ],
     [theme],
   );
@@ -40,7 +40,7 @@ export function AllocationDonut({ data, totalValue, height = 240 }: Props) {
             innerRadius="66%"
             outerRadius="94%"
             paddingAngle={2}
-            stroke={theme.color.surface}
+            stroke={theme.color.surfaceSolid}
             strokeWidth={2}
             isAnimationActive={false}
           >
@@ -50,8 +50,9 @@ export function AllocationDonut({ data, totalValue, height = 240 }: Props) {
           </Pie>
           <Tooltip
             contentStyle={{
-              background: theme.color.surface,
-              border: `1px solid ${theme.color.border}`,
+              background: `color-mix(in srgb, ${theme.color.surfaceSolid} 82%, transparent)`,
+              backdropFilter: theme.glass.blur,
+              border: `1px solid ${theme.color.borderStrong}`,
               borderRadius: theme.radius.md,
               boxShadow: theme.shadow.md,
               fontSize: theme.fontSize.sm,
