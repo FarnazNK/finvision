@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import styled from 'styled-components';
+import { glassInteractive } from '@/theme/glass';
 
 interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   /** Renders a header bar above children. Title alone is sufficient; actions optional. */
@@ -40,20 +41,8 @@ export function Card({
 }
 
 const Root = styled.section`
-  background: ${({ theme }) => theme.color.surface};
-  border: 1px solid ${({ theme }) => theme.color.border};
+  ${glassInteractive}
   border-radius: ${({ theme }) => theme.radius.lg};
-  box-shadow: ${({ theme }) => theme.shadow.sm};
-  transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
-  &:hover {
-    border-color: ${({ theme }) => theme.color.borderStrong};
-    box-shadow: ${({ theme }) => theme.shadow.md};
-    transform: translateY(-2px);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-    &:hover { transform: none; }
-  }
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -65,8 +54,9 @@ const Header = styled.header`
   align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.space[4]};
-  padding: ${({ theme }) => `${theme.space[5]} ${theme.space[6]}`};
+  padding: ${({ theme }) => `${theme.space[5]} ${theme.space[6]} ${theme.space[4]}`};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  border-image: linear-gradient(90deg, transparent, ${({ theme }) => theme.color.borderStrong} 20%, ${({ theme }) => theme.color.borderStrong} 80%, transparent) 1;
 
   @media (max-width: 520px) {
     padding: ${({ theme }) => `${theme.space[4]} ${theme.space[4]}`};
@@ -82,6 +72,7 @@ const Title = styled.h2`
   font-size: ${({ theme }) => theme.fontSize.md};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   color: ${({ theme }) => theme.color.text};
+  letter-spacing: -0.015em;
   margin: 0;
 `;
 

@@ -790,8 +790,12 @@ const Cta = styled.section`
   border-radius: 24px;
   color: #fff;
   background:
-    radial-gradient(600px 300px at 90% 0%, ${({ theme }) => theme.color.success}66, transparent),
-    linear-gradient(135deg, #1a3cb0, #244fdb 60%, #3366ff);
+    radial-gradient(60% 55% at 15% 5%, rgba(109, 148, 255, 0.7), transparent 70%),
+    radial-gradient(55% 55% at 95% 30%, rgba(167, 139, 250, 0.55), transparent 70%),
+    radial-gradient(50% 45% at 30% 100%, rgba(34, 211, 238, 0.4), transparent 70%),
+    #0a0f26;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 40px 80px -30px rgba(109, 148, 255, 0.5);
 
   ${Actions} { margin-top: 0; }
 

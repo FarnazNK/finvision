@@ -11,7 +11,7 @@ export interface UIState {
 
 export function initialUIState(): UIState {
   return {
-    themeMode: 'light',
+    themeMode: 'dark',
     sidebarCollapsed: false,
     liveFeed: true,
     currency: 'USD',

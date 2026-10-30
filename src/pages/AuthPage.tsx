@@ -133,8 +133,11 @@ const Showcase = styled.aside`
   padding: ${({ theme }) => theme.space[10]};
   color: #fff;
   background:
-    radial-gradient(500px 300px at 100% 0%, ${({ theme }) => theme.color.success}80, transparent),
-    linear-gradient(150deg, #152e85, #244fdb 55%, #3366ff);
+    radial-gradient(60% 55% at 15% 5%, rgba(109, 148, 255, 0.7), transparent 70%),
+    radial-gradient(55% 55% at 95% 30%, rgba(167, 139, 250, 0.55), transparent 70%),
+    radial-gradient(50% 45% at 30% 100%, rgba(34, 211, 238, 0.4), transparent 70%),
+    #0a0f26;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 
   /* Logo text sits on the blue panel here. */
   a, a span { color: #fff; }
