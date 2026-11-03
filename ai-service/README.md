@@ -23,6 +23,22 @@ uvicorn app.main:app --reload          # http://localhost:8000/docs
 pytest                                 # tests
 ```
 
+## MCP server
+
+`app/mcp_server.py` exposes the five analytics tools to coding agents over the
+Model Context Protocol, reusing `analytics.TOOLS` (no duplicated logic). It is
+stateless: the agent passes the portfolio in each call. `run_mcp.py` starts it
+over stdio from any directory; the repo-root `.mcp.json` registers it for
+Claude Code. The MCP SDK lives in `requirements-mcp.txt`, so the deployed API
+image is unchanged.
+
+```bash
+python run_mcp.py                      # stdio server, for agents
+pytest tests/test_mcp_server.py        # in-process and real stdio tests
+```
+
+Setup for Claude Code and Cursor is in the [root README](../README.md#use-finvision-from-a-coding-agent-mcp).
+
 ## Endpoints
 
 | Method | Path            | Description                              |

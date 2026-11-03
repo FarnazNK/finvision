@@ -19,8 +19,8 @@
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
-| **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback |
-| **Quality** | 81 frontend tests (Jest + React Testing Library), 18 backend tests (pytest), CodeQL and dependency audits in CI |
+| **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
+| **Quality** | 83 frontend tests (Jest + React Testing Library), 30 backend tests (pytest), CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
@@ -28,6 +28,11 @@
 ### 🤖 AI assistant that doesn't make up numbers
 LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. Each answer **cites the tools it used**, so it can be checked. Without an API key the service falls back to deterministic answers, so the demo and CI never depend on an external model.
 → [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py)
+
+### 🔌 MCP server for coding agents
+The same 5 analytics functions are also available to external AI agents through a **Model Context Protocol (MCP) server**. Clone the repo, open it in Claude Code, and ask "Use FinVision to check how concentrated the sample portfolio is". The agent discovers the tools from [`.mcp.json`](.mcp.json) and runs the real calculations. There is one implementation behind two interfaces: the in-app assistant and the MCP server call the same code, and a test checks they return identical numbers.
+It's written for agents: every tool says when to use it, inputs are typed and bounded, invalid input returns an error naming the bad field, optional fields have defaults so an agent doesn't have to invent IDs, and a sample portfolio resource lets an agent try the tools with no setup. Tools are marked read-only. Version 1 is **stateless**: the agent passes the portfolio in each call, so the server needs no credentials and can't expose anyone's saved data.
+→ [`ai-service/app/mcp_server.py`](ai-service/app/mcp_server.py), [tests](ai-service/tests/test_mcp_server.py), [setup](#use-finvision-from-a-coding-agent-mcp)
 
 ### 🔐 Backend API with authentication
 FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints that only return the signed-in user's data, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
@@ -67,12 +72,14 @@ flowchart LR
         Auth["JWT auth"]
         Insights["AI insights"]
         Tools["5 analytics tools<br/>(deterministic Python)"]
+        MCP["MCP server<br/>(stdio, read-only)"]
         Market["Market data adapter"]
         Research["Document retrieval<br/>(in-memory prototype)"]
     end
 
     DB[("PostgreSQL<br/>users + holdings")]
     LLM["Anthropic model<br/>(optional)"]
+    Agent["Coding agent<br/>Claude Code · Cursor · Codex"]
     Finnhub["Finnhub<br/>(optional)"]
 
     UI -->|HTTPS| API
@@ -81,6 +88,7 @@ flowchart LR
     Insights -.->|optional| LLM
     API --> Market -.->|optional| Finnhub
     API --> Research
+    Agent -->|MCP| MCP -->|same functions| Tools
 ```
 
 ## Run it locally
@@ -102,6 +110,41 @@ pytest
 
 Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
 
+## Use FinVision from a coding agent (MCP)
+
+```bash
+cd ai-service && pip install -r requirements-dev.txt   # includes the MCP SDK
+```
+
+**Claude Code:** open the repo folder and run `claude`. The project's [`.mcp.json`](.mcp.json) registers the `finvision` server; approve it when prompted, then check with `/mcp`. To add it to another project instead:
+
+```bash
+claude mcp add --transport stdio finvision -- python3 /path/to/finvision/ai-service/run_mcp.py
+```
+
+**Cursor and other MCP clients:** add the same command to the client's MCP config, for example in `.cursor/mcp.json`:
+
+```json
+{ "mcpServers": { "finvision": { "command": "python3", "args": ["/path/to/finvision/ai-service/run_mcp.py"] } } }
+```
+
+If your dependencies are in a virtual environment, use that environment's `python` as the command.
+
+**Try these prompts:**
+- "Use FinVision's sample portfolio. What is it worth and am I up or down?"
+- "With FinVision, what are my three largest positions? I hold 35 AAPL bought at $148, now $198, and 142 VTI bought at $198.40, now $246.10."
+- "Using FinVision, how is the sample portfolio split between stocks, bonds and cash?"
+
+| Tool | Answers | Optional inputs |
+| --- | --- | --- |
+| `get_portfolio_summary` | Market value, cost basis, unrealized gain/loss | none |
+| `get_allocation` | Share of value per asset class | none |
+| `get_concentration` | Largest positions by weight | `top_n` (1–50) |
+| `get_top_movers` | Best and worst holdings today | `n` (1–20) |
+| `get_recent_activity` | Latest transactions | `limit` (1–100) |
+
+Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis` per unit, `price`) and optional `transactions`. Weights are fractions (0.25 = 25%). The resource `finvision://sample-portfolio` returns a ready-made demo portfolio.
+
 ## Honest limitations
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
@@ -109,8 +152,9 @@ This is a portfolio project, not production investment software, and it doesn't 
 - **Demo data:** the public dashboard uses seeded holdings and simulated price ticks. Real quotes depend on a Finnhub key.
 - **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
+- **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
 
-**Next up:** server-side portfolio snapshots for AI, pgvector-based retrieval, and an evaluation set that checks AI answer quality in CI.
+**Next up:** server-side portfolio snapshots for AI, pgvector-based retrieval, and an evaluation set that runs coding agents against the MCP tools and checks answer quality in CI.
 
 <details>
 <summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus/Grafana</strong></summary>
@@ -129,7 +173,8 @@ None of these need a paid account. All run locally.
 | Path | What's there |
 | --- | --- |
 | [`src/`](src/) | React frontend: pages, components, Zustand store and slices, Zod contracts, charts, 3D scene |
-| [`ai-service/`](ai-service/) | FastAPI backend: API, auth, analytics tools, LLM layer, tests |
+| [`ai-service/`](ai-service/) | FastAPI backend: API, auth, analytics tools, LLM layer, MCP server, tests |
+| [`.mcp.json`](.mcp.json) | Registers the FinVision MCP server for Claude Code |
 | [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
 | [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
 | [`SECURITY.md`](SECURITY.md) | Security policy |

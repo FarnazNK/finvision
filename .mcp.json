@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "finvision": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/ai-service/run_mcp.py"]
+    }
+  }
+}
