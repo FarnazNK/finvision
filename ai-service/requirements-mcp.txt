@@ -1,0 +1,3 @@
+# Optional: only needed to run the MCP server (python -m app.mcp_server).
+# Kept out of requirements.txt so the deployed API image does not change.
+mcp>=2,<3

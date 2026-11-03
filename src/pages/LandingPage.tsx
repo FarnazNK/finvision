@@ -6,6 +6,9 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 // three.js is ~150 kB gzipped, so the scene loads after the page text is on screen.
 const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
 
+const MCP_DOCS_URL =
+  'https://github.com/FarnazNK/finvision#use-finvision-from-a-coding-agent-mcp';
+
 const STACK = [
   {
     label: 'Frontend',
@@ -13,7 +16,7 @@ const STACK = [
   },
   {
     label: 'Backend & AI',
-    items: ['Python', 'FastAPI', 'Pydantic', 'SQLAlchemy', 'PostgreSQL', 'JWT auth', 'Anthropic tool use'],
+    items: ['Python', 'FastAPI', 'Pydantic', 'SQLAlchemy', 'PostgreSQL', 'JWT auth', 'Anthropic tool use', 'MCP server'],
   },
   {
     label: 'Delivery',
@@ -145,6 +148,13 @@ export function LandingPage() {
               title="Private by design"
               text="Secure sign-in, your data scoped to your account, and no selling of personal information."
             />
+            <Feature
+              wide
+              icon={<><path d="M9 7L4 12l5 5M15 7l5 5-5 5" /><path d="M13 5l-2 14" /></>}
+              title="Works with your coding agent"
+              text="The same analytics tools behind the AI assistant are available to Claude Code, Cursor and Codex through an MCP server, so an agent gets exact, calculated answers instead of guessing."
+              link={{ href: MCP_DOCS_URL, label: 'Set up the MCP server →' }}
+            />
           </FeatureGrid>
         </Section>
 
@@ -220,9 +230,17 @@ export function LandingPage() {
   );
 }
 
-function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+type FeatureProps = {
+  icon: ReactNode;
+  title: string;
+  text: string;
+  wide?: boolean;
+  link?: { href: string; label: string };
+};
+
+function Feature({ icon, title, text, wide = false, link }: FeatureProps) {
   return (
-    <FeatureCard>
+    <FeatureCard $wide={wide}>
       <FeatureIcon aria-hidden="true">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           {icon}
@@ -230,6 +248,11 @@ function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: 
       </FeatureIcon>
       <FeatureTitle>{title}</FeatureTitle>
       <FeatureText>{text}</FeatureText>
+      {link && (
+        <FeatureLink href={link.href} target="_blank" rel="noreferrer">
+          {link.label}
+        </FeatureLink>
+      )}
     </FeatureCard>
   );
 }
@@ -651,7 +674,8 @@ const FeatureGrid = styled.div`
   @media (max-width: 560px) { grid-template-columns: 1fr; }
 `;
 
-const FeatureCard = styled.article`
+const FeatureCard = styled.article<{ $wide?: boolean }>`
+  ${({ $wide }) => $wide && css`grid-column: 1 / -1;`}
   padding: ${({ theme }) => theme.space[6]};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.xl};
@@ -689,6 +713,13 @@ const FeatureText = styled.p`
   color: ${({ theme }) => theme.color.textMuted};
   font-size: ${({ theme }) => theme.fontSize.sm};
   line-height: 1.6;
+`;
+
+const FeatureLink = styled.a`
+  display: inline-block;
+  margin-top: ${({ theme }) => theme.space[3]};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
 `;
 
 const Steps = styled.ol`
