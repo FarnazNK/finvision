@@ -38,6 +38,7 @@ pytest                                 # tests
 | GET    | `/api/auth/me` | Return the authenticated user |
 | GET    | `/api/portfolio/holdings` | List the authenticated user's holdings |
 | POST   | `/api/portfolio/holdings` | Add a holding to the authenticated user's portfolio |
+| GET    | `/api/portfolio/concentration?threshold=0.25` | Largest positions in the user's saved portfolio at live prices, plus any above the threshold (used by the n8n alert) |
 | POST   | `/api/research/ingest` | Index a document into the retrieval store |
 | POST   | `/api/research` | Retrieve relevant passages with citations |
 

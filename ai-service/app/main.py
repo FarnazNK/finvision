@@ -7,7 +7,7 @@ import time
 from collections import defaultdict, deque
 
 import jwt
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,7 @@ from .agentcore_client import AgentCoreUnavailable, invoke_readonly_agent
 from .graphql_portfolio import build_graphql_router
 from sqlalchemy import select
 
+from . import analytics
 from .llm import generate_insight
 from .market_data import FinnhubClient, MarketDataError
 from .observability import RequestMetricsMiddleware, request_metrics
@@ -41,9 +42,13 @@ from .schemas import (
     MarketQuote,
     MarketSearchResponse,
     AuthResponse,
+    ConcentrationResponse,
+    Holding,
     HoldingCreate,
     HoldingResponse,
     LoginRequest,
+    PortfolioSnapshot,
+    PositionWeight,
     RegisterRequest,
     UserResponse,
 )
@@ -229,6 +234,72 @@ def create_holding(
 
 def _market_error(exc: MarketDataError) -> HTTPException:
     return HTTPException(status_code=503, detail=str(exc))
+
+
+def _priced_snapshot(records: list[HoldingRecord]) -> PortfolioSnapshot:
+    """Build an analytics snapshot from saved holdings at current market prices.
+
+    Cash is valued at its cost basis; every other holding needs a live quote, so
+    a missing or zero price fails the request instead of skewing the weights.
+    """
+    holdings = []
+    for record in records:
+        if record.asset_class == "cash":
+            price, day_change = record.cost_basis, 0.0
+        else:
+            data = market_client.quote(record.symbol)
+            price = float(data.get("c") or 0)
+            if price <= 0:
+                raise MarketDataError(f"No current price for {record.symbol}")
+            day_change = float(data.get("dp") or 0) / 100
+        holdings.append(
+            Holding(
+                id=str(record.id),
+                symbol=record.symbol,
+                name=record.name,
+                assetClass=record.asset_class,
+                quantity=record.quantity,
+                costBasis=record.cost_basis,
+                price=price,
+                dayChangePct=day_change,
+                currency=record.currency,
+            )
+        )
+    return PortfolioSnapshot(holdings=holdings)
+
+
+@app.get("/api/portfolio/concentration", response_model=ConcentrationResponse)
+def portfolio_concentration(
+    top_n: int = Query(5, ge=1, le=50, description="How many of the largest positions to return."),
+    threshold: float = Query(
+        0.25, gt=0, le=1, description="Flag positions above this share of the portfolio."
+    ),
+    user: UserRecord = Depends(current_user),
+    _: None = Depends(enforce_rate_limit),
+) -> ConcentrationResponse:
+    """Largest positions in the signed-in user's saved portfolio, plus any above `threshold`.
+
+    Built for scheduled checks such as the n8n concentration alert in `n8n/`.
+    """
+    with SessionLocal() as session:
+        records = list(
+            session.scalars(
+                select(HoldingRecord).where(HoldingRecord.user_id == user.id).order_by(HoldingRecord.id)
+            ).all()
+        )
+    try:
+        snapshot = _priced_snapshot(records)
+    except (MarketDataError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    ranked = analytics.concentration(snapshot, top_n=len(snapshot.holdings))
+    return ConcentrationResponse(
+        baseCurrency=snapshot.baseCurrency,
+        marketValue=round(analytics.market_value(snapshot), 2),
+        threshold=threshold,
+        positions=[PositionWeight(**row) for row in ranked[:top_n]],
+        breaches=[PositionWeight(**row) for row in ranked if row["weight"] > threshold],
+    )
 
 
 @app.get("/api/markets/quote", response_model=MarketQuote)
