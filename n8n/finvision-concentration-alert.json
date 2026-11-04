@@ -1,0 +1,164 @@
+{
+  "name": "FinVision concentration alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1f0c6b2-0001-4c1e-9a10-000000000001",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "a1f0c6b2-0002-4c1e-9a10-000000000002",
+      "name": "Weekdays at 9:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FINVISION_API_URL }}/api/auth/login",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $env.FINVISION_EMAIL, password: $env.FINVISION_PASSWORD }) }}",
+        "options": {}
+      },
+      "id": "a1f0c6b2-0003-4c1e-9a10-000000000003",
+      "name": "Log in",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 100]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.FINVISION_API_URL }}/api/portfolio/concentration",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "threshold",
+              "value": "={{ $env.FINVISION_ALERT_THRESHOLD || 0.25 }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1f0c6b2-0004-4c1e-9a10-000000000004",
+      "name": "Check concentration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a1f0c6b2-0005-4c1e-9a10-0000000000c1",
+              "leftValue": "={{ $json.breaches.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1f0c6b2-0005-4c1e-9a10-000000000005",
+      "name": "Any position too big?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst pct = (w) => (w * 100).toFixed(1) + '%';\nconst money = r.marketValue.toLocaleString('en-US', { maximumFractionDigits: 0 });\nconst lines = r.breaches.map((b) => `• ${b.symbol} (${b.name}) is ${pct(b.weight)} of the portfolio`);\nconst text = [\n  `FinVision concentration alert: ${r.breaches.length} position(s) above ${pct(r.threshold)}`,\n  ...lines,\n  `Portfolio value: ${money} ${r.baseCurrency}.`,\n  'Analysis only, not investment advice.'\n].join('\\n');\nreturn [{ json: { text, content: text, breaches: r.breaches } }];"
+      },
+      "id": "a1f0c6b2-0006-4c1e-9a10-000000000006",
+      "name": "Write alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.content }) }}",
+        "options": {}
+      },
+      "id": "a1f0c6b2-0007-4c1e-9a10-000000000007",
+      "name": "Send alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {},
+      "id": "a1f0c6b2-0008-4c1e-9a10-000000000008",
+      "name": "All within limit",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [960, 200]
+    }
+  ],
+  "connections": {
+    "Run now": {
+      "main": [[{ "node": "Log in", "type": "main", "index": 0 }]]
+    },
+    "Weekdays at 9:00": {
+      "main": [[{ "node": "Log in", "type": "main", "index": 0 }]]
+    },
+    "Log in": {
+      "main": [[{ "node": "Check concentration", "type": "main", "index": 0 }]]
+    },
+    "Check concentration": {
+      "main": [[{ "node": "Any position too big?", "type": "main", "index": 0 }]]
+    },
+    "Any position too big?": {
+      "main": [
+        [{ "node": "Write alert", "type": "main", "index": 0 }],
+        [{ "node": "All within limit", "type": "main", "index": 0 }]
+      ]
+    },
+    "Write alert": {
+      "main": [[{ "node": "Send alert", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

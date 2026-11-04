@@ -57,6 +57,28 @@ services:
   redis:
     image: redis:7-alpine
 
+  # Workflow automation: import n8n/finvision-concentration-alert.json at
+  # http://localhost:5678. Optional; nothing else depends on it.
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-latest}
+    ports:
+      - "5678:5678"
+    environment:
+      - GENERIC_TIMEZONE=${TZ:-America/Edmonton}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_SECURE_COOKIE=false
+      - FINVISION_API_URL=http://ai-service:8000
+      - FINVISION_EMAIL=${FINVISION_EMAIL:-}
+      - FINVISION_PASSWORD=${FINVISION_PASSWORD:-}
+      - FINVISION_ALERT_THRESHOLD=${FINVISION_ALERT_THRESHOLD:-0.25}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./n8n:/workflows:ro
+    depends_on:
+      - ai-service
+
 volumes:
   finvision-data:
   postgres-data:
+  n8n-data:

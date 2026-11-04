@@ -46,6 +46,10 @@ An animated **three.js** portfolio scene: rising bars, a growth line and orbitin
 On every push GitHub Actions runs type checking, ESLint, Jest, pytest, **CodeQL**, `npm audit` and `pip-audit`, builds Docker images to GHCR, deploys the frontend to GitHub Pages, and runs a smoke test against the live APIs.
 → [`.github/workflows/`](.github/workflows/)
 
+### ⚙️ n8n concentration alert
+An importable **n8n** workflow checks a saved portfolio every weekday morning and posts a Slack or Discord alert when one position grows past a threshold (25% by default). The workflow does no math: it calls a user-scoped endpoint, `GET /api/portfolio/concentration`, which prices the saved holdings with live quotes and reuses the same analytics function as the AI assistant. `docker compose up` also starts n8n with the API wired in.
+→ [`n8n/`](n8n/), [`ai-service/tests/test_concentration.py`](ai-service/tests/test_concentration.py)
+
 ## Screenshots
 
 | Dashboard | Mobile |
@@ -100,7 +104,7 @@ uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ```
 
-Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
+Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`, which also starts n8n at http://localhost:5678 (see [`n8n/README.md`](n8n/README.md)).
 
 ## Honest limitations
 
@@ -132,6 +136,7 @@ None of these need a paid account. All run locally.
 | [`ai-service/`](ai-service/) | FastAPI backend: API, auth, analytics tools, LLM layer, tests |
 | [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
 | [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
+| [`n8n/`](n8n/) | Importable n8n workflow: weekday concentration alert |
 | [`SECURITY.md`](SECURITY.md) | Security policy |
 
 ---

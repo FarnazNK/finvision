@@ -168,3 +168,20 @@ class HoldingCreate(BaseModel):
 
 class HoldingResponse(HoldingCreate):
     id: int
+
+class PositionWeight(BaseModel):
+    symbol: str
+    name: str
+    weight: float = Field(..., description="Share of portfolio market value, 0-1.")
+
+
+class ConcentrationResponse(BaseModel):
+    """Concentration of the signed-in user's saved holdings at current prices."""
+
+    baseCurrency: str
+    marketValue: float
+    threshold: float
+    positions: list[PositionWeight] = Field(description="Largest positions, largest first.")
+    breaches: list[PositionWeight] = Field(
+        description="Every position whose weight is above the threshold."
+    )
