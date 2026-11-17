@@ -8,6 +8,7 @@
 import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
+import { ProRequiredError } from './errors';
 import { insightsResponseSchema, parseResponse, type InsightsResponse } from './schemas';
 
 export type { Citation, InsightsResponse } from './schemas';
@@ -22,7 +23,9 @@ export async function askInsight(
   signal?: AbortSignal,
 ): Promise<InsightsResponse> {
   const accessToken = getAccessToken();
-  const credential = API_KEY || accessToken;
+  // Prefer the signed-in user's token: with billing on, AI insights are a Pro
+  // feature checked against that user's subscription on the server.
+  const credential = accessToken || API_KEY;
 
   const res = await fetch(`${API_BASE_URL}/api/insights`, {
     method: 'POST',
@@ -37,6 +40,9 @@ export async function askInsight(
     signal,
   });
 
+  if (res.status === 402) {
+    throw new ProRequiredError();
+  }
   if (!res.ok) {
     throw new Error(`Insights request failed: ${res.status}`);
   }
