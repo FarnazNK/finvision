@@ -20,6 +20,7 @@ off, the API behaves exactly as before. Test mode keys cost nothing.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from datetime import datetime, timezone
@@ -35,6 +36,10 @@ from starlette.concurrency import run_in_threadpool
 from .persistence import BillingAccount, SessionLocal, StripeEventRecord, UserRecord
 
 PRO_STATUSES = frozenset({"active", "trialing"})
+# Any subscription that isn't finished. A user in one of these states must fix
+# it in the portal; a second Checkout would create a second, double-billed
+# subscription once the first one recovers.
+OPEN_STATUSES = PRO_STATUSES | {"past_due", "unpaid", "incomplete", "paused"}
 IDEMPOTENCY_KEY_PATTERN = r"^[A-Za-z0-9_-]{8,64}$"
 SUBSCRIPTION_EVENTS = frozenset(
     {
@@ -84,6 +89,12 @@ def _plain(obj: Any) -> dict[str, Any]:
     return obj.to_dict()  # recursive by default in current stripe-python
 
 
+def _has_open_subscription(user_id: int) -> bool:
+    with SessionLocal() as session:
+        account = session.get(BillingAccount, user_id)
+        return account is not None and account.status in OPEN_STATUSES
+
+
 def is_pro(user_id: int) -> bool:
     with SessionLocal() as session:
         account = session.get(BillingAccount, user_id)
@@ -110,8 +121,13 @@ def _get_or_create_customer(user: UserRecord) -> str:
     customer = _stripe().Customer.create(
         email=user.email,
         metadata={"user_id": str(user.id)},
-        # One customer per user even if two first-time checkouts race.
-        idempotency_key=f"finvision-customer-{user.id}",
+        # One customer per user even if two first-time checkouts race. The
+        # email hash keeps keys distinct when two databases (e.g. preview and
+        # production) share a Stripe account and reuse the same user IDs.
+        idempotency_key=(
+            f"finvision-customer-{user.id}-"
+            f"{hashlib.sha256(user.email.encode()).hexdigest()[:16]}"
+        ),
     )
     with SessionLocal() as session:
         session.add(BillingAccount(user_id=user.id, stripe_customer_id=customer["id"]))
@@ -205,7 +221,9 @@ def apply_event(event: dict[str, Any]) -> str:
 # --- Routes -----------------------------------------------------------------
 
 
-def build_billing_router(current_user: Callable[..., UserRecord]) -> APIRouter:
+def build_billing_router(
+    current_user: Callable[..., UserRecord], rate_limit: Callable[..., None]
+) -> APIRouter:
     router = APIRouter(prefix="/api/billing", tags=["billing"])
 
     @router.get("/status", response_model=BillingStatus)
@@ -215,14 +233,21 @@ def build_billing_router(current_user: Callable[..., UserRecord]) -> APIRouter:
     @router.post("/checkout", response_model=BillingRedirect)
     def create_checkout(
         user: UserRecord = Depends(current_user),
+        _: None = Depends(rate_limit),
         idempotency_key: str | None = Header(
             default=None, alias="Idempotency-Key", pattern=IDEMPOTENCY_KEY_PATTERN
         ),
     ) -> BillingRedirect:
         api = _stripe()
-        if is_pro(user.id):
-            raise HTTPException(status_code=409, detail="Already subscribed; use the billing portal")
-        customer_id = _get_or_create_customer(user)
+        if _has_open_subscription(user.id):
+            raise HTTPException(
+                status_code=409,
+                detail="You already have a subscription; manage it in the billing portal",
+            )
+        try:
+            customer_id = _get_or_create_customer(user)
+        except stripe.error.StripeError as exc:
+            raise HTTPException(status_code=502, detail="Payment provider error") from exc
         params: dict[str, Any] = {
             "mode": "subscription",
             "customer": customer_id,
@@ -235,19 +260,28 @@ def build_billing_router(current_user: Callable[..., UserRecord]) -> APIRouter:
         if idempotency_key:
             # A double-clicked Upgrade button gets the same Checkout Session back.
             params["idempotency_key"] = f"finvision-checkout-{user.id}-{idempotency_key}"
-        session = api.checkout.Session.create(**params)
+        try:
+            session = api.checkout.Session.create(**params)
+        except stripe.error.StripeError as exc:
+            raise HTTPException(status_code=502, detail="Payment provider error") from exc
         return BillingRedirect(url=session["url"])
 
     @router.post("/portal", response_model=BillingRedirect)
-    def create_portal(user: UserRecord = Depends(current_user)) -> BillingRedirect:
+    def create_portal(
+        user: UserRecord = Depends(current_user),
+        _: None = Depends(rate_limit),
+    ) -> BillingRedirect:
         api = _stripe()
         with SessionLocal() as db:
             account = db.get(BillingAccount, user.id)
         if account is None:
             raise HTTPException(status_code=404, detail="No billing account yet")
-        portal = api.billing_portal.Session.create(
-            customer=account.stripe_customer_id, return_url=_app_url()
-        )
+        try:
+            portal = api.billing_portal.Session.create(
+                customer=account.stripe_customer_id, return_url=_app_url()
+            )
+        except stripe.error.StripeError as exc:
+            raise HTTPException(status_code=502, detail="Payment provider error") from exc
         return BillingRedirect(url=portal["url"])
 
     @router.post("/webhook", include_in_schema=False)

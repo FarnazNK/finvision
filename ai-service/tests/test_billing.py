@@ -298,3 +298,61 @@ def test_insights_unchanged_when_billing_is_off(monkeypatch):
     monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assert _ask(_user()).status_code == 200
+
+
+# --- Hardening ----------------------------------------------------------------
+
+
+def test_past_due_user_cannot_start_a_second_subscription(stripe_on):
+    """A second Checkout while the first subscription is past_due would double
+    bill once the first recovers; send them to the portal instead."""
+    headers = _user()
+    sub_id = _subscribe(stripe_on, headers)
+    stripe_on.subscriptions[sub_id]["status"] = "past_due"
+    client.post("/api/billing/webhook", **_signed(_subscription_event(sub_id)))
+    checkouts = len(stripe_on.checkouts)
+    assert client.post("/api/billing/checkout", headers=headers).status_code == 409
+    assert len(stripe_on.checkouts) == checkouts
+
+
+def test_canceled_user_can_subscribe_again(stripe_on):
+    headers = _user()
+    sub_id = _subscribe(stripe_on, headers)
+    stripe_on.subscriptions[sub_id]["status"] = "canceled"
+    client.post("/api/billing/webhook", **_signed(_subscription_event(sub_id)))
+    assert client.post("/api/billing/checkout", headers=headers).status_code == 200
+
+
+def test_stripe_outage_returns_502_not_500(stripe_on, monkeypatch):
+    import stripe
+
+    def down(**_):
+        raise stripe.error.APIConnectionError("Stripe unreachable")
+
+    monkeypatch.setattr(stripe_on.checkout.Session, "create", staticmethod(down))
+    response = client.post("/api/billing/checkout", headers=_user())
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Payment provider error"
+
+
+def test_checkout_is_rate_limited(stripe_on, monkeypatch):
+    monkeypatch.setenv("FINVISION_RATE_LIMIT", "3")
+    headers = _user()  # registration counts toward the same per-IP window
+    codes = [client.post("/api/billing/checkout", headers=headers).status_code for _ in range(4)]
+    assert 429 in codes
+
+
+def test_customer_idempotency_key_differs_across_databases(stripe_on):
+    """Same user ID, different account (e.g. preview vs production DB)."""
+    headers = _user()
+    client.post("/api/billing/checkout", headers=headers)
+    key = stripe_on.customers[-1]["idempotency_key"]
+    assert key.startswith("finvision-customer-")
+    assert len(key.split("-")[-1]) == 16  # email-derived suffix
+
+
+def test_agentcore_assistant_is_behind_the_same_paywall(stripe_on, monkeypatch):
+    monkeypatch.setenv("FINVISION_ENABLE_AGENTCORE", "true")
+    response = client.post("/api/agentcore/portfolio/ask", headers=_user(),
+                           json={"question": "How diversified am I?"})
+    assert response.status_code == 402

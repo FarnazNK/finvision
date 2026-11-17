@@ -5,3 +5,11 @@ export class ProRequiredError extends Error {
     this.name = 'ProRequiredError';
   }
 }
+
+/** The API answered 401: the user has to sign in first. */
+export class SignInRequiredError extends Error {
+  constructor(message = 'Sign in to use AI insights.') {
+    super(message);
+    this.name = 'SignInRequiredError';
+  }
+}

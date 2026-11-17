@@ -15,7 +15,7 @@ import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
 import { redirectTo, startCheckout } from '@/services/billingClient';
-import { ProRequiredError } from '@/services/errors';
+import { ProRequiredError, SignInRequiredError } from '@/services/errors';
 import { askInsight } from '@/services/insightsClient';
 import { useInsightsStore } from './insightsStore';
 
@@ -90,6 +90,8 @@ export function InsightsPanel() {
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
         requestCancelled();
+      } else if (e instanceof SignInRequiredError) {
+        requestFailed('Sign in to use AI insights.');
       } else if (e instanceof ProRequiredError) {
         requestFailed('AI insights are part of FinVision Pro.', true);
       } else {

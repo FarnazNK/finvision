@@ -20,7 +20,7 @@
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth, Stripe subscriptions |
 | **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 90 frontend tests (Jest + React Testing Library), 48 backend tests (pytest), CodeQL and dependency audits in CI |
+| **Quality** | 91 frontend tests (Jest + React Testing Library), 54 backend tests (pytest), CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built

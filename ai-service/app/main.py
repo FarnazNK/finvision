@@ -395,6 +395,9 @@ async def agentcore_portfolio_ask(
     """Read-only analysis with a strictly user-scoped, minimal portfolio context."""
     if os.environ.get("FINVISION_ENABLE_AGENTCORE", "").lower() != "true":
         raise HTTPException(status_code=404, detail="Not found")
+    if billing_enabled() and not is_pro(user.id):
+        # Same paywall as /api/insights: model calls cost money.
+        raise HTTPException(status_code=402, detail="FinVision Pro is required for AI insights")
     with SessionLocal() as session:
         holdings = session.scalars(
             select(HoldingRecord)
@@ -424,7 +427,7 @@ async def agentcore_portfolio_ask(
 
 # Read-only GraphQL runs alongside the existing REST routes.
 app.include_router(build_graphql_router(current_user, enforce_rate_limit), prefix="/api/graphql")
-app.include_router(build_billing_router(current_user))
+app.include_router(build_billing_router(current_user, enforce_rate_limit))
 
 @app.get("/metrics", include_in_schema=False)
 def prometheus_metrics() -> Response:

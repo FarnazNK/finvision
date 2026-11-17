@@ -8,7 +8,7 @@
 import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
-import { ProRequiredError } from './errors';
+import { ProRequiredError, SignInRequiredError } from './errors';
 import { insightsResponseSchema, parseResponse, type InsightsResponse } from './schemas';
 
 export type { Citation, InsightsResponse } from './schemas';
@@ -40,6 +40,9 @@ export async function askInsight(
     signal,
   });
 
+  if (res.status === 401) {
+    throw new SignInRequiredError();
+  }
   if (res.status === 402) {
     throw new ProRequiredError();
   }

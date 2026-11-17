@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen, waitFor } from '@/test/utils';
 import { askInsight } from '@/services/insightsClient';
 import { redirectTo, startCheckout } from '@/services/billingClient';
-import { ProRequiredError } from '@/services/errors';
+import { ProRequiredError, SignInRequiredError } from '@/services/errors';
 import { InsightsPanel } from './InsightsPanel';
 import { useInsightsStore } from './insightsStore';
 
@@ -89,6 +89,16 @@ describe('InsightsPanel', () => {
       screen.getByRole('button', { name: 'Summarize my recent activity.' }),
     );
     await screen.findByRole('alert');
+    expect(screen.queryByRole('button', { name: 'Upgrade to Pro' })).not.toBeInTheDocument();
+  });
+
+  it('asks a signed-out user to sign in instead of blaming the service', async () => {
+    mockedAsk.mockRejectedValue(new SignInRequiredError());
+    renderWithProviders(<InsightsPanel />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'What was my biggest mover today?' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sign in to use AI insights.');
     expect(screen.queryByRole('button', { name: 'Upgrade to Pro' })).not.toBeInTheDocument();
   });
 });
