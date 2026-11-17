@@ -1,6 +1,8 @@
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen, waitFor } from '@/test/utils';
 import { askInsight } from '@/services/insightsClient';
+import { redirectTo, startCheckout } from '@/services/billingClient';
+import { ProRequiredError, SignInRequiredError } from '@/services/errors';
 import { InsightsPanel } from './InsightsPanel';
 import { useInsightsStore } from './insightsStore';
 
@@ -8,10 +10,19 @@ jest.mock('@/services/insightsClient', () => ({
   askInsight: jest.fn(),
 }));
 
+jest.mock('@/services/billingClient', () => ({
+  startCheckout: jest.fn(),
+  redirectTo: jest.fn(),
+}));
+
 const mockedAsk = askInsight as jest.MockedFunction<typeof askInsight>;
+const mockedCheckout = startCheckout as jest.MockedFunction<typeof startCheckout>;
+const mockedRedirect = redirectTo as jest.MockedFunction<typeof redirectTo>;
 
 beforeEach(() => {
   mockedAsk.mockReset();
+  mockedCheckout.mockReset();
+  mockedRedirect.mockReset();
   useInsightsStore.getState().reset();
 });
 
@@ -45,5 +56,49 @@ describe('InsightsPanel', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(/temporarily unavailable/),
     );
     expect(useInsightsStore.getState().status).toBe('error');
+  });
+
+  it('offers Pro checkout when the API says insights need Pro', async () => {
+    mockedAsk.mockRejectedValue(new ProRequiredError());
+    mockedCheckout.mockResolvedValue('https://checkout.stripe.com/c/pay/cs_test');
+    renderWithProviders(<InsightsPanel />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'How is my portfolio doing overall?' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(/part of FinVision Pro/);
+
+    const upgrade = screen.getByRole('button', { name: 'Upgrade to Pro' });
+    await userEvent.click(upgrade);
+    await waitFor(() =>
+      expect(mockedRedirect).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/cs_test'),
+    );
+    expect(useInsightsStore.getState().needsPro).toBe(true);
+
+    // A second attempt in the same session reuses the idempotency key.
+    mockedCheckout.mockRejectedValueOnce(new Error('network'));
+    await userEvent.click(screen.getByRole('button', { name: /Upgrade to Pro|Opening/ }));
+    const keys = mockedCheckout.mock.calls.map(([key]) => key);
+    expect(new Set(keys).size).toBe(1);
+  });
+
+  it('shows a plain error, not an upgrade offer, for other failures', async () => {
+    mockedAsk.mockRejectedValue(new Error('500'));
+    renderWithProviders(<InsightsPanel />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Summarize my recent activity.' }),
+    );
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('button', { name: 'Upgrade to Pro' })).not.toBeInTheDocument();
+  });
+
+  it('asks a signed-out user to sign in instead of blaming the service', async () => {
+    mockedAsk.mockRejectedValue(new SignInRequiredError());
+    renderWithProviders(<InsightsPanel />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'What was my biggest mover today?' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sign in to use AI insights.');
+    expect(screen.queryByRole('button', { name: 'Upgrade to Pro' })).not.toBeInTheDocument();
   });
 });

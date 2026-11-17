@@ -52,4 +52,47 @@ class HoldingRecord(Base):
     user: Mapped[UserRecord] = relationship(back_populates="holdings")
 
 
+class BillingAccount(Base):
+    """A user's Stripe customer and subscription state.
+
+    Kept in its own table (not new columns on `users`) so `create_all` can add
+    it to an existing database without a migration. Only the Stripe webhook
+    changes `status`; the browser never decides who is on Pro.
+    """
+
+    __tablename__ = "billing_accounts"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    stripe_customer_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
+    # Stripe subscription status: active, trialing, past_due, canceled, ... or "none".
+    status: Mapped[str] = mapped_column(String(32), default="none")
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class StripeEventRecord(Base):
+    """Stripe event IDs already applied. Stripe retries webhook deliveries, so
+    an event is recorded in the same transaction as its effect and skipped if
+    it arrives again."""
+
+    __tablename__ = "stripe_events"
+
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    type: Mapped[str] = mapped_column(String(100))
+    processed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
 Base.metadata.create_all(engine)

@@ -6,7 +6,7 @@
  * user is looking at. The panel's own session state (question, request status,
  * recent questions) lives in a Zustand store; see insightsStore.ts.
  */
-import { useRef, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 
 import { useAppStore } from '@/app/hooks';
@@ -14,6 +14,8 @@ import { selectCurrency } from '@/features/ui/uiSlice';
 import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
+import { redirectTo, startCheckout } from '@/services/billingClient';
+import { ProRequiredError, SignInRequiredError } from '@/services/errors';
 import { askInsight } from '@/services/insightsClient';
 import { useInsightsStore } from './insightsStore';
 
@@ -23,6 +25,15 @@ const SUGGESTIONS = [
   'What was my biggest mover today?',
   'Summarize my recent activity.',
 ];
+
+function newAttemptKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `upgrade-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function billingReturn(): 'success' | 'cancelled' | null {
+  const value = new URLSearchParams(window.location.search).get('billing');
+  return value === 'success' || value === 'cancelled' ? value : null;
+}
 
 export function InsightsPanel() {
   const holdings = useAppStore(selectHoldings);
@@ -34,6 +45,7 @@ export function InsightsPanel() {
   const result = useInsightsStore((s) => s.result);
   const error = useInsightsStore((s) => s.error);
   const history = useInsightsStore((s) => s.history);
+  const needsPro = useInsightsStore((s) => s.needsPro);
   const setQuestion = useInsightsStore((s) => s.setQuestion);
   const requestStarted = useInsightsStore((s) => s.requestStarted);
   const requestSucceeded = useInsightsStore((s) => s.requestSucceeded);
@@ -41,6 +53,22 @@ export function InsightsPanel() {
   const requestCancelled = useInsightsStore((s) => s.requestCancelled);
   const abortRef = useRef<AbortController | null>(null);
   const loading = status === 'loading';
+  // One key per upgrade attempt, so a double click reuses one Checkout Session.
+  const [upgradeKey] = useState(newAttemptKey);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [returned] = useState(billingReturn);
+
+  async function upgrade() {
+    setUpgrading(true);
+    setUpgradeError(null);
+    try {
+      redirectTo(await startCheckout(upgradeKey));
+    } catch (e) {
+      setUpgradeError((e as Error).message);
+      setUpgrading(false);
+    }
+  }
 
   async function run(q: string) {
     const trimmed = q.trim();
@@ -62,6 +90,10 @@ export function InsightsPanel() {
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
         requestCancelled();
+      } else if (e instanceof SignInRequiredError) {
+        requestFailed('Sign in to use AI insights.');
+      } else if (e instanceof ProRequiredError) {
+        requestFailed('AI insights are part of FinVision Pro.', true);
       } else {
         requestFailed('Insights are temporarily unavailable. Please try again in a moment.');
       }
@@ -107,7 +139,22 @@ export function InsightsPanel() {
         </Recent>
       )}
 
+      {returned === 'success' && (
+        <Notice role="status">
+          Thanks for subscribing. Pro turns on as soon as Stripe confirms the payment.
+        </Notice>
+      )}
+
       {error && <ErrorText role="alert">{error}</ErrorText>}
+
+      {needsPro && (
+        <Upgrade>
+          <Ask onClick={upgrade} disabled={upgrading}>
+            {upgrading ? 'Opening checkout…' : 'Upgrade to Pro'}
+          </Ask>
+          {upgradeError && <ErrorText role="alert">{upgradeError}</ErrorText>}
+        </Upgrade>
+      )}
 
       {result && !error && (
         <Answer role="status" aria-live="polite">
@@ -122,6 +169,19 @@ export function InsightsPanel() {
     </Card>
   );
 }
+
+const Upgrade = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+`;
+
+const Notice = styled.p`
+  margin: 8px 0;
+  font-size: 0.875rem;
+`;
 
 const Row = styled.div`
   display: flex;
