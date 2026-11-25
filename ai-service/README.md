@@ -9,18 +9,28 @@ holdings and transactions.
 - **Tool use, not hallucinated math.** The model calls deterministic analytics
   functions (`app/analytics.py`) via Anthropic function calling; financial
   figures are computed in Python and only *reasoned about* by the model.
-- **Grounded + auditable.** Every response carries `citations` pointing at the
-  metrics/records that produced it.
-- **Runs offline.** Without `ANTHROPIC_API_KEY`, `/api/insights` returns a
-  deterministic templated answer, so demos and CI need no network or secrets.
+- **Guardrails in code** (`app/guardrails.py`). Advice, off-topic and
+  prompt-injection questions are refused before the model is called; every
+  figure in a model answer must match a tool result, or the model gets one
+  retry and then the service answers deterministically.
+- **Number-level citations.** Responses carry `metric` citations (tools called)
+  and `figure` citations (each number in the text → tool, field, raw value),
+  plus a `guardrail` field saying which path produced the answer.
+- **Never a 500 from the model.** Without `ANTHROPIC_API_KEY`, and on API errors,
+  timeouts or the step limit, `/api/insights` answers deterministically from the
+  tool that fits the question, so demos and CI need no network or secrets.
+- **Evals.** `python -m evals.run` runs 20 cases offline (in CI);
+  `python -m evals.run --live` runs them against the model.
 
 ## Run
 
 ```bash
 pip install -r requirements-dev.txt
 export ANTHROPIC_API_KEY=sk-...        # optional; omit for offline mode
+export FINVISION_MODEL=claude-sonnet-5-5  # optional; this is the default
 uvicorn app.main:app --reload          # http://localhost:8000/docs
 pytest                                 # tests
+python -m evals.run                    # offline eval set
 ```
 
 ## MCP server
@@ -41,21 +51,30 @@ Setup for Claude Code and Cursor is in the [root README](../README.md#use-finvis
 
 ## Endpoints
 
-| Method | Path            | Description                              |
-|--------|-----------------|------------------------------------------|
-| GET    | `/health`       | Liveness probe                           |
-| GET    | `/metrics`       | Lightweight request counters for monitoring |
-| POST   | `/api/insights` | `{question, portfolio}` → grounded answer|
-| GET    | `/api/markets/quote?symbol=AAPL` | Current quote from Finnhub |
-| GET    | `/api/markets/history?symbol=AAPL&start=...&end=...` | Historical candles |
-| GET    | `/api/markets/search?q=apple` | Symbol search |
-| POST   | `/api/auth/register` | Create a user account |
-| POST   | `/api/auth/login` | Issue a short-lived access token |
-| GET    | `/api/auth/me` | Return the authenticated user |
-| GET    | `/api/portfolio/holdings` | List the authenticated user's holdings |
-| POST   | `/api/portfolio/holdings` | Add a holding to the authenticated user's portfolio |
-| POST   | `/api/research/ingest` | Index a document into the retrieval store |
-| POST   | `/api/research` | Retrieve relevant passages with citations |
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| GET | `/health` | public | Liveness probe |
+| GET | `/metrics` | service API key or JWT | JSON request counters (see note below) |
+| POST | `/api/insights` | JWT or service API key; anonymous for the demo portfolio only | `{question, portfolio}` → grounded answer |
+| GET | `/api/markets/quote?symbol=AAPL` | public, rate-limited | Current quote from Finnhub (503 without `FINNHUB_API_KEY`) |
+| GET | `/api/markets/history?symbol=AAPL&start=...&end=...` | public, rate-limited | Historical candles |
+| GET | `/api/markets/search?q=apple` | public, rate-limited | Symbol search |
+| POST | `/api/auth/register` | public, rate-limited | Create a user account |
+| POST | `/api/auth/login` | public, rate-limited | Issue a short-lived access token |
+| GET | `/api/auth/me` | JWT | Return the authenticated user |
+| GET | `/api/portfolio/holdings` | JWT | List the authenticated user's holdings |
+| POST | `/api/portfolio/holdings` | JWT | Add a holding to the authenticated user's portfolio |
+| POST | `/api/graphql` | JWT | Read-only GraphQL over the user's own holdings |
+| POST | `/api/research/ingest` | service API key | Index a document into the retrieval store |
+| POST | `/api/research` | JWT or service API key | Retrieve relevant passages with citations |
+| POST | `/api/agentcore/portfolio/ask` | JWT; 404 unless `FINVISION_ENABLE_AGENTCORE=true` | Read-only AgentCore assistant |
+
+Auth, markets, insights, research, GraphQL and AgentCore routes go through the
+per-IP rate limit (`FINVISION_RATE_LIMIT`, default 30 requests/minute, kept in
+process memory); `/api/auth/me` and the holdings routes do not. Research
+ingestion returns 503 unless `FINVISION_API_KEY` is set. A second, Prometheus-format `/metrics` route is defined later in
+`main.py` and is shadowed by the JSON one, so Prometheus scrapes currently get a
+401.
 
 Market endpoints keep the Finnhub credential on the server and cache responses
 in-process to avoid repeated provider requests. Set `FINNHUB_API_KEY` before
