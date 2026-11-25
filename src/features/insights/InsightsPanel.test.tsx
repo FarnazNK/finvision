@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen, waitFor } from '@/test/utils';
 import { askInsight } from '@/services/insightsClient';
+import { InsightsRequestError } from '@/services/insightsErrors';
 import { InsightsPanel } from './InsightsPanel';
 import { useInsightsStore } from './insightsStore';
 
@@ -45,5 +46,18 @@ describe('InsightsPanel', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(/temporarily unavailable/),
     );
     expect(useInsightsStore.getState().status).toBe('error');
+  });
+
+  it('asks the visitor to sign in when the service returns 401', async () => {
+    mockedAsk.mockRejectedValue(new InsightsRequestError(401));
+    renderWithProviders(<InsightsPanel />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'How is my portfolio doing overall?' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Sign in to use the assistant.'),
+    );
   });
 });

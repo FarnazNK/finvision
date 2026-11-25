@@ -12,6 +12,10 @@ import { insightsResponseSchema, parseResponse, type InsightsResponse } from './
 
 export type { Citation, InsightsResponse } from './schemas';
 
+import { InsightsRequestError } from './insightsErrors';
+
+export { InsightsRequestError } from './insightsErrors';
+
 const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
 export async function askInsight(
@@ -38,7 +42,7 @@ export async function askInsight(
   });
 
   if (!res.ok) {
-    throw new Error(`Insights request failed: ${res.status}`);
+    throw new InsightsRequestError(res.status);
   }
   return parseResponse(insightsResponseSchema, await res.json(), '/api/insights');
 }
