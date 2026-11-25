@@ -64,6 +64,9 @@ jobs:
       - name: Run backend tests
         run: pytest -v
 
+      - name: AI assistant eval set (offline)
+        run: python -m evals.run
+
       - name: AgentCore security regression tests
         run: pytest ../aws_agentcore/test_agentcore_readonly.py -q
 

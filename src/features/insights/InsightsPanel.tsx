@@ -16,6 +16,7 @@ import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
 import { askInsight } from '@/services/insightsClient';
 import { InsightsRequestError } from '@/services/insightsErrors';
+import { CitedAnswer } from './CitedAnswer';
 import { useInsightsStore } from './insightsStore';
 
 const SUGGESTIONS = [
@@ -112,16 +113,7 @@ export function InsightsPanel() {
 
       {error && <ErrorText role="alert">{error}</ErrorText>}
 
-      {result && !error && (
-        <Answer role="status" aria-live="polite">
-          <p>{result.answer}</p>
-          <Meta>
-            model: {result.model}
-            {result.citations.length > 0 &&
-              ` · grounded in ${result.citations.map((c) => c.ref).join(', ')}`}
-          </Meta>
-        </Answer>
-      )}
+      {result && !error && <CitedAnswer result={result} />}
     </Card>
   );
 }
@@ -185,21 +177,6 @@ const Chip = styled.button`
   cursor: pointer;
   &:hover { color: ${({ theme }) => theme.color.text}; }
   &:disabled { opacity: 0.6; cursor: wait; }
-`;
-
-const Answer = styled.div`
-  margin-top: 16px;
-  padding: 14px;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.color.surfaceAlt ?? theme.color.surface};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  p { margin: 0; line-height: 1.55; color: ${({ theme }) => theme.color.text}; }
-`;
-
-const Meta = styled.div`
-  margin-top: 10px;
-  font-size: 11px;
-  color: ${({ theme }) => theme.color.textMuted};
 `;
 
 const ErrorText = styled.p`

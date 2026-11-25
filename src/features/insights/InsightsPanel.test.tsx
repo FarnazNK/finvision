@@ -34,6 +34,45 @@ describe('InsightsPanel', () => {
     expect(screen.getByRole('button', { name: 'Too much tech?' })).toBeInTheDocument();
   });
 
+  it('marks each verified figure and lists where it came from', async () => {
+    mockedAsk.mockResolvedValue({
+      answer: 'VTI is worth $34,946.20, which is 45.4% of the portfolio.',
+      citations: [
+        { kind: 'metric', ref: 'get_concentration' },
+        { kind: 'figure', ref: 'get_concentration', text: '$34,946.20', path: '[VTI].marketValue', value: 34946.2 },
+        { kind: 'figure', ref: 'get_concentration', text: '45.4%', path: '[VTI].weight', value: 0.4538 },
+      ],
+      model: 'claude-sonnet-5-5',
+      guardrail: null,
+    });
+    renderWithProviders(<InsightsPanel />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Am I over-concentrated in any position?' }),
+    );
+
+    const sources = await screen.findByRole('list', { name: 'Sources for each figure' });
+    expect(sources).toHaveTextContent('get_concentration → [VTI].marketValue = 34946.2');
+    expect(sources).toHaveTextContent('get_concentration → [VTI].weight = 0.4538');
+    expect(screen.getByRole('link', { name: 'source 2' })).toHaveAttribute('href', '#insight-src-2');
+    expect(screen.getByTitle('get_concentration → [VTI].weight = 0.4538')).toHaveTextContent('45.4%');
+  });
+
+  it('labels answers shaped by a guardrail', async () => {
+    mockedAsk.mockResolvedValue({
+      answer: "I can't tell you what to buy, sell or hold.",
+      citations: [],
+      model: 'deterministic',
+      guardrail: 'refused:advice',
+    });
+    renderWithProviders(<InsightsPanel />);
+
+    await userEvent.type(screen.getByLabelText('Ask about your portfolio'), 'Should I sell AAPL?');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
+
+    expect(await screen.findByText('Investment advice declined')).toBeInTheDocument();
+  });
+
   it('shows a friendly error when the service fails', async () => {
     mockedAsk.mockRejectedValue(new Error('500'));
     renderWithProviders(<InsightsPanel />);
