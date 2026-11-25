@@ -44,6 +44,7 @@ def concentration(snapshot: PortfolioSnapshot, top_n: int = 5) -> list[dict]:
     total = market_value(snapshot) or 1.0
     rows = [
         {"symbol": h.symbol, "name": h.name,
+         "marketValue": round(h.quantity * h.price, 2),
          "weight": round((h.quantity * h.price) / total, 4)}
         for h in snapshot.holdings
     ]

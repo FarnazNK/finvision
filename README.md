@@ -19,15 +19,15 @@
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
-| **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 83 frontend tests (Jest + React Testing Library), 30 backend tests (pytest), CodeQL and dependency audits in CI |
+| **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
+| **Quality** | 85 frontend tests (Jest + React Testing Library), 83 backend tests (pytest), 20 assistant evals, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
 
 ### 🤖 AI assistant that doesn't make up numbers
-LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. Each answer **cites the tools it used**, so it can be checked. Without an API key the service falls back to deterministic answers, so the demo and CI never depend on an external model.
-→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py)
+LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. The rules aren't only in the prompt: **code checks every number in the answer against the tool results**, and each verified figure is cited to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called. If the model fails (no key, API error, timeout, or figures that don't verify), the service answers deterministically instead of erroring. Details in [How the AI assistant works](#how-the-ai-assistant-works).
+→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/guardrails.py`](ai-service/app/guardrails.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/evals/`](ai-service/evals/)
 
 ### 🔌 MCP server for coding agents
 The same 5 analytics functions are also available to external AI agents through a **Model Context Protocol (MCP) server**. Clone the repo, open it in Claude Code, and ask "Use FinVision to check how concentrated the sample portfolio is". The agent discovers the tools from [`.mcp.json`](.mcp.json) and runs the real calculations. There is one implementation behind two interfaces: the in-app assistant and the MCP server call the same code, and a test checks they return identical numbers.
@@ -91,6 +91,59 @@ flowchart LR
     Agent -->|MCP| MCP -->|same functions| Tools
 ```
 
+## How the AI assistant works
+
+```mermaid
+flowchart TD
+    Q["Question + portfolio snapshot"] --> S{"Input screen<br/>(code, no model)"}
+    S -->|investment advice| RA["Decline + relevant facts<br/>from one tool"]
+    S -->|off-topic| RO["Refuse"]
+    S -->|prompt injection<br/>in question or holding names| RI["Refuse"]
+    S -->|in scope| K{"API key?"}
+    K -->|no| D["Deterministic answer<br/>(question routed to one tool)"]
+    K -->|yes| M["Model"]
+    M -->|tool call| T["5 analytics tools<br/>(deterministic Python)"]
+    T -->|results| M
+    M -->|final text| V{"Every figure matches<br/>a tool result?"}
+    V -->|yes| A["Answer + number-level citations"]
+    V -->|no, first time| R["Retry: list the<br/>unsupported figures"] --> M
+    V -->|no, again| D
+    M -.->|API error · timeout · 6-step limit<br/>· buy/sell advice in output| D
+```
+
+| Guardrail | Enforced by | What happens |
+| --- | --- | --- |
+| Numbers must come from tools | `verify_numbers`: extracts every figure (amounts, %, k/M) and matches it to a tool output or a raw snapshot input, allowing only display rounding | One retry naming the bad figures, then a deterministic answer |
+| No investment advice | Regex screen on the question ("should I sell…", "is X a good investment", predictions); a second check on the model's output | Declines, then gives the relevant facts from one tool |
+| Stay on topic | Question must be about the portfolio (or name a held symbol) | Refusal, model never called |
+| Prompt injection | Screen on the question **and** on holding names and transaction descriptions, which also reach the prompt | Refusal, model never called |
+| Model failures | Bad model name, rate limit, outage, per-call timeout, 40 s total budget, 6-step loop limit | Deterministic answer; the API never returns a 500 for these |
+
+Each response carries a `guardrail` field (for example `refused:advice` or `fallback:api_error`), and the panel shows it as a label. Citations come in two kinds: `metric` (a tool that was called) and `figure` (one number in the text → tool, field, raw value).
+
+![Insights panel with each figure footnoted to the tool and field it came from](docs/screenshots/ai-insights.png)
+
+*Offline mode, so this answer was computed directly; a model answer is cited the same way.*
+
+### Evals
+
+[`ai-service/evals/cases.json`](ai-service/evals/cases.json) holds 20 cases: 10 portfolio questions (checking tool choice and that every figure matches the tool results), 4 advice requests, 3 off-topic requests and 3 injection attempts (one hidden in a holding name). The runner re-checks figures independently of the service.
+
+```bash
+cd ai-service
+python -m evals.run          # offline, runs in CI on every push
+python -m evals.run --live   # real model, needs ANTHROPIC_API_KEY
+```
+
+| Check | Offline (CI) | Live model |
+| --- | --- | --- |
+| Tool choice + grounded numbers | 10/10 | not run yet |
+| Refuses investment advice | 4/4 | not run yet |
+| Refuses off-topic questions | 3/3 | not run yet |
+| Blocks prompt injection | 3/3 | not run yet |
+
+Offline mode tests the guardrails and the deterministic path the service falls back to. The live run tests the model itself (and fails a case if it fell back); start it from the **AI evals (live model)** workflow in the Actions tab after adding an `ANTHROPIC_API_KEY` repository secret. Per-case results: [`evals/results-offline.md`](ai-service/evals/results-offline.md).
+
 ## Run it locally
 
 **Frontend** (Node 20+)
@@ -108,7 +161,7 @@ uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ```
 
-Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
+Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `FINVISION_MODEL` (model ID, default `claude-sonnet-5-5`), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
 
 ## Use FinVision from a coding agent (MCP)
 
@@ -154,7 +207,9 @@ This is a portfolio project, not production investment software, and it doesn't 
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
 
-**Next up:** server-side portfolio snapshots for AI, pgvector-based retrieval, and an evaluation set that runs coding agents against the MCP tools and checks answer quality in CI.
+- **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
+
+**Next up:** a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.
 
 <details>
 <summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus/Grafana</strong></summary>

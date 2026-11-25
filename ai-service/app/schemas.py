@@ -51,17 +51,30 @@ class InsightsRequest(BaseModel):
 
 
 class Citation(BaseModel):
-    """Which holdings, transactions, or documents grounded a response."""
+    """Which holdings, transactions, tools or documents grounded a response.
 
-    kind: Literal["holding", "transaction", "metric", "document"]
+    ``kind="metric"`` names a tool the assistant called. ``kind="figure"`` ties one
+    number in the answer (``text``, exactly as written) to the tool output it came
+    from: ``ref`` is the tool name (or ``portfolio_snapshot``), ``path`` the field
+    inside that output, and ``value`` the raw value there.
+    """
+
+    kind: Literal["holding", "transaction", "metric", "document", "figure"]
     ref: str
     source: Optional[str] = None
+    text: Optional[str] = None
+    path: Optional[str] = None
+    value: Optional[float] = None
 
 
 class InsightsResponse(BaseModel):
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     model: str
+    # Set when a code-level guardrail shaped the answer, e.g. "refused:advice",
+    # "fallback:api_error" or "fallback:unverified_numbers". None for a normal,
+    # fully verified model answer.
+    guardrail: Optional[str] = None
 
 
 class ResearchDocument(BaseModel):
