@@ -47,7 +47,7 @@ python run_mcp.py                      # stdio server, for agents
 pytest tests/test_mcp_server.py        # in-process and real stdio tests
 ```
 
-Setup for Claude Code and Cursor is in the [root README](../README.md#use-finvision-from-a-coding-agent-mcp).
+Setup for Claude Code and Cursor is in the [root README](../README.md#use-it-from-a-coding-agent-mcp).
 
 ## Endpoints
 
