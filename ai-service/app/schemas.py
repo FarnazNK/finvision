@@ -128,6 +128,11 @@ class MarketQuote(BaseModel):
     timestamp: int
 
 
+class MarketQuotesResponse(BaseModel):
+    quotes: list[MarketQuote]
+    unavailable: list[str] = Field(default_factory=list)
+
+
 class MarketCandle(BaseModel):
     symbol: str
     resolution: str

@@ -8,6 +8,7 @@ import {
   selectThemeMode,
   } from '@/features/ui/uiSlice';
 import { selectLastUpdated } from '@/features/portfolio/portfolioSlice';
+import { selectPriceSource } from '@/features/markets/marketsSlice';
 import { formatRelativeTime } from '@/utils/format';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { media } from '@/utils/responsive';
@@ -24,6 +25,8 @@ export function Topbar() {
   const liveFeed = useAppStore(selectLiveFeed);
   const currency = useAppStore(selectCurrency);
   const lastUpdated = useAppStore(selectLastUpdated);
+  const priceSource = useAppStore(selectPriceSource);
+  const isLive = priceSource === 'live';
   const [paletteOpen, setPaletteOpen] = useCommandPaletteHotkey();
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -70,11 +73,12 @@ export function Topbar() {
           type="button"
           onClick={() => liveFeedToggled()}
           aria-pressed={liveFeed}
-          aria-label={liveFeed ? 'Pause simulated price updates' : 'Resume simulated price updates'}
+          aria-label={liveFeed ? 'Pause price updates' : 'Resume price updates'}
+          title={isLive ? 'Real market quotes, refreshed every minute' : 'Simulated demo prices'}
         >
           <Dot $live={liveFeed} aria-hidden="true" />
           <LiveLabel>
-            {liveFeed ? 'Demo prices' : 'Demo paused'}
+            {!liveFeed ? 'Prices paused' : isLive ? 'Market prices' : 'Demo prices'}
             {lastUpdated && (
               <LiveSub aria-hidden="true">{formatRelativeTime(lastUpdated)}</LiveSub>
             )}

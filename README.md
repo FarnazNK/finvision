@@ -1,55 +1,36 @@
 # FinVision
 
-**A full-stack, AI-assisted portfolio tracker.** React + TypeScript frontend, Python/FastAPI backend, and an AI assistant that answers questions about a portfolio by calling real calculation tools instead of guessing numbers.
+**A full-stack, AI-assisted portfolio tracker.** React + TypeScript frontend, FastAPI backend, and an AI assistant that answers portfolio questions by calling real calculation tools instead of guessing numbers.
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 [![Security](https://github.com/FarnazNK/finvision/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/security.yml)
 [![Deploy](https://github.com/FarnazNK/finvision/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/pages.yml)
 
-**[🌐 Live website](https://farnaznk.github.io/finvision/)** · **[📊 Live dashboard](https://farnaznk.github.io/finvision/app)** · **[📘 API docs](https://finvision-api.vercel.app/docs)**
+**[🌐 Live website](https://farnaznk.github.io/finvision/)** · **[📊 Live dashboard](https://farnaznk.github.io/finvision/app)** · **[📘 API docs](https://finvision-api.vercel.app/docs)** · no sign-in needed ([what's live](#live-demo-status))
 
 ![FinVision landing page with an animated 3D portfolio scene](docs/screenshots/landing.png)
-
----
 
 ## At a glance
 
 | | |
 | --- | --- |
-| **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
-| **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
-| **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 86 frontend tests (Jest + React Testing Library), 89 backend tests (pytest), 20 assistant evals, CodeQL and dependency audits in CI |
-| **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
+| **Backend** | FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth, read-only GraphQL |
+| **AI** | Anthropic tool use over 5 deterministic analytics functions, guardrails enforced in code, number-level citations, deterministic fallback, 20-case eval set; the same tools exposed to coding agents via MCP |
+| **Quality** | 93 frontend tests (Jest + RTL), 91 backend tests (pytest), 20 evals, CodeQL and dependency audits in CI |
+| **Deployed** | GitHub Pages (frontend) and Vercel (API) from `main`; Docker images on GHCR; Kubernetes manifests validated in CI |
 
-## What I built
+## Features
 
-### 🤖 AI assistant that doesn't make up numbers
-LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. The rules aren't only in the prompt: **code checks every number in the answer against the tool results**, and each verified figure is cited to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called. If the model fails (no key, API error, timeout, or figures that don't verify), the service answers deterministically instead of erroring. Details in [How the AI assistant works](#how-the-ai-assistant-works).
-→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/guardrails.py`](ai-service/app/guardrails.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/evals/`](ai-service/evals/)
+**🤖 AI assistant that doesn't make up numbers.** The model never calculates: it calls 5 Python tools (summary, allocation, concentration, movers, recent activity) and explains the results. Code then checks every number in the answer against the tool output and cites each one to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called, and any model failure falls back to a computed answer instead of an error. → [`llm.py`](ai-service/app/llm.py), [`guardrails.py`](ai-service/app/guardrails.py), [`analytics.py`](ai-service/app/analytics.py)
 
-### 🔌 MCP server for coding agents
-The same 5 analytics functions are also available to external AI agents through a **Model Context Protocol (MCP) server**. Clone the repo, open it in Claude Code, and ask "Use FinVision to check how concentrated the sample portfolio is". The agent discovers the tools from [`.mcp.json`](.mcp.json) and runs the real calculations. There is one implementation behind two interfaces: the in-app assistant and the MCP server call the same code, and a test checks they return identical numbers.
-It's written for agents: every tool says when to use it, inputs are typed and bounded, invalid input returns an error naming the bad field, optional fields have defaults so an agent doesn't have to invent IDs, and a sample portfolio resource lets an agent try the tools with no setup. Tools are marked read-only. Version 1 is **stateless**: the agent passes the portfolio in each call, so the server needs no credentials and can't expose anyone's saved data.
-→ [`ai-service/app/mcp_server.py`](ai-service/app/mcp_server.py), [tests](ai-service/tests/test_mcp_server.py), [setup](#use-finvision-from-a-coding-agent-mcp)
+**🔌 MCP server for coding agents.** The same 5 functions are available to Claude Code, Cursor or Codex over the Model Context Protocol, with one implementation behind both interfaces and a test that checks they return identical numbers. Tools are typed, bounded, read-only and stateless (the agent passes the portfolio), so the server needs no credentials. → [`mcp_server.py`](ai-service/app/mcp_server.py), [setup](#use-it-from-a-coding-agent-mcp)
 
-### 🔐 Backend API with authentication
-FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints that only return the signed-in user's data, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
-→ [`ai-service/app/main.py`](ai-service/app/main.py), [API docs](https://finvision-api.vercel.app/docs)
+**🔐 Backend API.** Register/login with hashed passwords and JWTs, per-user holdings, Finnhub market data (single and batch quotes, history, search) with timeouts and caching, per-IP rate limiting, read-only GraphQL (no mutations or introspection, size limits), and an in-memory document-retrieval prototype. → [`main.py`](ai-service/app/main.py), [endpoints](ai-service/README.md#endpoints)
 
-### 📊 Responsive dashboard
-Portfolio value chart with time ranges, allocation donut, sortable holdings, filterable transactions, market movers and a watchlist. It uses a token-driven **glass design system** (frosted translucent surfaces with backdrop blur, light-catching gradient edges and an animated aurora backdrop, with solid fallbacks for browsers without `backdrop-filter` and for users who prefer reduced transparency). A **⌘K / Ctrl+K command palette** (accessible combobox, fuzzy matching, focus restore) jumps between pages and changes settings from the keyboard. It works on desktop and phones (card layouts and a floating bottom navigation on mobile), offers dark (default) and light themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
-**State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and the durable data is persisted locally. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
-→ [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/), [`src/services/schemas.ts`](src/services/schemas.ts), [`src/app/store.ts`](src/app/store.ts), [`src/features/insights/insightsStore.ts`](src/features/insights/insightsStore.ts)
+**📊 Responsive dashboard.** Value chart (1W–1Y), allocation donut, sortable holdings, filterable transactions, market movers and a watchlist, for a seeded demo portfolio. Prices are **real market quotes** refreshed every minute when the API has a Finnhub key, otherwise simulated; the header badge says which ("Market prices" / "Demo prices"). Glass design system, ⌘K command palette, dark and light themes, mobile layout, and accessible components (keyboard focus, screen-reader labels, reduced motion). State lives in one Zustand store built from feature slices, and every API response is validated with Zod. → [`src/pages/`](src/pages/), [`store.ts`](src/app/store.ts), [`schemas.ts`](src/services/schemas.ts)
 
-### ✨ 3D landing page
-An animated **three.js** portfolio scene: rising bars, a growth line and orbiting points. It's code-split so other pages never load three.js, pauses when off-screen, shows a still frame for users who prefer reduced motion, and falls back to an SVG if WebGL isn't available.
-→ [`src/components/three/PortfolioScene.tsx`](src/components/three/PortfolioScene.tsx)
-
-### 🚀 CI/CD and delivery
-On every push GitHub Actions runs type checking, ESLint, Jest, pytest, **CodeQL**, `npm audit` and `pip-audit`, builds Docker images to GHCR, deploys the frontend to GitHub Pages, and runs a smoke test against the live APIs.
-→ [`.github/workflows/`](.github/workflows/)
+**✨ 3D landing page.** A code-split three.js scene that pauses off-screen, respects reduced motion and falls back to SVG without WebGL. → [`PortfolioScene.tsx`](src/components/three/PortfolioScene.tsx)
 
 ## Screenshots
 
@@ -57,182 +38,122 @@ On every push GitHub Actions runs type checking, ESLint, Jest, pytest, **CodeQL*
 | --- | --- |
 | ![Dashboard with KPIs, performance chart, allocation and recent activity](docs/screenshots/dashboard.png) | <img src="docs/screenshots/mobile.png" alt="Dashboard on a phone" width="260"> |
 
-![Holdings table with returns per position](docs/screenshots/holdings.png)
-
 ## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph FE["Frontend · GitHub Pages"]
-        UI["React + TypeScript<br/>Zustand · Zod · Recharts · three.js"]
-    end
-
-    subgraph BE["FastAPI · Vercel"]
-        API["REST + read-only GraphQL<br/>Pydantic validation · rate limits"]
-        Auth["JWT auth"]
-        Insights["AI insights"]
-        Tools["5 analytics tools<br/>(deterministic Python)"]
-        MCP["MCP server<br/>(stdio, read-only)"]
-        Market["Market data adapter"]
-        Research["Document retrieval<br/>(in-memory prototype)"]
-    end
-
-    DB[("PostgreSQL<br/>users + holdings")]
-    LLM["Anthropic model<br/>(optional)"]
-    Agent["Coding agent<br/>Claude Code · Cursor · Codex"]
-    Finnhub["Finnhub<br/>(optional)"]
-
-    UI -->|HTTPS| API
-    API --> Auth --> DB
-    API --> Insights -->|tool calls| Tools
-    Insights -.->|optional| LLM
-    API --> Market -.->|optional| Finnhub
-    API --> Research
-    Agent -->|MCP| MCP -->|same functions| Tools
+    UI["React frontend<br/>GitHub Pages"] -->|HTTPS| API["FastAPI · Vercel<br/>REST + GraphQL · rate limits"]
+    API --> Auth["JWT auth"] --> DB[("PostgreSQL")]
+    API --> Insights["AI insights<br/>guardrails · fallback"] -->|tool calls| Tools["5 analytics tools"]
+    Insights -.->|optional| LLM["Anthropic model"]
+    API --> Market["Market data"] -.->|optional| Finnhub["Finnhub"]
+    Agent["Coding agent"] -->|MCP| MCP["MCP server"] -->|same functions| Tools
 ```
 
 ## How the AI assistant works
 
 ```mermaid
 flowchart TD
-    Q["Question + portfolio snapshot"] --> S{"Input screen<br/>(code, no model)"}
-    S -->|investment advice| RA["Decline + relevant facts<br/>from one tool"]
-    S -->|off-topic| RO["Refuse"]
-    S -->|prompt injection<br/>in question or holding names| RI["Refuse"]
+    Q["Question + portfolio"] --> S{"Input screen<br/>(code)"}
+    S -->|advice| RA["Decline + relevant facts"]
+    S -->|off-topic / injection| RO["Refuse"]
     S -->|in scope| K{"API key?"}
-    K -->|no| D["Deterministic answer<br/>(question routed to one tool)"]
+    K -->|no| D["Computed answer<br/>(one tool)"]
     K -->|yes| M["Model"]
-    M -->|tool call| T["5 analytics tools<br/>(deterministic Python)"]
-    T -->|results| M
-    M -->|final text| V{"Every figure matches<br/>a tool result?"}
-    V -->|yes| A["Answer + number-level citations"]
-    V -->|no, first time| R["Retry: list the<br/>unsupported figures"] --> M
-    V -->|no, again| D
-    M -.->|API error · timeout · 6-step limit<br/>· buy/sell advice in output| D
+    M -->|tool calls| T["Analytics tools"] -->|results| M
+    M --> V{"Every figure matches<br/>a tool result?"}
+    V -->|yes| A["Answer + citations"]
+    V -->|no| R["One retry"] --> M
+    V -->|still no| D
+    M -.->|API error · timeout · step limit| D
 ```
 
-| Guardrail | Enforced by | What happens |
-| --- | --- | --- |
-| Numbers must come from tools | `verify_numbers`: extracts every figure (amounts, %, k/M) and matches it to a tool output or a raw snapshot input, allowing only display rounding | One retry naming the bad figures, then a deterministic answer |
-| No investment advice | Regex screen on the question ("should I sell…", "is X a good investment", predictions); a second check on the model's output | Declines, then gives the relevant facts from one tool |
-| Stay on topic | Question must be about the portfolio (or name a held symbol) | Refusal, model never called |
-| Prompt injection | Screen on the question **and** on holding names and transaction descriptions, which also reach the prompt | Refusal, model never called |
-| Model failures | Bad model name, rate limit, outage, per-call timeout, 40 s total budget, 6-step loop limit | Deterministic answer; the API never returns a 500 for these |
+| Guardrail | How it's enforced |
+| --- | --- |
+| Numbers come from tools | Every figure (amounts, %, k/M) must match a tool output or raw input, allowing display rounding; one retry, then a computed answer |
+| No investment advice | Pattern screen on the question and on the model's output; declines, then gives the relevant facts |
+| On topic | The question must be about the portfolio or name a held symbol |
+| Prompt injection | Screens the question and holding names / transaction descriptions, which also reach the prompt |
+| Model failures | Bad model name, rate limit, outage, timeouts (40 s budget) and a 6-step limit all fall back; no 500s |
 
-Each response carries a `guardrail` field (for example `refused:advice` or `fallback:api_error`), and the panel shows it as a label. Citations come in two kinds: `metric` (a tool that was called) and `figure` (one number in the text → tool, field, raw value).
+Each response has a `guardrail` field (e.g. `refused:advice`, `fallback:api_error`) that the panel shows as a label.
 
 ![Insights panel with each figure footnoted to the tool and field it came from](docs/screenshots/ai-insights.png)
 
-*Offline mode, so this answer was computed directly; a model answer is cited the same way.*
-
-### Evals
-
-[`ai-service/evals/cases.json`](ai-service/evals/cases.json) holds 20 cases: 10 portfolio questions (checking tool choice and that every figure matches the tool results), 4 advice requests, 3 off-topic requests and 3 injection attempts (one hidden in a holding name). The runner re-checks figures independently of the service.
-
-```bash
-cd ai-service
-python -m evals.run          # offline, runs in CI on every push
-python -m evals.run --live   # real model, needs ANTHROPIC_API_KEY
-```
+**Evals.** [20 cases](ai-service/evals/cases.json): 10 portfolio questions (right tool, every figure grounded), 4 advice, 3 off-topic and 3 injection attempts (one hidden in a holding name).
 
 | Check | Offline (CI) | Live model |
 | --- | --- | --- |
 | Tool choice + grounded numbers | 10/10 | not run yet |
-| Refuses investment advice | 4/4 | not run yet |
-| Refuses off-topic questions | 3/3 | not run yet |
+| Refuses advice / off-topic | 7/7 | not run yet |
 | Blocks prompt injection | 3/3 | not run yet |
 
-Offline mode tests the guardrails and the deterministic path the service falls back to. The live run tests the model itself (and fails a case if it fell back); start it from the **AI evals (live model)** workflow in the Actions tab after adding an `ANTHROPIC_API_KEY` repository secret. Per-case results: [`evals/results-offline.md`](ai-service/evals/results-offline.md).
+Offline runs test the guardrails and the fallback path on every push. The live run, started from the **AI evals (live model)** workflow, needs an `ANTHROPIC_API_KEY` repository secret.
+
+## Live demo status
+
+| Part | Status |
+| --- | --- |
+| Dashboard | Live on GitHub Pages with a seeded demo portfolio; no sign-in needed |
+| Prices | Real quotes once `FINNHUB_API_KEY` is set on the API (free key); otherwise simulated |
+| AI assistant | Live in **offline mode**: no Anthropic key on the API, so answers are computed directly. Guardrails and citations work the same |
+| Accounts | Sign-in works, but the dashboard still shows the demo portfolio; saved holdings are available through the API and GraphQL only |
 
 ## Run it locally
 
-**Frontend** (Node 20+)
 ```bash
-npm install
-npm run dev            # http://localhost:3000
-npm test               # Jest + React Testing Library
+npm install && npm run dev        # frontend: http://localhost:3000 · tests: npm test
+cd ai-service && pip install -r requirements-dev.txt
+uvicorn app.main:app --reload     # API: http://localhost:8000/docs · tests: pytest, python -m evals.run
 ```
 
-**Backend** (Python 3.12)
-```bash
-cd ai-service
-pip install -r requirements-dev.txt
-uvicorn app.main:app --reload     # http://localhost:8000/docs
-pytest
-```
+Optional: `ANTHROPIC_API_KEY` (model answers), `FINVISION_MODEL` (default `claude-sonnet-5-5`), `FINNHUB_API_KEY` (real prices), `VITE_AI_SERVICE_URL` (API address for the frontend). Or run everything with `docker compose up`.
 
-Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `FINVISION_MODEL` (model ID, default `claude-sonnet-5-5`), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
+## Use it from a coding agent (MCP)
 
-## Use FinVision from a coding agent (MCP)
-
-```bash
-cd ai-service && pip install -r requirements-dev.txt   # includes the MCP SDK
-```
-
-**Claude Code:** open the repo folder and run `claude`. The project's [`.mcp.json`](.mcp.json) registers the `finvision` server; approve it when prompted, then check with `/mcp`. To add it to another project instead:
+Open the repo in **Claude Code** (`claude`); [`.mcp.json`](.mcp.json) registers the `finvision` server. Elsewhere, or in **Cursor**:
 
 ```bash
 claude mcp add --transport stdio finvision -- python3 /path/to/finvision/ai-service/run_mcp.py
 ```
-
-**Cursor and other MCP clients:** add the same command to the client's MCP config, for example in `.cursor/mcp.json`:
-
 ```json
 { "mcpServers": { "finvision": { "command": "python3", "args": ["/path/to/finvision/ai-service/run_mcp.py"] } } }
 ```
 
-If your dependencies are in a virtual environment, use that environment's `python` as the command.
+Try: *"Use FinVision's sample portfolio. What is it worth and am I up or down?"* Tools: `get_portfolio_summary`, `get_allocation`, `get_concentration` (`top_n`), `get_top_movers` (`n`), `get_recent_activity` (`limit`). Each takes a `portfolio` of holdings (`symbol`, `quantity`, `costBasis`, `price`) and optional transactions; `finvision://sample-portfolio` gives a ready-made one.
 
-**Try these prompts:**
-- "Use FinVision's sample portfolio. What is it worth and am I up or down?"
-- "With FinVision, what are my three largest positions? I hold 35 AAPL bought at $148, now $198, and 142 VTI bought at $198.40, now $246.10."
-- "Using FinVision, how is the sample portfolio split between stocks, bonds and cash?"
+## CI/CD
 
-| Tool | Answers | Optional inputs |
+| Workflow | Runs on | Does |
 | --- | --- | --- |
-| `get_portfolio_summary` | Market value, cost basis, unrealized gain/loss | none |
-| `get_allocation` | Share of value per asset class | none |
-| `get_concentration` | Largest positions by weight | `top_n` (1–50) |
-| `get_top_movers` | Best and worst holdings today | `n` (1–20) |
-| `get_recent_activity` | Latest transactions | `limit` (1–100) |
+| CI | Pushes and PRs to `main` | Typecheck, ESLint, Jest, build, pytest, offline evals, Compose build |
+| Security | Pushes, PRs, weekly | CodeQL, `pip-audit`, `npm audit` |
+| Deploy / Docker / Kubernetes | Pushes to `main` | GitHub Pages deploy, GHCR images, manifest validation |
+| Live evals / smoke test | Manual | Evals against the real model; health checks on the deployed API |
 
-Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis` per unit, `price`) and optional `transactions`. Weights are fractions (0.25 = 25%). The resource `finvision://sample-portfolio` returns a ready-made demo portfolio.
+Vercel deploys the API from `main` and builds a preview for every branch.
 
-## Honest limitations
+## Limitations
 
-This is a portfolio project, not production investment software, and it doesn't give investment advice.
+FinVision is not investment software and gives no investment advice.
 
-- **Demo data:** the public dashboard uses seeded holdings and simulated price ticks. Real quotes depend on a Finnhub key.
-- **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
-- **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
-- **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
+- The dashboard always shows the seeded portfolio, and the value chart's history before page load is simulated.
+- The assistant uses a snapshot sent by the browser, not the user's saved holdings.
+- Guardrail screens are pattern-based and catch common phrasings, not every rewording; the number check is the stronger guarantee.
+- Rate limiting is per IP and in memory, so it resets on cold starts.
+- Retrieval is in memory, without embeddings or per-user isolation. MCP runs locally over stdio.
 
-- **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
-
-**Next up:** a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.
+**Next up:** live-model eval results, saved holdings in the dashboard, server-side AI snapshots, pgvector retrieval.
 
 <details>
-<summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus/Grafana</strong></summary>
+<summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus</strong></summary>
 
-None of these need a paid account. All run locally.
-
-- **GraphQL (read-only):** `POST /api/graphql` with a JWT returns only the user's own holdings. Mutations, introspection, fragments and oversized requests are rejected. Tests: `pytest ai-service/tests/test_graphql.py`.
-- **AWS AgentCore demo:** a disabled-by-default, read-only portfolio assistant behind a mockable runtime. It only shares asset names and symbols with the model, never balances. Run `python aws_agentcore/demo_offline.py`. Details in [`aws_agentcore/PORTFOLIO.md`](aws_agentcore/PORTFOLIO.md). Not deployed to AWS.
-- **Kubernetes:** manifests for a local kind cluster with resource limits and secret references, validated in CI. See [`k8s/README.md`](k8s/README.md).
-- **Prometheus + Grafana:** local-only monitoring of the API's HTTP metrics. See [`k8s/MONITORING.md`](k8s/MONITORING.md).
+- **GraphQL:** `POST /api/graphql` with a JWT returns only the user's own holdings; mutations, introspection, fragments and oversized requests are rejected.
+- **AWS AgentCore:** a disabled-by-default, read-only assistant that shares only asset names and symbols with the model. Run `python aws_agentcore/demo_offline.py`. Not deployed. [Details](aws_agentcore/README.md).
+- **Kubernetes:** kind manifests with resource limits and secret references. [`k8s/README.md`](k8s/README.md).
+- **Prometheus + Grafana:** local manifests. Known issue: a token-protected `/metrics` route shadows the Prometheus one, so scrapes get a 401. [`k8s/MONITORING.md`](k8s/MONITORING.md).
 
 </details>
-
-## Repository guide
-
-| Path | What's there |
-| --- | --- |
-| [`src/`](src/) | React frontend: pages, components, Zustand store and slices, Zod contracts, charts, 3D scene |
-| [`ai-service/`](ai-service/) | FastAPI backend: API, auth, analytics tools, LLM layer, MCP server, tests |
-| [`.mcp.json`](.mcp.json) | Registers the FinVision MCP server for Claude Code |
-| [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
-| [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
-| [`SECURITY.md`](SECURITY.md) | Security policy |
 
 ---
 

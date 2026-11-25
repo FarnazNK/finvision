@@ -64,6 +64,12 @@ export const marketQuoteSchema = z.object({
 });
 export type MarketQuote = z.infer<typeof marketQuoteSchema>;
 
+export const marketQuotesResponseSchema = z.object({
+  quotes: z.array(marketQuoteSchema),
+  unavailable: z.array(z.string()),
+});
+export type MarketQuotesResponse = z.infer<typeof marketQuotesResponseSchema>;
+
 /** Raised when a response does not match its contract. */
 export class ContractError extends Error {
   constructor(endpoint: string, issues: z.ZodIssue[]) {

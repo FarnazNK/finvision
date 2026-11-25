@@ -40,6 +40,7 @@ from .schemas import (
     ResearchResponse,
     MarketCandle,
     MarketQuote,
+    MarketQuotesResponse,
     MarketSearchResponse,
     AuthResponse,
     HoldingCreate,
@@ -252,6 +253,53 @@ def market_quote(
         previousClose=data.get("pc", 0),
         timestamp=data.get("t", 0),
     )
+
+
+MAX_BATCH_SYMBOLS = 25
+
+
+@app.get("/api/markets/quotes", response_model=MarketQuotesResponse)
+def market_quotes(
+    symbols: str,
+    _: None = Depends(enforce_rate_limit),
+) -> MarketQuotesResponse:
+    """Quotes for several symbols in one request (one rate-limit hit, cached
+    per symbol on the server). Symbols the provider can't price are listed in
+    ``unavailable`` instead of failing the whole request."""
+    wanted = list(dict.fromkeys(s.strip().upper() for s in symbols.split(",") if s.strip()))
+    if not wanted:
+        raise HTTPException(status_code=400, detail="symbols is required")
+    if len(wanted) > MAX_BATCH_SYMBOLS:
+        raise HTTPException(status_code=400, detail=f"At most {MAX_BATCH_SYMBOLS} symbols")
+    if not market_client.api_key:
+        raise _market_error(MarketDataError("FINNHUB_API_KEY is not configured"))
+
+    quotes: list[MarketQuote] = []
+    unavailable: list[str] = []
+    for symbol in wanted:
+        try:
+            data = market_client.quote(symbol)
+        except (MarketDataError, ValueError):
+            unavailable.append(symbol)
+            continue
+        # Finnhub answers unknown symbols with zeros rather than an error.
+        if not data.get("c") or data.get("c", 0) <= 0:
+            unavailable.append(symbol)
+            continue
+        quotes.append(MarketQuote(
+            symbol=symbol,
+            current=data.get("c", 0),
+            change=data.get("d") or 0,
+            changePercent=data.get("dp") or 0,
+            high=data.get("h", 0),
+            low=data.get("l", 0),
+            open=data.get("o", 0),
+            previousClose=data.get("pc", 0),
+            timestamp=data.get("t", 0),
+        ))
+    if not quotes:
+        raise _market_error(MarketDataError("No quotes available"))
+    return MarketQuotesResponse(quotes=quotes, unavailable=unavailable)
 
 
 @app.get("/api/markets/history", response_model=MarketCandle)

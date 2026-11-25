@@ -4,14 +4,16 @@ import { useAppStore } from '@/app/hooks';
 import {
   selectWatchlist,
   } from '@/features/watchlist/watchlistSlice';
+import { selectLiveQuotes } from '@/features/markets/marketsSlice';
 import { Button, Card, Input, TickerBadge } from '@/components/primitives';
-import { formatRelativeTime } from '@/utils/format';
+import { formatMoney, formatPercent, formatRelativeTime } from '@/utils/format';
 import { media } from '@/utils/responsive';
 
 export function WatchlistPage() {
   const watchlistItemAdded = useAppStore((s) => s.watchlistItemAdded);
   const watchlistItemRemoved = useAppStore((s) => s.watchlistItemRemoved);
   const items = useAppStore(selectWatchlist);
+  const quotes = useAppStore(selectLiveQuotes);
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +92,18 @@ export function WatchlistPage() {
                     {item.symbol} · added {formatRelativeTime(item.addedAt)}
                   </Sub>
                 </Stack>
+                <Quote aria-label={`${item.symbol} price`}>
+                  {quotes[item.symbol] ? (
+                    <>
+                      <QuotePrice>{formatMoney(quotes[item.symbol].price)}</QuotePrice>
+                      <QuoteChange $up={quotes[item.symbol].changePct >= 0}>
+                        {formatPercent(quotes[item.symbol].changePct)}
+                      </QuoteChange>
+                    </>
+                  ) : (
+                    <QuoteMissing title="Needs a market data key on the API">No quote</QuoteMissing>
+                  )}
+                </Quote>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -163,7 +177,7 @@ const List = styled.ul`
 
 const Row = styled.li`
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 36px 1fr auto auto;
   align-items: center;
   gap: ${({ theme }) => theme.space[3]};
   padding: ${({ theme }) => `${theme.space[3]} ${theme.space[4]}`};
@@ -207,5 +221,27 @@ const EmptyTitle = styled.div`
 const EmptyHint = styled.div`
   margin-top: ${({ theme }) => theme.space[2]};
   font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.color.textMuted};
+`;
+
+const Quote = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+`;
+
+const QuotePrice = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const QuoteChange = styled.span<{ $up: boolean }>`
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  color: ${({ theme, $up }) => ($up ? theme.color.success : theme.color.danger)};
+`;
+
+const QuoteMissing = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.xs};
   color: ${({ theme }) => theme.color.textMuted};
 `;
