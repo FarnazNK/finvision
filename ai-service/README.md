@@ -57,6 +57,7 @@ Setup for Claude Code and Cursor is in the [root README](../README.md#use-finvis
 | GET | `/metrics` | service API key or JWT | JSON request counters (see note below) |
 | POST | `/api/insights` | JWT or service API key; anonymous for the demo portfolio only | `{question, portfolio}` → grounded answer |
 | GET | `/api/markets/quote?symbol=AAPL` | public, rate-limited | Current quote from Finnhub (503 without `FINNHUB_API_KEY`) |
+| GET | `/api/markets/quotes?symbols=AAPL,VTI` | public, rate-limited | Up to 25 quotes in one request; unpriced symbols are listed in `unavailable` |
 | GET | `/api/markets/history?symbol=AAPL&start=...&end=...` | public, rate-limited | Historical candles |
 | GET | `/api/markets/search?q=apple` | public, rate-limited | Symbol search |
 | POST | `/api/auth/register` | public, rate-limited | Create a user account |

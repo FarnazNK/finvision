@@ -3,6 +3,11 @@ import { selectTotalValue } from '@/features/portfolio/portfolioSlice';
 import type { MarketTick } from '@/types/domain';
 
 /**
+ * Simulated price feed for the demo.
+ *
+ * When real quotes are available (see useLiveQuotes), symbols with a real
+ * quote are skipped here, so the feed only animates what the market can't price.
+ *
  * Lightweight mock of a market data WebSocket.
  *
  * In production this would be a real WS subscription — `feed.subscribe`,
@@ -32,7 +37,9 @@ export function createMarketFeed(
 
   const tickOnce = () => {
     const state = getState();
-    const holdings = state.portfolio.holdings;
+    // Holdings priced by real quotes are left alone; only the rest are simulated.
+    const live = state.markets.liveQuotes ?? {};
+    const holdings = state.portfolio.holdings.filter((h) => !live[h.symbol]);
     if (holdings.length === 0) return;
 
     // Pick 1–3 holdings to "tick" each round so changes feel organic.

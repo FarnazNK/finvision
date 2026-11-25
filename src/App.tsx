@@ -9,10 +9,13 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { useMarketFeed } from '@/hooks/useMarketFeed';
+import { useLiveQuotes } from '@/hooks/useLiveQuotes';
 
 export function App() {
   // Boots the simulated market feed; toggled by the live-feed UI control.
   useMarketFeed();
+  // Real quotes from the API replace simulated prices when available.
+  useLiveQuotes();
   const location = useLocation();
   // The marketing page is the front door; the dashboard lives at /app.
   const isPublicRoute =

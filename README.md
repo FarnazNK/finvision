@@ -8,7 +8,7 @@
 
 **[🌐 Live website](https://farnaznk.github.io/finvision/)** · **[📊 Live dashboard](https://farnaznk.github.io/finvision/app)** · **[📘 API docs](https://finvision-api.vercel.app/docs)**
 
-The live dashboard needs no sign-in. It shows a seeded demo portfolio with simulated prices, and its AI assistant currently runs in [offline mode](#current-state-of-the-live-demo).
+The live dashboard needs no sign-in. It shows a seeded demo portfolio priced with real market quotes when the API has a Finnhub key (simulated prices otherwise), and its AI assistant currently runs in [offline mode](#current-state-of-the-live-demo).
 
 ![FinVision landing page with an animated 3D portfolio scene](docs/screenshots/landing.png)
 
@@ -41,7 +41,7 @@ FastAPI service with typed Pydantic contracts: register/login with hashed passwo
 → [`ai-service/app/main.py`](ai-service/app/main.py), [endpoint list](ai-service/README.md#endpoints), [API docs](https://finvision-api.vercel.app/docs)
 
 ### 📊 Responsive dashboard
-Portfolio value chart with time ranges (1W to 1Y), allocation donut, sortable holdings, filterable transactions, market movers and a watchlist, all driven by seeded data with simulated price ticks. The Markets page asks the API for real quotes and keeps the simulated prices when none are available. A sign-in page creates an account and session against the API. It uses a token-driven **glass design system** (frosted translucent surfaces with backdrop blur, light-catching gradient edges and an animated aurora backdrop, with solid fallbacks for browsers without `backdrop-filter` and for users who prefer reduced transparency). A **⌘K / Ctrl+K command palette** (accessible combobox, fuzzy matching, focus restore) jumps between pages and changes settings from the keyboard. It works on desktop and phones (card layouts and a floating bottom navigation on mobile), offers dark (default) and light themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
+Portfolio value chart with time ranges (1W to 1Y), allocation donut, sortable holdings, filterable transactions, market movers and a watchlist, all driven by a seeded demo portfolio. **Prices come from real market quotes** (Finnhub, through the API's batch quote endpoint, refreshed every minute while the tab is visible) for every holding and watchlist symbol; any symbol without a quote keeps a simulated price, and the header badge shows which mode is active ("Market prices" or "Demo prices"). The portfolio-value chart's earlier history is still simulated. A sign-in page creates an account and session against the API. It uses a token-driven **glass design system** (frosted translucent surfaces with backdrop blur, light-catching gradient edges and an animated aurora backdrop, with solid fallbacks for browsers without `backdrop-filter` and for users who prefer reduced transparency). A **⌘K / Ctrl+K command palette** (accessible combobox, fuzzy matching, focus restore) jumps between pages and changes settings from the keyboard. It works on desktop and phones (card layouts and a floating bottom navigation on mobile), offers dark (default) and light themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
 **State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and the durable data is persisted locally. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
 → [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/), [`src/services/schemas.ts`](src/services/schemas.ts), [`src/app/store.ts`](src/app/store.ts), [`src/features/insights/insightsStore.ts`](src/features/insights/insightsStore.ts)
 
@@ -218,14 +218,14 @@ Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis
 | --- | --- |
 | Dashboard | Live on GitHub Pages. Seeded demo portfolio, simulated price ticks, no sign-in needed |
 | AI assistant | Live and answering visitors, in **offline mode**: the deployed API has no Anthropic key, so answers are computed directly from one tool and labeled "Offline mode". Guardrails, refusals and number-level citations work the same way |
-| Market quotes | The deployed API has no Finnhub key, so the Markets page shows simulated prices |
+| Market quotes | Real quotes appear on every page once `FINNHUB_API_KEY` is set on the API (free key, personal use). Without it the dashboard falls back to simulated prices and the badge says "Demo prices" |
 | Accounts | Register and sign-in use PostgreSQL. The dashboard still shows the demo portfolio after sign-in; a user's saved holdings are reachable through the API and GraphQL only |
 
 ## Honest limitations
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
 
-- **Demo data:** the dashboard always uses the seeded holdings and simulated price ticks, signed in or not.
+- **Demo data:** the dashboard always uses the seeded holdings, signed in or not. Prices are real when the API has a Finnhub key; the value chart's history before the page loaded is simulated.
 - **AI context:** insights use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
 - **Evals:** only the offline eval set has run so far. The live-model column above is empty until the eval workflow runs with an API key.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import styled from 'styled-components';
 import { useAppStore } from '@/app/hooks';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
@@ -7,7 +7,6 @@ import { Card, TickerBadge } from '@/components/primitives';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { formatMoney, formatPercent } from '@/utils/format';
 import { media } from '@/utils/responsive';
-import { fetchQuote, type MarketQuote } from '@/services/marketClient';
 
 interface Mover {
   symbol: string;
@@ -19,53 +18,6 @@ interface Mover {
 export function MarketsPage() {
   const holdings = useAppStore(selectHoldings);
   const history = useAppStore(selectMarketHistory);
-  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
-
-  // Simulated price ticks replace the holdings array frequently. Depend on the
-  // stable set of symbols instead so we do not refetch every quote on each tick.
-  const quoteSymbolsKey = useMemo(
-    () =>
-      [...new Set(
-        holdings
-          .filter((holding) => holding.assetClass !== 'cash')
-          .map((holding) => holding.symbol),
-      )]
-        .sort()
-        .join('|'),
-    [holdings],
-  );
-
-  useEffect(() => {
-    const symbols = quoteSymbolsKey ? quoteSymbolsKey.split('|') : [];
-    if (symbols.length === 0) {
-      setQuotes({});
-      return;
-    }
-
-    const controller = new AbortController();
-    void Promise.all(
-      symbols.map(async (symbol) => {
-        try {
-          return await fetchQuote(symbol, controller.signal);
-        } catch {
-          return null;
-        }
-      }),
-    ).then((results) => {
-      if (controller.signal.aborted) return;
-      setQuotes(
-        Object.fromEntries(
-          results.filter((quote): quote is MarketQuote => quote !== null).map((quote) => [
-            quote.symbol,
-            quote,
-          ]),
-        ),
-      );
-    });
-
-    return () => controller.abort();
-  }, [quoteSymbolsKey]);
-
   const movers: Mover[] = useMemo(
     () =>
       holdings
@@ -73,12 +25,10 @@ export function MarketsPage() {
         .map((h) => ({
           symbol: h.symbol,
           name: h.name,
-          price: quotes[h.symbol]?.current ?? h.price,
-          changePct: quotes[h.symbol]?.changePercent
-            ? quotes[h.symbol].changePercent / 100
-            : h.dayChangePct,
+          price: h.price,
+          changePct: h.dayChangePct,
         })),
-    [holdings, quotes],
+    [holdings],
   );
 
   // Only symbols that actually moved in that direction belong in each list.
