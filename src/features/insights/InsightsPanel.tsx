@@ -15,6 +15,7 @@ import { Card } from '@/components/primitives/Card';
 import { selectHoldings } from '@/features/portfolio/portfolioSlice';
 import { selectTransactions } from '@/features/transactions/transactionsSlice';
 import { askInsight } from '@/services/insightsClient';
+import { InsightsRequestError } from '@/services/insightsErrors';
 import { useInsightsStore } from './insightsStore';
 
 const SUGGESTIONS = [
@@ -62,6 +63,8 @@ export function InsightsPanel() {
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
         requestCancelled();
+      } else if (e instanceof InsightsRequestError && e.status === 401) {
+        requestFailed('Sign in to use the assistant.');
       } else {
         requestFailed('Insights are temporarily unavailable. Please try again in a moment.');
       }

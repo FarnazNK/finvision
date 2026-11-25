@@ -18,6 +18,7 @@ from .agentcore_client import AgentCoreUnavailable, invoke_readonly_agent
 from .graphql_portfolio import build_graphql_router
 from sqlalchemy import select
 
+from .demo_portfolio import is_demo_portfolio
 from .llm import generate_insight
 from .market_data import FinnhubClient, MarketDataError
 from .observability import RequestMetricsMiddleware, request_metrics
@@ -307,9 +308,15 @@ def market_search(
 @app.post("/api/insights", response_model=InsightsResponse)
 def insights(
     req: InsightsRequest,
-    _: None = Depends(authorize),
+    authorization: str | None = Header(default=None),
     __: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
+    # Visitors who are not signed in can try the assistant on the public demo
+    # portfolio only, under the same per-IP rate limit. Any other portfolio
+    # still needs a signed-in user or the service API key.
+    if authorization is None and is_demo_portfolio(req.portfolio):
+        return generate_insight(req.question, req.portfolio)
+    authorize(authorization)
     return generate_insight(req.question, req.portfolio)
 
 @app.post(
