@@ -20,7 +20,7 @@
 | **Quality** | 93 frontend tests (Jest + RTL), 91 backend tests (pytest), 20 evals, CodeQL and dependency audits in CI |
 | **Deployed** | GitHub Pages (frontend) and Vercel (API) from `main`; Docker images on GHCR; Kubernetes manifests validated in CI |
 
-## What I built
+## Features
 
 **🤖 AI assistant that doesn't make up numbers.** The model never calculates: it calls 5 Python tools (summary, allocation, concentration, movers, recent activity) and explains the results. Code then checks every number in the answer against the tool output and cites each one to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called, and any model failure falls back to a computed answer instead of an error. → [`llm.py`](ai-service/app/llm.py), [`guardrails.py`](ai-service/app/guardrails.py), [`analytics.py`](ai-service/app/analytics.py)
 
@@ -135,7 +135,7 @@ Vercel deploys the API from `main` and builds a preview for every branch.
 
 ## Limitations
 
-A portfolio project, not investment software, and it gives no investment advice.
+FinVision is not investment software and gives no investment advice.
 
 - The dashboard always shows the seeded portfolio, and the value chart's history before page load is simulated.
 - The assistant uses a snapshot sent by the browser, not the user's saved holdings.
@@ -149,7 +149,7 @@ A portfolio project, not investment software, and it gives no investment advice.
 <summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus</strong></summary>
 
 - **GraphQL:** `POST /api/graphql` with a JWT returns only the user's own holdings; mutations, introspection, fragments and oversized requests are rejected.
-- **AWS AgentCore:** a disabled-by-default, read-only assistant that shares only asset names and symbols with the model. Run `python aws_agentcore/demo_offline.py`. Not deployed. [Details](aws_agentcore/PORTFOLIO.md).
+- **AWS AgentCore:** a disabled-by-default, read-only assistant that shares only asset names and symbols with the model. Run `python aws_agentcore/demo_offline.py`. Not deployed. [Details](aws_agentcore/README.md).
 - **Kubernetes:** kind manifests with resource limits and secret references. [`k8s/README.md`](k8s/README.md).
 - **Prometheus + Grafana:** local manifests. Known issue: a token-protected `/metrics` route shadows the Prometheus one, so scrapes get a 401. [`k8s/MONITORING.md`](k8s/MONITORING.md).
 
