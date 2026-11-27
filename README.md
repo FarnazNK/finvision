@@ -1,5 +1,7 @@
 # FinVision — AI Portfolio Tracker & Financial Analytics MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A full-stack portfolio tracker and financial analytics reference project built with React, TypeScript, Python and FastAPI. Explore holdings, asset allocation, portfolio concentration and unrealized gains through an interactive dashboard, or ask an AI assistant backed by deterministic financial calculation tools. The same analytics are available through a local Model Context Protocol (MCP) server for coding agents.
 
 **Useful for:** developers exploring financial dashboards, grounded LLM tool calling, MCP integration and testable portfolio analytics.
@@ -235,6 +237,14 @@ None of these need a paid account. All run locally.
 | [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
 | [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
 | [`SECURITY.md`](SECURITY.md) | Security policy |
+
+## Contributing
+
+Issues, reproducible bug reports and focused pull requests are welcome. If this project is useful to you, consider starring it so you can find it again.
+
+## License
+
+[MIT](LICENSE). This software is a portfolio analytics reference project, not investment advice or production investment software.
 
 ---
 
