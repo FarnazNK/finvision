@@ -11,6 +11,13 @@ SNAP = PortfolioInput.model_validate(SAMPLE_PORTFOLIO).to_snapshot()
 _REQ = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
 
 
+@pytest.fixture(autouse=True)
+def _full_data_mode(monkeypatch):
+    """These tests cover the legacy path where raw figures go to the model.
+    The default masked path is covered in test_privacy.py."""
+    monkeypatch.setenv("FINVISION_MODEL_DATA", "full")
+
+
 def _figures(resp):
     return {c.text: (c.ref, c.path) for c in resp.citations if c.kind == "figure"}
 
