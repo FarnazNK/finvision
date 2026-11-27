@@ -1,6 +1,8 @@
-# FinVision
+# FinVision — AI Portfolio Tracker & Financial Analytics MCP Server
 
-**A full-stack, AI-assisted portfolio tracker.** React + TypeScript frontend, Python/FastAPI backend, and an AI assistant that answers questions about a portfolio by calling real calculation tools instead of guessing numbers.
+A full-stack portfolio tracker and financial analytics reference project built with React, TypeScript, Python and FastAPI. Explore holdings, asset allocation, portfolio concentration and unrealized gains through an interactive dashboard, or ask an AI assistant backed by deterministic financial calculation tools. The same analytics are available through a local Model Context Protocol (MCP) server for coding agents.
+
+**Useful for:** developers exploring financial dashboards, grounded LLM tool calling, MCP integration and testable portfolio analytics.
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 [![Security](https://github.com/FarnazNK/finvision/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/security.yml)
@@ -25,7 +27,7 @@
 
 ## What I built
 
-### 🤖 AI assistant that doesn't make up numbers
+### 🤖 AI assistant with validated financial calculations
 LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. The rules aren't only in the prompt: **code checks every number in the answer against the tool results**, and each verified figure is cited to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called. If the model fails (no key, API error, timeout, or figures that don't verify), the service answers deterministically instead of erroring. Details in [How the AI assistant works](#how-the-ai-assistant-works).
 → [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/guardrails.py`](ai-service/app/guardrails.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/evals/`](ai-service/evals/)
 
