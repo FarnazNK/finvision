@@ -49,9 +49,14 @@ describe('saved state', () => {
     expect(Object.keys(saved).sort()).toEqual(['transactions', 'ui', 'watchlist']);
   });
 
-  test('the old format, which stored drifting prices, is removed', () => {
-    localStorage.setItem('finvision-state-v1', JSON.stringify({ portfolio: { holdings: [] } }));
-    loadPersistedData(localStorage);
+  test('the old format is migrated: user data kept, drifting prices dropped', () => {
+    const watchlist = { items: [{ symbol: 'NVDA', name: 'NVIDIA', addedAt: '2026-10-01' }] };
+    localStorage.setItem(
+      'finvision-state-v1',
+      JSON.stringify({ watchlist, portfolio: { holdings: [{ symbol: 'VTI', price: 1 }] } }),
+    );
+    const restored = loadPersistedData(localStorage);
+    expect(restored).toEqual({ watchlist });
     expect(localStorage.getItem('finvision-state-v1')).toBeNull();
   });
 

@@ -127,8 +127,13 @@ const MAX_SAVED_BYTES = 1_000_000;
 
 export function loadPersistedData(storage: Storage = localStorage): Partial<AppData> | undefined {
   try {
-    for (const key of LEGACY_STORAGE_KEYS) storage.removeItem(key);
-    const saved = storage.getItem(STORAGE_KEY);
+    let saved = storage.getItem(STORAGE_KEY);
+    for (const key of LEGACY_STORAGE_KEYS) {
+      // Migrate user data from the old format; its simulated prices are dropped
+      // because only the user slices pass validatePersisted.
+      saved = saved ?? storage.getItem(key);
+      storage.removeItem(key);
+    }
     if (!saved || saved.length > MAX_SAVED_BYTES) return undefined;
     return validatePersisted(JSON.parse(saved));
   } catch {
