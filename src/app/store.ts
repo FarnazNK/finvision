@@ -42,6 +42,7 @@ import {
   type UIActions,
   type UIState,
 } from '@/features/ui/uiSlice';
+import { validatePersisted } from '@/app/persistedSchema';
 
 export interface AppData {
   portfolio: PortfolioState;
@@ -63,8 +64,13 @@ export type AppStore = StoreApi<RootState>;
 /** Applies an immer recipe to the store's data. */
 export type Mutate = (recipe: (draft: AppData) => void) => void;
 
-const DATA_KEYS = ['portfolio', 'markets', 'transactions', 'watchlist', 'ui'] as const;
-const STORAGE_KEY = 'finvision-state-v1';
+/**
+ * Only user-owned data is saved between visits. Simulated prices and history
+ * are regenerated on each load: persisting them let prices random-walk across
+ * visits, and "today's change" kept growing because its baseline never reset.
+ */
+export const STORAGE_KEY = 'finvision-state-v2';
+const LEGACY_STORAGE_KEYS = ['finvision-state-v1'];
 
 export function initialData(preloaded: Partial<AppData> = {}): AppData {
   return {
@@ -107,18 +113,24 @@ export function makeStore(preloaded?: Partial<AppData>): AppStore {
   });
 }
 
-function loadPersistedData(): Partial<AppData> | undefined {
+/** The subset of state that is saved to localStorage. */
+export function pickPersisted(state: AppData): Partial<AppData> {
+  return {
+    transactions: state.transactions,
+    watchlist: state.watchlist,
+    ui: state.ui,
+  };
+}
+
+/** Larger saved state is ignored rather than parsed (corrupt or tampered). */
+const MAX_SAVED_BYTES = 1_000_000;
+
+export function loadPersistedData(storage: Storage = localStorage): Partial<AppData> | undefined {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return undefined;
-    const parsed = JSON.parse(saved) as Record<string, unknown>;
-    const data: Partial<AppData> = {};
-    for (const key of DATA_KEYS) {
-      if (parsed[key] && typeof parsed[key] === 'object') {
-        (data as Record<string, unknown>)[key] = parsed[key];
-      }
-    }
-    return data;
+    for (const key of LEGACY_STORAGE_KEYS) storage.removeItem(key);
+    const saved = storage.getItem(STORAGE_KEY);
+    if (!saved || saved.length > MAX_SAVED_BYTES) return undefined;
+    return validatePersisted(JSON.parse(saved));
   } catch {
     return undefined;
   }
@@ -129,7 +141,7 @@ export const store = makeStore(loadPersistedData());
 
 store.subscribe((state) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pickData(state)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pickPersisted(state)));
   } catch {
     // Storage can be disabled or full; the in-memory store remains usable.
   }
