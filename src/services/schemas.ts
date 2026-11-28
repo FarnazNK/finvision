@@ -64,6 +64,25 @@ export const marketQuoteSchema = z.object({
 });
 export type MarketQuote = z.infer<typeof marketQuoteSchema>;
 
+export const billingStatusSchema = z.object({
+  billingEnabled: z.boolean(),
+  plan: z.enum(['free', 'pro']),
+  status: z.string(),
+  currentPeriodEnd: z.string().nullable(),
+});
+export type BillingStatus = z.infer<typeof billingStatusSchema>;
+
+/** Stripe-hosted page to send the browser to. Only Stripe origins are accepted. */
+export const billingRedirectSchema = z.object({
+  url: z
+    .string()
+    .url()
+    .refine(
+      (u) => /^https:\/\/(checkout|billing)\.stripe\.com\//.test(u),
+      'Billing redirects must go to stripe.com',
+    ),
+});
+
 /** Raised when a response does not match its contract. */
 export class ContractError extends Error {
   constructor(endpoint: string, issues: z.ZodIssue[]) {

@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from .agentcore_client import AgentCoreUnavailable, invoke_readonly_agent
+from .billing import billing_enabled, build_billing_router, is_pro
 from .graphql_portfolio import build_graphql_router
 from sqlalchemy import select
 
@@ -111,6 +112,19 @@ def current_user(authorization: str | None = Header(default=None)) -> UserRecord
             raise HTTPException(status_code=401, detail="User not found")
         session.expunge(user)
         return user
+
+
+def require_insights_access(authorization: str | None = Header(default=None)) -> None:
+    """AI insights cost money per call. With billing on, only a signed-in user
+    whose Stripe subscription is active (per the webhook-maintained record on
+    the server) gets them; the shared service key no longer works here, since
+    a browser-embedded key would let anyone skip the paywall."""
+    if not billing_enabled():
+        authorize(authorization)
+        return
+    user = current_user(authorization)
+    if not is_pro(user.id):
+        raise HTTPException(status_code=402, detail="FinVision Pro is required for AI insights")
 
 
 def enforce_rate_limit(request: Request) -> None:
@@ -311,12 +325,15 @@ def insights(
     authorization: str | None = Header(default=None),
     __: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
-    # Visitors who are not signed in can try the assistant on the public demo
-    # portfolio only, under the same per-IP rate limit. Any other portfolio
-    # still needs a signed-in user or the service API key.
-    if authorization is None and is_demo_portfolio(req.portfolio):
+    # The public demo portfolio stays free for everyone, signed in or not, under
+    # the same per-IP rate limit, so the live demo works with billing on. Any
+    # other portfolio needs FinVision Pro when billing is on (a signed-in user
+    # or the service API key when it is off).
+    if is_demo_portfolio(req.portfolio):
+        if authorization is not None:
+            authorize(authorization)  # a credential that is sent must be valid
         return generate_insight(req.question, req.portfolio)
-    authorize(authorization)
+    require_insights_access(authorization)
     return generate_insight(req.question, req.portfolio)
 
 @app.post(
@@ -388,6 +405,9 @@ async def agentcore_portfolio_ask(
     """Read-only analysis with a strictly user-scoped, minimal portfolio context."""
     if os.environ.get("FINVISION_ENABLE_AGENTCORE", "").lower() != "true":
         raise HTTPException(status_code=404, detail="Not found")
+    if billing_enabled() and not is_pro(user.id):
+        # Same paywall as /api/insights: model calls cost money.
+        raise HTTPException(status_code=402, detail="FinVision Pro is required for AI insights")
     with SessionLocal() as session:
         holdings = session.scalars(
             select(HoldingRecord)
@@ -417,6 +437,7 @@ async def agentcore_portfolio_ask(
 
 # Read-only GraphQL runs alongside the existing REST routes.
 app.include_router(build_graphql_router(current_user, enforce_rate_limit), prefix="/api/graphql")
+app.include_router(build_billing_router(current_user, enforce_rate_limit))
 
 @app.get("/metrics", include_in_schema=False)
 def prometheus_metrics() -> Response:

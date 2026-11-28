@@ -22,9 +22,9 @@ A full-stack portfolio tracker and financial analytics reference project built w
 | --- | --- |
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
-| **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
+| **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth, Stripe subscriptions |
 | **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, a **privacy mode that keeps every customer figure away from the model provider**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 112 frontend tests (Jest + React Testing Library), 104 backend tests (pytest), 20 assistant evals, statistical tests for the price model, CodeQL and dependency audits in CI |
+| **Quality** | 119 frontend tests (Jest + React Testing Library), 132 backend tests (pytest), 20 assistant evals, statistical tests for the price model, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
@@ -54,6 +54,16 @@ It's written for agents: every tool says when to use it, inputs are typed and bo
 ### 📈 Market simulation that behaves like real markets
 The public demo has no paid market-data feed, so prices are simulated, and they're built to pass a quant's sniff test. A year of daily history comes from **correlated geometric Brownian motion**: realistic volatility per asset (VTI 16%, AAPL 27%, BND 6%, gold 15%, cash 0), with correlations applied through a **Cholesky** factor so stocks move together and bonds mostly don't. The path ends exactly at today's prices, and each holding's day change is the last return of that same path, so the chart, the "Day's change" tile and the landing page always agree. Live ticks use a mean-reverting (**Ornstein–Uhlenbeck**) intraday model, so the day's move stays at a normal daily size however long the page is open. Everything is seeded and reproducible; the demo year comes out at +9.1% with 11% annualized volatility and a −12.5% maximum drawdown. Tests simulate ten years and check that the realized volatilities and correlations match their targets.
 → [`src/services/priceModel.ts`](src/services/priceModel.ts), [tests](src/services/priceModel.test.ts)
+
+### 💳 FinVision Pro: Stripe subscription billing
+AI insights cost money per question, so they're a paid **Pro** feature. The browser never decides who is on Pro:
+- **Checkout is created on the server.** `POST /api/billing/checkout` creates (or reuses) the user's Stripe customer and a subscription Checkout Session. The price and the redirect URLs come from server config, so the client can't change what it pays or where it's sent. An `Idempotency-Key` header makes a double-clicked Upgrade button open one session, not two. Card details are entered only on Stripe's page.
+- **Webhooks are signed and idempotent.** `POST /api/billing/webhook` verifies Stripe's HMAC signature over the raw body and records each event ID in the same transaction as its effect, so Stripe's retries never apply twice. It re-reads the subscription from Stripe instead of trusting the event body, because events can arrive out of order. It only updates customers this app created.
+- **The paywall is on the server.** `/api/insights` returns **402** unless the signed-in user's stored subscription is `active` or `trialing`. A failed renewal (`past_due`) or a cancellation removes access, and the shared service key can't bypass it. Questions about the public demo portfolio stay free, so the live demo works for every visitor.
+- **Self-service.** `POST /api/billing/portal` opens Stripe's customer portal to update the card or cancel.
+
+Billing is **off unless Stripe keys are set**, and the API then behaves exactly as before. It runs in Stripe **test mode** at no cost.
+→ [`ai-service/app/billing.py`](ai-service/app/billing.py), [tests](ai-service/tests/test_billing.py), [`src/services/billingClient.ts`](src/services/billingClient.ts), [setup](#turn-on-stripe-billing-test-mode)
 
 ### 🔐 Backend API with authentication
 FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints that only return the signed-in user's data, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
@@ -219,11 +229,28 @@ If your dependencies are in a virtual environment, use that environment's `pytho
 
 Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis` per unit, `price`) and optional `transactions`. Weights are fractions (0.25 = 25%). The resource `finvision://sample-portfolio` returns a ready-made demo portfolio.
 
+## Turn on Stripe billing (test mode)
+
+Free, with no real charges:
+
+1. In the [Stripe dashboard](https://dashboard.stripe.com/test/products) (test mode), create a product with a monthly recurring price. Copy its `price_...` ID.
+2. Set these on the API (Vercel environment variables, or `ai-service/.env` locally):
+   ```bash
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_PRICE_ID=price_...
+   STRIPE_WEBHOOK_SECRET=whsec_...    # from step 3 or 4
+   FINVISION_APP_URL=https://farnaznk.github.io/finvision/app
+   ```
+3. **Local:** forward webhooks with the [Stripe CLI](https://docs.stripe.com/stripe-cli): `stripe listen --forward-to localhost:8000/api/billing/webhook` (it prints the `whsec_...` secret).
+4. **Deployed:** add a webhook endpoint at `https://<your-api>/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*` events.
+5. Sign in, ask an AI question, click **Upgrade to Pro**, and pay with test card `4242 4242 4242 4242`.
+
 ## Honest limitations
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
 
 - **Demo data:** the public dashboard uses seeded holdings and **simulated prices, not market data**. They come from a correlated price model ([`priceModel.ts`](src/services/priceModel.ts)): a year of daily history from geometric Brownian motion with realistic volatility per asset and correlations via Cholesky decomposition, plus bounded intraday ticks, so the charts, today's change and the landing page all agree. It's simplified: normal returns (no fat tails or volatility clustering), constant parameters, and holdings held constant over the history. Statistical tests check the realized volatilities and correlations against their targets. Real quotes depend on a Finnhub key.
+- **Billing:** implemented and tested, but off on the live demo until Stripe test keys are configured. It is test mode only; no real payments are taken.
 - **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.

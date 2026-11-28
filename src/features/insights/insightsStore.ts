@@ -20,12 +20,14 @@ export interface InsightsStore {
   status: InsightsStatus;
   result: InsightsResponse | null;
   error: string | null;
+  /** The last request was refused because the user isn't on FinVision Pro. */
+  needsPro: boolean;
   /** Most recent questions first, de-duplicated, capped at HISTORY_LIMIT. */
   history: string[];
   setQuestion: (question: string) => void;
   requestStarted: (question: string) => void;
   requestSucceeded: (result: InsightsResponse) => void;
-  requestFailed: (message: string) => void;
+  requestFailed: (message: string, needsPro?: boolean) => void;
   requestCancelled: () => void;
   reset: () => void;
 }
@@ -35,6 +37,7 @@ const initialState = {
   status: 'idle' as InsightsStatus,
   result: null,
   error: null,
+  needsPro: false,
   history: [] as string[],
 };
 
@@ -47,13 +50,15 @@ export const useInsightsStore = create<InsightsStore>()((set) => ({
       status: 'loading',
       result: null,
       error: null,
+      needsPro: false,
       history: [question, ...state.history.filter((q) => q !== question)].slice(
         0,
         HISTORY_LIMIT,
       ),
     })),
-  requestSucceeded: (result) => set({ status: 'success', result, error: null }),
-  requestFailed: (message) => set({ status: 'error', result: null, error: message }),
+  requestSucceeded: (result) => set({ status: 'success', result, error: null, needsPro: false }),
+  requestFailed: (message, needsPro = false) =>
+    set({ status: 'error', result: null, error: message, needsPro }),
   requestCancelled: () => set({ status: 'idle' }),
   reset: () => set({ ...initialState, history: [] }),
 }));
