@@ -219,7 +219,7 @@ Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
 
-- **Demo data:** the public dashboard uses seeded holdings and simulated price ticks. Real quotes depend on a Finnhub key.
+- **Demo data:** the public dashboard uses seeded holdings and **simulated prices, not market data**. They come from a correlated price model ([`priceModel.ts`](src/services/priceModel.ts)): a year of daily history from geometric Brownian motion with realistic volatility per asset and correlations via Cholesky decomposition, plus bounded intraday ticks, so the charts, today's change and the landing page all agree. It's simplified: normal returns (no fat tails or volatility clustering), constant parameters, and holdings held constant over the history. Statistical tests check the realized volatilities and correlations against their targets. Real quotes depend on a Finnhub key.
 - **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.

@@ -2,6 +2,8 @@ import { lazy, Suspense, useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css, keyframes, useTheme } from 'styled-components';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { demoHeadline } from '@/services/seed';
+import { formatMoney } from '@/utils/format';
 
 // three.js is ~150 kB gzipped, so the scene loads after the page text is on screen.
 const PortfolioScene = lazy(() => import('@/components/three/PortfolioScene'));
@@ -26,6 +28,9 @@ const STACK = [
 
 export function LandingPage() {
   const theme = useTheme();
+  // Same seeded model as the dashboard, so the two pages show the same portfolio.
+  const headline = useMemo(() => demoHeadline(), []);
+  const largestPct = Math.round(headline.largestWeight * 100);
   const sceneColors = useMemo(
     () => ({
       primary: theme.color.primary,
@@ -90,14 +95,16 @@ export function LandingPage() {
             </Suspense>
             <FloatCard $pos="top" aria-hidden="true">
               <FloatLabel>Demo portfolio</FloatLabel>
-              <FloatValue>$248,310</FloatValue>
-              <FloatDelta>▲ 12.4% this year</FloatDelta>
+              <FloatValue>{formatMoney(Math.round(headline.value)).replace(/\.00$/, '')}</FloatValue>
+              <FloatDelta>
+                {headline.pastYearPct >= 0 ? '▲' : '▼'} {Math.abs(headline.pastYearPct * 100).toFixed(1)}% past year
+              </FloatDelta>
             </FloatCard>
             <FloatCard $pos="bottom" aria-hidden="true">
               <FloatLabel>Largest holding</FloatLabel>
               <AllocRow>
-                <AllocBar><span style={{ width: '38%' }} /></AllocBar>
-                <strong>38%</strong>
+                <AllocBar><span style={{ width: `${largestPct}%` }} /></AllocBar>
+                <strong>{largestPct}%</strong>
               </AllocRow>
               <FloatHint>Concentration check</FloatHint>
             </FloatCard>
