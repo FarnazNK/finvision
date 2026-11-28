@@ -229,6 +229,22 @@ If your dependencies are in a virtual environment, use that environment's `pytho
 
 Every tool takes a `portfolio` with `holdings` (`symbol`, `quantity`, `costBasis` per unit, `price`) and optional `transactions`. Weights are fractions (0.25 = 25%). The resource `finvision://sample-portfolio` returns a ready-made demo portfolio.
 
+## Working on this repo with Claude Code
+
+The repository ships its own coding-agent setup, so an agent keeps the product's guarantees without being reminded:
+
+| Piece | What it does |
+| --- | --- |
+| [`CLAUDE.md`](CLAUDE.md) | Commands, layout and the rules: the model never calculates, never sees customer figures, never gives advice |
+| [Hooks](.claude/settings.json) | Before an edit: block writes to `.env` files, keys and `package-lock.json`. After an edit: syntax-check Python and run ESLint on TypeScript, handing any errors back to the agent |
+| [`.mcp.json`](.mcp.json) | The FinVision MCP server, so the agent can call the real analytics tools while it works |
+| [`privacy-reviewer`](.claude/agents/privacy-reviewer.md) subagent | Read-only review for customer data reaching the model, logs or the client, plus billing and validation checks |
+| [`quant-reviewer`](.claude/agents/quant-reviewer.md) subagent | Read-only review of financial and statistical correctness in analytics and the price model |
+| [`add-analytics-tool`](.claude/skills/add-analytics-tool/SKILL.md) skill | Adds a tool across all six places it touches: calculation, assistant, fallback, privacy masking, MCP and tests |
+| [`add-eval-case`](.claude/skills/add-eval-case/SKILL.md) skill | Adds grounded or refusal cases to the assistant eval set |
+
+The setup is tested ([`ai-service/tests/test_claude_setup.py`](ai-service/tests/test_claude_setup.py)): the hooks block and allow the right files, catch real Python and ESLint errors, and fail open on bad input; every subagent is read-only.
+
 ## Turn on Stripe billing (test mode)
 
 Free, with no real charges:
