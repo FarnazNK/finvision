@@ -23,8 +23,8 @@ A full-stack portfolio tracker and financial analytics reference project built w
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
-| **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 86 frontend tests (Jest + React Testing Library), 89 backend tests (pytest), 20 assistant evals, CodeQL and dependency audits in CI |
+| **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, a **privacy mode that keeps every customer figure away from the model provider**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
+| **Quality** | 86 frontend tests (Jest + React Testing Library), 104 backend tests (pytest), 20 assistant evals, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
@@ -32,6 +32,19 @@ A full-stack portfolio tracker and financial analytics reference project built w
 ### 🤖 AI assistant with validated financial calculations
 LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. The rules aren't only in the prompt: **code checks every number in the answer against the tool results**, and each verified figure is cited to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called. If the model fails (no key, API error, timeout, or figures that don't verify), the service answers deterministically instead of erroring. Details in [How the AI assistant works](#how-the-ai-assistant-works).
 → [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/guardrails.py`](ai-service/app/guardrails.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/evals/`](ai-service/evals/)
+
+### 🛡️ Customer figures never reach the model
+Sending a customer's balances and transactions to a third-party model provider is what usually stops financial AI projects in compliance and vendor-risk review. Because the model never calculates here, it doesn't need the numbers either. By default, every customer-derived value (amounts, weights, percentages, transaction dates) is swapped for a placeholder like `{{F3}}` before anything is sent. The model sees only public ticker symbols, asset classes, ranks, gain/loss direction and size words ("large", "majority"), writes its answer with the placeholders, and the server inserts the real values afterwards. A draft with any number of its own is rejected, since the model had none to copy, and the rendered answer still goes through the normal figure check. A test runs every tool and asserts that none of the portfolio's values appear in any request: the old path sent 38 of them, the new one sends 0. Set `FINVISION_MODEL_DATA=full` to compare against the old behaviour.
+→ [`ai-service/app/privacy.py`](ai-service/app/privacy.py), [tests](ai-service/tests/test_privacy.py)
+
+| Sent to the model provider | Default (`masked`) | `full` |
+| --- | --- | --- |
+| Amounts, balances, cost basis, quantities, prices | ❌ placeholders | ✅ |
+| Weights, returns, daily changes | ❌ placeholders | ✅ |
+| Transaction dates and amounts | ❌ placeholders | ✅ |
+| Holding names and transaction descriptions (free text) | ❌ | names only |
+| Ticker symbols, asset classes, ranks, gain/loss direction | ✅ | ✅ |
+| The user's question | ✅ | ✅ |
 
 ### 🔌 MCP server for coding agents
 The same 5 analytics functions are also available to external AI agents through a **Model Context Protocol (MCP) server**. Clone the repo, open it in Claude Code, and ask "Use FinVision to check how concentrated the sample portfolio is". The agent discovers the tools from [`.mcp.json`](.mcp.json) and runs the real calculations. There is one implementation behind two interfaces: the in-app assistant and the MCP server call the same code, and a test checks they return identical numbers.
@@ -165,7 +178,7 @@ uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ```
 
-Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `FINVISION_MODEL` (model ID, default `claude-sonnet-5-5`), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
+Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `FINVISION_MODEL` (model ID, default `claude-sonnet-5-5`), `FINVISION_MODEL_DATA` (`masked`, the default, keeps customer figures away from the model; `full` sends them), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
 
 ## Use FinVision from a coding agent (MCP)
 
@@ -211,6 +224,7 @@ This is a portfolio project, not production investment software, and it doesn't 
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
 
+- **Privacy mode:** the user's question is still sent as typed, so a figure the user types themselves reaches the model. In masked mode the model can only compare values through ranks and size words, so answers are less nuanced than with full data. The MCP server is unchanged: it runs locally and the calling agent's own model sees the portfolio it was given.
 - **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
 
 **Next up:** a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.

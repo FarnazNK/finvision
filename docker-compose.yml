@@ -14,6 +14,7 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - FINVISION_MODEL=${FINVISION_MODEL:-claude-sonnet-5}
+      - FINVISION_MODEL_DATA=${FINVISION_MODEL_DATA:-masked}
       - FINVISION_API_KEY=${FINVISION_API_KEY:-}
       - FINVISION_JWT_SECRET=${FINVISION_JWT_SECRET:-local-compose-change-me}
       - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://finvision:finvision@postgres:5432/finvision}
