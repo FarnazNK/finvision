@@ -24,7 +24,7 @@ A full-stack portfolio tracker and financial analytics reference project built w
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth |
 | **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, a **privacy mode that keeps every customer figure away from the model provider**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 86 frontend tests (Jest + React Testing Library), 104 backend tests (pytest), 20 assistant evals, CodeQL and dependency audits in CI |
+| **Quality** | 112 frontend tests (Jest + React Testing Library), 104 backend tests (pytest), 20 assistant evals, statistical tests for the price model, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
@@ -51,13 +51,17 @@ The same 5 analytics functions are also available to external AI agents through 
 It's written for agents: every tool says when to use it, inputs are typed and bounded, invalid input returns an error naming the bad field, optional fields have defaults so an agent doesn't have to invent IDs, and a sample portfolio resource lets an agent try the tools with no setup. Tools are marked read-only. Version 1 is **stateless**: the agent passes the portfolio in each call, so the server needs no credentials and can't expose anyone's saved data.
 → [`ai-service/app/mcp_server.py`](ai-service/app/mcp_server.py), [tests](ai-service/tests/test_mcp_server.py), [setup](#use-finvision-from-a-coding-agent-mcp)
 
+### 📈 Market simulation that behaves like real markets
+The public demo has no paid market-data feed, so prices are simulated, and they're built to pass a quant's sniff test. A year of daily history comes from **correlated geometric Brownian motion**: realistic volatility per asset (VTI 16%, AAPL 27%, BND 6%, gold 15%, cash 0), with correlations applied through a **Cholesky** factor so stocks move together and bonds mostly don't. The path ends exactly at today's prices, and each holding's day change is the last return of that same path, so the chart, the "Day's change" tile and the landing page always agree. Live ticks use a mean-reverting (**Ornstein–Uhlenbeck**) intraday model, so the day's move stays at a normal daily size however long the page is open. Everything is seeded and reproducible; the demo year comes out at +9.1% with 11% annualized volatility and a −12.5% maximum drawdown. Tests simulate ten years and check that the realized volatilities and correlations match their targets.
+→ [`src/services/priceModel.ts`](src/services/priceModel.ts), [tests](src/services/priceModel.test.ts)
+
 ### 🔐 Backend API with authentication
 FastAPI service with typed Pydantic contracts: register/login with hashed passwords and JWT tokens, holdings endpoints that only return the signed-in user's data, market data (quotes, history, symbol search) through a Finnhub adapter with timeouts, input validation and caching, plus request metrics and rate limiting. A **read-only GraphQL** endpoint shows flexible field selection with guardrails (no mutations, no introspection, size limits).
 → [`ai-service/app/main.py`](ai-service/app/main.py), [API docs](https://finvision-api.vercel.app/docs)
 
 ### 📊 Responsive dashboard
 Portfolio value chart with time ranges, allocation donut, sortable holdings, filterable transactions, market movers and a watchlist. It uses a token-driven **glass design system** (frosted translucent surfaces with backdrop blur, light-catching gradient edges and an animated aurora backdrop, with solid fallbacks for browsers without `backdrop-filter` and for users who prefer reduced transparency). A **⌘K / Ctrl+K command palette** (accessible combobox, fuzzy matching, focus restore) jumps between pages and changes settings from the keyboard. It works on desktop and phones (card layouts and a floating bottom navigation on mobile), offers dark (default) and light themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
-**State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and the durable data is persisted locally. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
+**State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and only user-owned data (transactions, watchlist, settings) is persisted locally, never simulated prices. Saved data is treated as untrusted input: it is validated with Zod, with size limits, before it reaches the store, and anything invalid falls back to defaults. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
 → [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/), [`src/services/schemas.ts`](src/services/schemas.ts), [`src/app/store.ts`](src/app/store.ts), [`src/features/insights/insightsStore.ts`](src/features/insights/insightsStore.ts)
 
 ### ✨ 3D landing page
@@ -223,11 +227,11 @@ This is a portfolio project, not production investment software, and it doesn't 
 - **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
-
 - **Privacy mode:** the user's question is still sent as typed, so a figure the user types themselves reaches the model. In masked mode the model can only compare values through ranks and size words, so answers are less nuanced than with full data. The MCP server is unchanged: it runs locally and the calling agent's own model sees the portfolio it was given.
 - **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
+- **Dependencies:** one moderate React Router advisory (open redirect) needs the breaking upgrade to v7. It isn't reachable here, since every link and redirect goes to a fixed path, but the upgrade is planned.
 
-**Next up:** a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.
+**Next up:** a risk module (volatility, Sharpe, max drawdown, VaR and Expected Shortfall) computed from the simulated history and exposed as AI tools, a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.
 
 <details>
 <summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus/Grafana</strong></summary>
