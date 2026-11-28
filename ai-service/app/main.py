@@ -19,6 +19,7 @@ from .billing import billing_enabled, build_billing_router, is_pro
 from .graphql_portfolio import build_graphql_router
 from sqlalchemy import select
 
+from .demo_portfolio import is_demo_portfolio
 from .llm import generate_insight
 from .market_data import FinnhubClient, MarketDataError
 from .observability import RequestMetricsMiddleware, request_metrics
@@ -321,9 +322,18 @@ def market_search(
 @app.post("/api/insights", response_model=InsightsResponse)
 def insights(
     req: InsightsRequest,
-    _: None = Depends(require_insights_access),
+    authorization: str | None = Header(default=None),
     __: None = Depends(enforce_rate_limit),
 ) -> InsightsResponse:
+    # The public demo portfolio stays free for everyone, signed in or not, under
+    # the same per-IP rate limit, so the live demo works with billing on. Any
+    # other portfolio needs FinVision Pro when billing is on (a signed-in user
+    # or the service API key when it is off).
+    if is_demo_portfolio(req.portfolio):
+        if authorization is not None:
+            authorize(authorization)  # a credential that is sent must be valid
+        return generate_insight(req.question, req.portfolio)
+    require_insights_access(authorization)
     return generate_insight(req.question, req.portfolio)
 
 @app.post(

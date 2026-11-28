@@ -9,9 +9,11 @@ import type { Holding, Transaction } from '@/types/domain';
 import { API_BASE_URL } from './apiConfig';
 import { getAccessToken } from './authClient';
 import { ProRequiredError, SignInRequiredError } from './errors';
+import { InsightsRequestError } from './insightsErrors';
 import { insightsResponseSchema, parseResponse, type InsightsResponse } from './schemas';
 
 export type { Citation, InsightsResponse } from './schemas';
+export { InsightsRequestError } from './insightsErrors';
 
 const API_KEY = import.meta.env?.VITE_AI_SERVICE_API_KEY as string | undefined;
 
@@ -47,7 +49,7 @@ export async function askInsight(
     throw new ProRequiredError();
   }
   if (!res.ok) {
-    throw new Error(`Insights request failed: ${res.status}`);
+    throw new InsightsRequestError(res.status);
   }
   return parseResponse(insightsResponseSchema, await res.json(), '/api/insights');
 }

@@ -10,3 +10,4 @@ coverage
 # Python bytecode
 __pycache__/
 *.py[cod]
+ai-service/evals/results-*.json

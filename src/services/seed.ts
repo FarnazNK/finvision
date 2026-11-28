@@ -4,6 +4,7 @@ import type {
   Transaction,
   WatchlistItem,
 } from '@/types/domain';
+import { simulateHistory } from '@/services/priceModel';
 
 export const seedHoldings: Holding[] = [
   {
@@ -85,21 +86,39 @@ export const seedHoldings: Holding[] = [
   },
 ];
 
-/** Generate a deterministic-looking 1-year equity curve. */
-export function seedPortfolioCurve(days = 365, start = 78000): PortfolioPoint[] {
-  const points: PortfolioPoint[] = [];
-  const now = Date.now();
-  let value = start;
-  for (let i = days; i >= 0; i--) {
-    // Pseudo-random walk with mild upward drift; deterministic for the same i.
-    const noise = Math.sin(i * 0.31) * 0.004 + Math.cos(i * 0.07) * 0.002;
-    const drift = 0.0006;
-    value = value * (1 + drift + noise);
-    points.push({ t: now - i * 86_400_000, value: Math.round(value * 100) / 100 });
-  }
-  const target = seedHoldings.reduce((sum, h) => sum + h.quantity * h.price, 0);
-  const scale = target / (points[points.length - 1]?.value ?? target);
-  return points.map((point) => ({ ...point, value: Math.round(point.value * scale * 100) / 100 }));
+/**
+ * Seeded market state for the demo: a one-year daily history from the
+ * correlated price model (see priceModel.ts), with each holding's day change
+ * taken from the last day of that same history so every number agrees.
+ */
+export function seedMarket(end = Date.now()): { holdings: Holding[]; curve: PortfolioPoint[] } {
+  const history = simulateHistory(seedHoldings, { end });
+  return {
+    holdings: seedHoldings.map((h, i) => ({ ...h, dayChangePct: history.dayChangePct[i] })),
+    curve: history.curve,
+  };
+}
+
+/** Headline figures for the landing page, from the same model as the dashboard. */
+export function demoHeadline(end = Date.now()): {
+  value: number;
+  pastYearPct: number;
+  largestWeight: number;
+} {
+  const { holdings, curve } = seedMarket(end);
+  const values = holdings.map((h) => h.quantity * h.price);
+  const value = values.reduce((a, b) => a + b, 0);
+  const first = curve[0]?.value ?? value;
+  return {
+    value,
+    pastYearPct: first > 0 ? value / first - 1 : 0,
+    largestWeight: value > 0 ? Math.max(...values) / value : 0,
+  };
+}
+
+/** One year of daily portfolio values (252 trading days). */
+export function seedPortfolioCurve(end = Date.now()): PortfolioPoint[] {
+  return simulateHistory(seedHoldings, { end }).curve;
 }
 
 export const seedTransactions: Transaction[] = [

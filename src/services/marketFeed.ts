@@ -1,9 +1,10 @@
 import type { RootState } from '@/app/store';
 import { selectTotalValue } from '@/features/portfolio/portfolioSlice';
 import type { MarketTick } from '@/types/domain';
+import { createIntradaySimulator } from '@/services/priceModel';
 
 /**
- * Lightweight mock of a market data WebSocket.
+ * Lightweight mock of a market data WebSocket, driven by a realistic price model.
  *
  * In production this would be a real WS subscription — `feed.subscribe`,
  * exponential reconnect, sequence-gap detection, etc. The shape is the same:
@@ -18,45 +19,51 @@ export interface MarketFeed {
 interface FeedOptions {
   /** Tick emission interval in ms. Default 1500ms (gentle on the eyes). */
   intervalMs?: number;
-  /** Per-tick magnitude — clamps the random walk. */
-  volatility?: number;
+  /** Uniform [0, 1) source. Tests pass a seeded one; simulation only, not crypto. */
+  random?: () => number;
 }
 
+/**
+ * Each tick moves every non-cash holding together, with correlated, bounded
+ * intraday noise from the price model (priceModel.ts). Today's point on the
+ * daily curve is updated in place, so live ticks never push real days out of
+ * the history or squeeze a "month" into a few seconds.
+ */
 export function createMarketFeed(
   getState: () => RootState,
   opts: FeedOptions = {},
 ): MarketFeed {
   const intervalMs = opts.intervalMs ?? 1500;
-  const volatility = opts.volatility ?? 0.0035;
+  const random = opts.random ?? Math.random;
   let timer: ReturnType<typeof setInterval> | null = null;
+  let simulator: ReturnType<typeof createIntradaySimulator> | null = null;
+  let simulatedSymbols = '';
 
   const tickOnce = () => {
     const state = getState();
     const holdings = state.portfolio.holdings;
     if (holdings.length === 0) return;
 
-    // Pick 1–3 holdings to "tick" each round so changes feel organic.
-    const n = 1 + Math.floor(Math.random() * 3);
-    const picks = sampleN(holdings, n);
+    // Rebuild the simulator if the set of holdings changed.
+    const symbols = holdings.map((h) => h.symbol).join('|');
+    if (!simulator || symbols !== simulatedSymbols) {
+      simulator = createIntradaySimulator(holdings, random);
+      simulatedSymbols = symbols;
+    }
+    const dayChanges = simulator.step();
 
-    const ticks: MarketTick[] = picks
-      .filter((h) => h.assetClass !== 'cash')
-      .map((h) => {
-        const drift = (Math.random() - 0.5) * 2 * volatility;
-        const newPrice = round(h.price * (1 + drift), 4);
-        const changePct = (newPrice - h.price) / h.price;
-        return {
-          symbol: h.symbol,
-          price: newPrice,
-          changePct,
-          t: Date.now(),
-        };
-      });
+    const now = Date.now();
+    const ticks: MarketTick[] = holdings.flatMap((h, i) => {
+      if (h.assetClass === 'cash') return [];
+      const previousClose = h.price / (1 + h.dayChangePct);
+      const price = round(previousClose * (1 + dayChanges[i]), 4);
+      return [{ symbol: h.symbol, price, changePct: (price - h.price) / h.price, t: now }];
+    });
 
     if (ticks.length === 0) return;
     state.tickReceived(ticks);
     state.holdingsRepriced(ticks);
-    state.curvePointAppended({ t: Date.now(), value: selectTotalValue(getState()) });
+    state.curveTodayUpdated(selectTotalValue(getState()));
   };
 
   return {
@@ -73,16 +80,6 @@ export function createMarketFeed(
       return timer !== null;
     },
   };
-}
-
-function sampleN<T>(arr: T[], n: number): T[] {
-  const copy = arr.slice();
-  const out: T[] = [];
-  for (let i = 0; i < n && copy.length > 0; i++) {
-    const idx = Math.floor(Math.random() * copy.length);
-    out.push(copy.splice(idx, 1)[0]);
-  }
-  return out;
 }
 
 function round(n: number, decimals: number): number {

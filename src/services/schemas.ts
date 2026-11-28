@@ -28,9 +28,17 @@ export const apiErrorSchema = z.object({
   detail: z.string(),
 });
 
+/**
+ * `metric` names a tool the assistant called. `figure` ties one number in the
+ * answer (`text`, exactly as written) to the tool output it came from: `ref` is
+ * the tool (or `portfolio_snapshot`), `path` the field and `value` the raw value.
+ */
 export const citationSchema = z.object({
-  kind: z.enum(['holding', 'transaction', 'metric']),
+  kind: z.enum(['holding', 'transaction', 'metric', 'document', 'figure']),
   ref: z.string(),
+  text: z.string().nullish(),
+  path: z.string().nullish(),
+  value: z.number().nullish(),
 });
 export type Citation = z.infer<typeof citationSchema>;
 
@@ -38,6 +46,8 @@ export const insightsResponseSchema = z.object({
   answer: z.string(),
   citations: z.array(citationSchema),
   model: z.string(),
+  /** Set when a code-level guardrail shaped the answer, e.g. "refused:advice". */
+  guardrail: z.string().nullish(),
 });
 export type InsightsResponse = z.infer<typeof insightsResponseSchema>;
 

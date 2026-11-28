@@ -1,5 +1,5 @@
 import type { Holding, MarketTick, PortfolioPoint } from '@/types/domain';
-import { seedHoldings, seedPortfolioCurve } from '@/services/seed';
+import { seedMarket } from '@/services/seed';
 import type { Mutate, RootState } from '@/app/store';
 import { createSelector } from '@/app/createSelector';
 
@@ -13,9 +13,10 @@ export interface PortfolioState {
 }
 
 export function initialPortfolioState(): PortfolioState {
+  const market = seedMarket();
   return {
-    holdings: seedHoldings,
-    curve: seedPortfolioCurve(),
+    holdings: market.holdings,
+    curve: market.curve,
     lastUpdated: new Date().toISOString(),
     loading: false,
     error: null,
@@ -25,6 +26,8 @@ export function initialPortfolioState(): PortfolioState {
 export interface PortfolioActions {
   holdingsRepriced: (ticks: MarketTick[]) => void;
   curvePointAppended: (point: PortfolioPoint) => void;
+  /** Live value for today: updates the last daily point instead of adding one. */
+  curveTodayUpdated: (value: number) => void;
   portfolioReset: () => void;
 }
 
@@ -49,10 +52,16 @@ export function createPortfolioActions(mutate: Mutate): PortfolioActions {
         // Keep only ~2 years of points to bound memory.
         if (portfolio.curve.length > 800) portfolio.curve.shift();
       }),
+    curveTodayUpdated: (value) =>
+      mutate(({ portfolio }) => {
+        const last = portfolio.curve[portfolio.curve.length - 1];
+        if (last) last.value = Math.round(value * 100) / 100;
+      }),
     portfolioReset: () =>
       mutate(({ portfolio }) => {
-        portfolio.holdings = seedHoldings;
-        portfolio.curve = seedPortfolioCurve();
+        const market = seedMarket();
+        portfolio.holdings = market.holdings;
+        portfolio.curve = market.curve;
         portfolio.lastUpdated = new Date().toISOString();
         portfolio.error = null;
       }),

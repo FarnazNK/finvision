@@ -356,3 +356,28 @@ def test_agentcore_assistant_is_behind_the_same_paywall(stripe_on, monkeypatch):
     response = client.post("/api/agentcore/portfolio/ask", headers=_user(),
                            json={"question": "How diversified am I?"})
     assert response.status_code == 402
+
+
+# --- Public demo portfolio with billing on -----------------------------------
+
+
+def _ask_demo(headers: dict):
+    from tests.test_demo_portfolio import _demo_payload
+
+    return client.post("/api/insights", headers=headers, json=_demo_payload())
+
+
+def test_demo_portfolio_stays_free_for_anonymous_visitors(stripe_on):
+    assert _ask_demo({}).status_code == 200
+
+
+def test_demo_portfolio_stays_free_for_signed_in_free_users(stripe_on):
+    assert _ask_demo(_user()).status_code == 200
+
+
+def test_invalid_credential_is_rejected_on_demo_portfolio_with_billing_on(stripe_on):
+    assert _ask_demo({"Authorization": "Bearer wrong"}).status_code == 401
+
+
+def test_anonymous_visitor_cannot_ask_about_another_portfolio(stripe_on):
+    assert _ask({}).status_code == 401

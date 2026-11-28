@@ -1,6 +1,10 @@
-# FinVision
+# FinVision — AI Portfolio Tracker & Financial Analytics MCP Server
 
-**A full-stack, AI-assisted portfolio tracker.** React + TypeScript frontend, Python/FastAPI backend, and an AI assistant that answers questions about a portfolio by calling real calculation tools instead of guessing numbers.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A full-stack portfolio tracker and financial analytics reference project built with React, TypeScript, Python and FastAPI. Explore holdings, asset allocation, portfolio concentration and unrealized gains through an interactive dashboard, or ask an AI assistant backed by deterministic financial calculation tools. The same analytics are available through a local Model Context Protocol (MCP) server for coding agents.
+
+**Useful for:** developers exploring financial dashboards, grounded LLM tool calling, MCP integration and testable portfolio analytics.
 
 [![CI](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/ci.yml)
 [![Security](https://github.com/FarnazNK/finvision/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FarnazNK/finvision/actions/workflows/security.yml)
@@ -19,26 +23,43 @@
 | **What it is** | A web app to track holdings, allocation, returns, transactions and a watchlist, with an AI assistant for portfolio questions |
 | **Frontend** | React 18, TypeScript, Zustand, Zod, immer, styled-components, Recharts, three.js |
 | **Backend** | Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL, JWT auth, Stripe subscriptions |
-| **AI** | Anthropic tool use over 5 deterministic analytics functions, cited answers, offline fallback; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
-| **Quality** | 91 frontend tests (Jest + React Testing Library), 54 backend tests (pytest), CodeQL and dependency audits in CI |
+| **AI** | Anthropic tool use over 5 deterministic analytics functions, **guardrails enforced in code** (every figure verified against tool output, advice/off-topic/injection refused before the model), **number-level citations**, a **privacy mode that keeps every customer figure away from the model provider**, deterministic fallback on any model failure, a 20-case **eval set in CI**; the same tools are exposed to coding agents (Claude Code, Cursor, Codex) through an **MCP server** |
+| **Quality** | 119 frontend tests (Jest + React Testing Library), 132 backend tests (pytest), 20 assistant evals, statistical tests for the price model, CodeQL and dependency audits in CI |
 | **Deployed on** | GitHub Pages (frontend) and Vercel (API), with automatic deploys from `main`; Docker images also run on Kubernetes (local kind cluster, manifests validated in CI) |
 
 ## What I built
 
-### 🤖 AI assistant that doesn't make up numbers
-LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. Each answer **cites the tools it used**, so it can be checked. Without an API key the service falls back to deterministic answers, so the demo and CI never depend on an external model.
-→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py)
+### 🤖 AI assistant with validated financial calculations
+LLMs are bad at arithmetic, and financial figures must be exact. So the model never calculates. It calls **5 Python tools** (`get_portfolio_summary`, `get_allocation`, `get_concentration`, `get_top_movers`, `get_recent_activity`) through Anthropic function calling, then explains the results. The rules aren't only in the prompt: **code checks every number in the answer against the tool results**, and each verified figure is cited to the tool and field it came from. Advice, off-topic and prompt-injection requests are refused before the model is called. If the model fails (no key, API error, timeout, or figures that don't verify), the service answers deterministically instead of erroring. Details in [How the AI assistant works](#how-the-ai-assistant-works).
+→ [`ai-service/app/llm.py`](ai-service/app/llm.py), [`ai-service/app/guardrails.py`](ai-service/app/guardrails.py), [`ai-service/app/analytics.py`](ai-service/app/analytics.py), [`ai-service/evals/`](ai-service/evals/)
+
+### 🛡️ Customer figures never reach the model
+Sending a customer's balances and transactions to a third-party model provider is what usually stops financial AI projects in compliance and vendor-risk review. Because the model never calculates here, it doesn't need the numbers either. By default, every customer-derived value (amounts, weights, percentages, transaction dates) is swapped for a placeholder like `{{F3}}` before anything is sent. The model sees only public ticker symbols, asset classes, ranks, gain/loss direction and size words ("large", "majority"), writes its answer with the placeholders, and the server inserts the real values afterwards. A draft with any number of its own is rejected, since the model had none to copy, and the rendered answer still goes through the normal figure check. A test runs every tool and asserts that none of the portfolio's values appear in any request: the old path sent 38 of them, the new one sends 0. Set `FINVISION_MODEL_DATA=full` to compare against the old behaviour.
+→ [`ai-service/app/privacy.py`](ai-service/app/privacy.py), [tests](ai-service/tests/test_privacy.py)
+
+| Sent to the model provider | Default (`masked`) | `full` |
+| --- | --- | --- |
+| Amounts, balances, cost basis, quantities, prices | ❌ placeholders | ✅ |
+| Weights, returns, daily changes | ❌ placeholders | ✅ |
+| Transaction dates and amounts | ❌ placeholders | ✅ |
+| Holding names and transaction descriptions (free text) | ❌ | names only |
+| Ticker symbols, asset classes, ranks, gain/loss direction | ✅ | ✅ |
+| The user's question | ✅ | ✅ |
 
 ### 🔌 MCP server for coding agents
 The same 5 analytics functions are also available to external AI agents through a **Model Context Protocol (MCP) server**. Clone the repo, open it in Claude Code, and ask "Use FinVision to check how concentrated the sample portfolio is". The agent discovers the tools from [`.mcp.json`](.mcp.json) and runs the real calculations. There is one implementation behind two interfaces: the in-app assistant and the MCP server call the same code, and a test checks they return identical numbers.
 It's written for agents: every tool says when to use it, inputs are typed and bounded, invalid input returns an error naming the bad field, optional fields have defaults so an agent doesn't have to invent IDs, and a sample portfolio resource lets an agent try the tools with no setup. Tools are marked read-only. Version 1 is **stateless**: the agent passes the portfolio in each call, so the server needs no credentials and can't expose anyone's saved data.
 → [`ai-service/app/mcp_server.py`](ai-service/app/mcp_server.py), [tests](ai-service/tests/test_mcp_server.py), [setup](#use-finvision-from-a-coding-agent-mcp)
 
+### 📈 Market simulation that behaves like real markets
+The public demo has no paid market-data feed, so prices are simulated, and they're built to pass a quant's sniff test. A year of daily history comes from **correlated geometric Brownian motion**: realistic volatility per asset (VTI 16%, AAPL 27%, BND 6%, gold 15%, cash 0), with correlations applied through a **Cholesky** factor so stocks move together and bonds mostly don't. The path ends exactly at today's prices, and each holding's day change is the last return of that same path, so the chart, the "Day's change" tile and the landing page always agree. Live ticks use a mean-reverting (**Ornstein–Uhlenbeck**) intraday model, so the day's move stays at a normal daily size however long the page is open. Everything is seeded and reproducible; the demo year comes out at +9.1% with 11% annualized volatility and a −12.5% maximum drawdown. Tests simulate ten years and check that the realized volatilities and correlations match their targets.
+→ [`src/services/priceModel.ts`](src/services/priceModel.ts), [tests](src/services/priceModel.test.ts)
+
 ### 💳 FinVision Pro: Stripe subscription billing
 AI insights cost money per question, so they're a paid **Pro** feature. The browser never decides who is on Pro:
 - **Checkout is created on the server.** `POST /api/billing/checkout` creates (or reuses) the user's Stripe customer and a subscription Checkout Session. The price and the redirect URLs come from server config, so the client can't change what it pays or where it's sent. An `Idempotency-Key` header makes a double-clicked Upgrade button open one session, not two. Card details are entered only on Stripe's page.
 - **Webhooks are signed and idempotent.** `POST /api/billing/webhook` verifies Stripe's HMAC signature over the raw body and records each event ID in the same transaction as its effect, so Stripe's retries never apply twice. It re-reads the subscription from Stripe instead of trusting the event body, because events can arrive out of order. It only updates customers this app created.
-- **The paywall is on the server.** `/api/insights` returns **402** unless the signed-in user's stored subscription is `active` or `trialing`. A failed renewal (`past_due`) or a cancellation removes access, and the shared service key can't bypass it.
+- **The paywall is on the server.** `/api/insights` returns **402** unless the signed-in user's stored subscription is `active` or `trialing`. A failed renewal (`past_due`) or a cancellation removes access, and the shared service key can't bypass it. Questions about the public demo portfolio stay free, so the live demo works for every visitor.
 - **Self-service.** `POST /api/billing/portal` opens Stripe's customer portal to update the card or cancel.
 
 Billing is **off unless Stripe keys are set**, and the API then behaves exactly as before. It runs in Stripe **test mode** at no cost.
@@ -50,7 +71,7 @@ FastAPI service with typed Pydantic contracts: register/login with hashed passwo
 
 ### 📊 Responsive dashboard
 Portfolio value chart with time ranges, allocation donut, sortable holdings, filterable transactions, market movers and a watchlist. It uses a token-driven **glass design system** (frosted translucent surfaces with backdrop blur, light-catching gradient edges and an animated aurora backdrop, with solid fallbacks for browsers without `backdrop-filter` and for users who prefer reduced transparency). A **⌘K / Ctrl+K command palette** (accessible combobox, fuzzy matching, focus restore) jumps between pages and changes settings from the keyboard. It works on desktop and phones (card layouts and a floating bottom navigation on mobile), offers dark (default) and light themes, and is built from reusable, accessible UI components with keyboard focus states, screen-reader labels and reduced-motion support.
-**State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and the durable data is persisted locally. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
+**State and contracts:** App state lives in a single **Zustand** store composed from feature slices (portfolio, markets, transactions, watchlist, UI). Each slice owns its data, actions and memoized selectors, updates go through immer, and only user-owned data (transactions, watchlist, settings) is persisted locally, never simulated prices. Saved data is treated as untrusted input: it is validated with Zod, with size limits, before it reaches the store, and anything invalid falls back to defaults. The AI Insights panel keeps its session-only state (current question, request status, recent questions) in a separate, unpersisted Zustand store, so it is never written to storage next to financial data. Every API response (auth, insights, market quotes) and the sign-in form are validated at runtime with **Zod** schemas, and the TypeScript types are inferred from those schemas so they cannot drift.
 → [`src/pages/`](src/pages/), [`src/components/primitives/`](src/components/primitives/), [`src/services/schemas.ts`](src/services/schemas.ts), [`src/app/store.ts`](src/app/store.ts), [`src/features/insights/insightsStore.ts`](src/features/insights/insightsStore.ts)
 
 ### ✨ 3D landing page
@@ -101,6 +122,59 @@ flowchart LR
     Agent -->|MCP| MCP -->|same functions| Tools
 ```
 
+## How the AI assistant works
+
+```mermaid
+flowchart TD
+    Q["Question + portfolio snapshot"] --> S{"Input screen<br/>(code, no model)"}
+    S -->|investment advice| RA["Decline + relevant facts<br/>from one tool"]
+    S -->|off-topic| RO["Refuse"]
+    S -->|prompt injection<br/>in question or holding names| RI["Refuse"]
+    S -->|in scope| K{"API key?"}
+    K -->|no| D["Deterministic answer<br/>(question routed to one tool)"]
+    K -->|yes| M["Model"]
+    M -->|tool call| T["5 analytics tools<br/>(deterministic Python)"]
+    T -->|results| M
+    M -->|final text| V{"Every figure matches<br/>a tool result?"}
+    V -->|yes| A["Answer + number-level citations"]
+    V -->|no, first time| R["Retry: list the<br/>unsupported figures"] --> M
+    V -->|no, again| D
+    M -.->|API error · timeout · 6-step limit<br/>· buy/sell advice in output| D
+```
+
+| Guardrail | Enforced by | What happens |
+| --- | --- | --- |
+| Numbers must come from tools | `verify_numbers`: extracts every figure (amounts, %, k/M) and matches it to a tool output or a raw snapshot input, allowing only display rounding | One retry naming the bad figures, then a deterministic answer |
+| No investment advice | Regex screen on the question ("should I sell…", "is X a good investment", predictions); a second check on the model's output | Declines, then gives the relevant facts from one tool |
+| Stay on topic | Question must be about the portfolio (or name a held symbol) | Refusal, model never called |
+| Prompt injection | Screen on the question **and** on holding names and transaction descriptions, which also reach the prompt | Refusal, model never called |
+| Model failures | Bad model name, rate limit, outage, per-call timeout, 40 s total budget, 6-step loop limit | Deterministic answer; the API never returns a 500 for these |
+
+Each response carries a `guardrail` field (for example `refused:advice` or `fallback:api_error`), and the panel shows it as a label. Citations come in two kinds: `metric` (a tool that was called) and `figure` (one number in the text → tool, field, raw value).
+
+![Insights panel with each figure footnoted to the tool and field it came from](docs/screenshots/ai-insights.png)
+
+*Offline mode, so this answer was computed directly; a model answer is cited the same way.*
+
+### Evals
+
+[`ai-service/evals/cases.json`](ai-service/evals/cases.json) holds 20 cases: 10 portfolio questions (checking tool choice and that every figure matches the tool results), 4 advice requests, 3 off-topic requests and 3 injection attempts (one hidden in a holding name). The runner re-checks figures independently of the service.
+
+```bash
+cd ai-service
+python -m evals.run          # offline, runs in CI on every push
+python -m evals.run --live   # real model, needs ANTHROPIC_API_KEY
+```
+
+| Check | Offline (CI) | Live model |
+| --- | --- | --- |
+| Tool choice + grounded numbers | 10/10 | not run yet |
+| Refuses investment advice | 4/4 | not run yet |
+| Refuses off-topic questions | 3/3 | not run yet |
+| Blocks prompt injection | 3/3 | not run yet |
+
+Offline mode tests the guardrails and the deterministic path the service falls back to. The live run tests the model itself (and fails a case if it fell back); start it from the **AI evals (live model)** workflow in the Actions tab after adding an `ANTHROPIC_API_KEY` repository secret. Per-case results: [`evals/results-offline.md`](ai-service/evals/results-offline.md).
+
 ## Run it locally
 
 **Frontend** (Node 20+)
@@ -118,7 +192,7 @@ uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ```
 
-Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
+Optional environment variables: `ANTHROPIC_API_KEY` (real model answers; without it you get offline answers), `FINVISION_MODEL` (model ID, default `claude-sonnet-5-5`), `FINVISION_MODEL_DATA` (`masked`, the default, keeps customer figures away from the model; `full` sends them), `VITE_AI_SERVICE_URL` (API address for the frontend). Or start everything with `docker compose up`.
 
 ## Use FinVision from a coding agent (MCP)
 
@@ -175,13 +249,16 @@ Free, with no real charges:
 
 This is a portfolio project, not production investment software, and it doesn't give investment advice.
 
-- **Demo data:** the public dashboard uses seeded holdings and simulated price ticks. Real quotes depend on a Finnhub key.
+- **Demo data:** the public dashboard uses seeded holdings and **simulated prices, not market data**. They come from a correlated price model ([`priceModel.ts`](src/services/priceModel.ts)): a year of daily history from geometric Brownian motion with realistic volatility per asset and correlations via Cholesky decomposition, plus bounded intraday ticks, so the charts, today's change and the landing page all agree. It's simplified: normal returns (no fat tails or volatility clustering), constant parameters, and holdings held constant over the history. Statistical tests check the realized volatilities and correlations against their targets. Real quotes depend on a Finnhub key.
 - **Billing:** implemented and tested, but off on the live demo until Stripe test keys are configured. It is test mode only; no real payments are taken.
 - **AI context:** insights currently use a portfolio snapshot sent by the browser. Next step: build it server-side from the signed-in user's saved holdings.
 - **Retrieval:** research documents are stored in memory, without embeddings, persistence or per-user isolation.
 - **MCP:** the server runs locally over stdio and doesn't read saved accounts. A hosted version would need OAuth and per-user scoping.
+- **Privacy mode:** the user's question is still sent as typed, so a figure the user types themselves reaches the model. In masked mode the model can only compare values through ranks and size words, so answers are less nuanced than with full data. The MCP server is unchanged: it runs locally and the calling agent's own model sees the portfolio it was given.
+- **Guardrails:** the advice, off-topic and injection screens are pattern-based. They catch the common phrasings in the eval set, not every possible rewording; the number check is the stronger guarantee.
+- **Dependencies:** one moderate React Router advisory (open redirect) needs the breaking upgrade to v7. It isn't reachable here, since every link and redirect goes to a fixed path, but the upgrade is planned.
 
-**Next up:** server-side portfolio snapshots for AI, pgvector-based retrieval, and an evaluation set that runs coding agents against the MCP tools and checks answer quality in CI.
+**Next up:** a risk module (volatility, Sharpe, max drawdown, VaR and Expected Shortfall) computed from the simulated history and exposed as AI tools, a live-model eval baseline in this README, server-side portfolio snapshots for AI, pgvector-based retrieval, and evals that run coding agents against the MCP tools.
 
 <details>
 <summary><strong>Optional extras: GraphQL, AWS AgentCore, Kubernetes, Prometheus/Grafana</strong></summary>
@@ -205,6 +282,14 @@ None of these need a paid account. All run locally.
 | [`.github/workflows/`](.github/workflows/) | CI, security scans, Docker publishing, deploys, live smoke test |
 | [`k8s/`](k8s/), [`aws_agentcore/`](aws_agentcore/) | Optional local extras |
 | [`SECURITY.md`](SECURITY.md) | Security policy |
+
+## Contributing
+
+Issues, reproducible bug reports and focused pull requests are welcome. If this project is useful to you, consider starring it so you can find it again.
+
+## License
+
+[MIT](LICENSE). This software is a portfolio analytics reference project, not investment advice or production investment software.
 
 ---
 
